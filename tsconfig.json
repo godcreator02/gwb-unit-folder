@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // 本仓只有这一份 typecheck program：src 的 node 半、纯逻辑测试、两个构建脚本一起收。
+    // **emit 不走这份**——build 走 tsconfig.build.json（rootDir 才关得住 src）
+    "noEmit": true,
+    // 只给 shadcn CLI 看：它读件根的 tsconfig 解析 components.json 里的 @/ 别名。
+    // **不写 baseUrl**——TS 7 把它移除了（TS5102），paths 直接相对本文件所在目录解析
+    "paths": {
+      "@/*": ["./src/client/*"]
+    }
+  },
+  "include": ["src/index.ts", "src/scan.ts", "src/browse.ts", "src/current.ts", "src/client/**/*.ts", "tests/**/*.test.ts", "build.ts", "tools/**/*.ts", "scripts/**/*.ts", "vitest.config.ts"]
+}

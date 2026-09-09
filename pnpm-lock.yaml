@@ -11,6 +11,9 @@ importers:
       '@godcreator02/gwb-commands':
         specifier: 0.1.0
         version: 0.1.0(@godcreator02/gwb-plugin-api@0.1.0(cordis@4.0.0-rc.9))
+      '@godcreator02/gwb-data':
+        specifier: 0.1.0
+        version: 0.1.0(@godcreator02/gwb-plugin-api@0.1.0(cordis@4.0.0-rc.9))(cordis@4.0.0-rc.9)
       '@godcreator02/gwb-plugin-api':
         specifier: 0.1.0
         version: 0.1.0(cordis@4.0.0-rc.9)
@@ -47,6 +50,9 @@ importers:
       cn:
         specifier: ^0.2.5
         version: 0.2.6
+      cordis:
+        specifier: 4.0.0-rc.9
+        version: 4.0.0-rc.9
       esbuild:
         specifier: ^0.27.0
         version: 0.27.7
