@@ -1,0 +1,81 @@
+---
+title: 单元文件夹
+description: 这个件解决什么问题、拆成几块、块与块之间怎么说话、为什么是这样——论断钉在仓里的真实源码上
+---
+
+# 单元文件夹
+
+`gwb-unit-folder` 是 gwb 内核线的一个件。它管的是**「单元」这个纯目录约定在工作台里长什么样**：
+容器根下一层一个目录、目录里一张 `unit.json` 出生证——这个件把它画成一棵树（现扫、读证、展开、看原文），
+并且**把「人现在看的是哪个单元」这个事实往外报**给别的件。
+
+这一页讲原理与模块划分；服务面、事件与命令面在 [服务面与命令面](/docs/service-and-commands)；
+为什么是「往外报」而不是扩展点、置顶为什么从设置改成数据，在轨迹卡「选中往外报」（`docs-god-flow/trajectory/`）。
+
+## 一次点击从头到尾怎么走
+
+人在树格里点一个单元行。浏览器半做两件事：本地展开那一行（目录清单经 `unit-folder.listDir` 现拉）、
+**fire-and-forget** 一条 `unit-folder.select { path }` 给宿主半。第二件事不等第一件，也不让第一件等它——
+「当前单元」是给别的件看的，报不上去不该让树本身卡住。
+
+宿主半收到 `select`：先过那堵墙——解设置里的 `units-root`、把参数路径验成容器根内的绝对路径——
+再按路径形状推出所属单元（relative 的第一段就是单元名，不碰盘），记成「最近一次点击」；
+如果 `current()` 因此变了，就在自己的 ctx 上 `emit('unit-folder/selection', …)`。消费方（第一个是文档站件）
+早在挂载时局部注入了本件、`on` 了这条事件，于是它知道该换哪个单元的文档站了。
+
+置顶走的是同一条墙，但落点不同：`unit-folder.pin { path }` 要求 path 是容器根下一层的单元目录，
+写进内存镜像、再写 `gwbData` 的文档 `pinned`。`current()` 没点过时回落到置顶，所以置顶在那种局面下
+也会让 `current()` 变、也会广播。
+
+## 拆成几块，依赖是单向的
+
+```
+scan.ts / browse.ts / current.ts     纯机 / 纯逻辑：只认 node:fs 与路径形状，不知道 cordis 存在
+          ↑
+      index.ts                        cordis Service：把上面三块接到窗格、命令、服务面、事件上
+          ↑
+   client/index.tsx                   浏览器半：只经命令总线说话，不 import 宿主半一个符号
+          ↑
+   别的件（消费方）                    inject('gwbUnitFolder')、on('unit-folder/selection')
+```
+
+三条边界各自「不知道什么」：
+
+**纯逻辑那层不知道 cordis 存在。** `current.ts` 里的四个函数——从路径推所属单元、置顶文档验形状、
+`current()` 的回落规则、清单里找置顶——全是「喂输入看输出」，所以全在 `tests/current.test.ts` 里测，
+`index.ts` 只剩接线。回落规则是整个服务面的语义核心，它长这样：
+
+{/* ref file="../src/current.ts" lines="66-76" */}
+
+**宿主半不知道任何消费方。** 方向是**特殊认识一般**：文档站件认识单元文件夹，单元文件夹不认识文档站件。
+本件往 ctx 上挂的名字只有一个，`static inject` 只放两个硬依赖——外壳（没它两格没处挂）与命令总线
+（没它浏览器半调不到任何东西）：
+
+{/* ref file="../src/index.ts" lines="102-104" */}
+
+设置、数据、说明书三件都是**局部注入**：缺哪个本件照挂、只少那一面。data 件那一格顺带定了置顶怎么落盘、
+以及「人先点了置顶、data 件后挂上」那种顺序谁赢：
+
+{/* ref file="../src/index.ts" lines="169-183" */}
+
+**浏览器半不知道宿主半的实现。** 它只经命令总线说话（`host.call`），按形状收回包；报选中那一下
+是 fire-and-forget、失败只在控制台说一声：
+
+{/* ref file="../src/client/index.tsx" lines="568-592" */}
+
+## 两条判据
+
+**配置与数据分家。** `units-root` 是人在设置面里手填的，所以是设置（`gwbSettings.define`）；置顶是人在树上
+点图钉、件因这个动作自己写下的，所以是数据（`gwbData` 文档 `pinned`）。判据跟外壳把布局档落 data 是同一条。
+0.2 那个手填目录名的设置项 `pinned-unit` 因此删了，产物守卫钉着它不许回来。
+
+**带路径参数的命令共用一堵墙。** 命令总线对外暴露（agent 经 MCP 也在调），参数不能默认是界面自己递来的
+那份清单上的：每条都先解 `units-root`、再把路径验成根内的绝对路径，越出根的一律回「路径不在容器根内」：
+
+{/* ref file="../src/index.ts" lines="212-224" */}
+
+## 怎么用
+
+装：`plugins.install {"pkg":"@godcreator02/gwb-unit-folder"}`，或进 home `pnpm add` 再在 `cordis.yml` 手写一条 `id: unit-folder`
+的条目（没有 `config`）。装完到「设置」填 `units-root`。确认它真在干活：日志里有 `服务就绪（ctx.gwbUnitFolder）`，
+在树上点一个单元后 `unit-folder.current` 回那个单元的 `{ unitPath, unitName, path }`。开发循环与发版见仓根 README。

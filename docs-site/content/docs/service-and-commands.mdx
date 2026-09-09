@@ -1,0 +1,70 @@
+---
+title: 服务面与命令面
+description: ctx.gwbUnitFolder 的两个方法、事件 unit-folder/selection 的载荷、九条命令的名字与参数——导出面就是契约，逐条钉在源码上
+---
+
+# 服务面与命令面
+
+这一页是契约。**这里钉着的每一样都有别人对着写代码**：服务面被别的件 inject，命令面被浏览器半与 agent 调。
+改任何一样之前先问人——判据见轨迹卡「选中往外报」的「代价与遗留」。
+
+## 服务 `ctx.gwbUnitFolder`
+
+消费方写 `ctx.inject(['gwbUnitFolder'], …)`（或硬 `inject`）拿到这一格，两个方法、都同步：
+
+{/* ref file="../src/index.ts" lines="50-65" */}
+
+`current()` 的回值形状与事件载荷是同一个 `UnitSelection`。三个字段：`unitPath` 是容器根下那一层的单元目录、
+`unitName` 是目录名、`path` 是人点的那个目录（点单元行时等于 `unitPath`，点单元内目录时是那个目录）——
+都是绝对路径：
+
+{/* ref file="../src/current.ts" lines="14-22" */}
+
+**为什么是两个方法而不是一个。** `current()` 会回落到置顶，所以光看它分不出「人点了」还是「没点过、只是置顶了」；
+文档站件不用分，但将来要「只在人真点了时才动」的消费方得分——`pinned()` 单独给出来，两者一比就知道。
+
+## 事件 `unit-folder/selection`
+
+`current()` 变了就在提供方的 ctx 上 emit 一次，载荷就是新的 `current()`。**点击与置顶两条路都经同一处判「变没变」**，
+所以没点过时置顶 / 取消置顶也会广播——消费方看到的「当前」确实变了：
+
+{/* ref file="../src/index.ts" lines="226-235" */}
+
+类型面：消费方只要 `import type {} from '@godcreator02/gwb-unit-folder'`，Context 上的 `gwbUnitFolder` 与
+Events 上的 `'unit-folder/selection'` 就都有了。两条声明合在文件末尾：
+
+{/* ref file="../src/index.ts" lines="396-403" */}
+
+**它不做的事**：不跨会话（`current()` 只住内存，重启之后是置顶或空）；不给「清空」的口（眼下没有清空的动作，
+undefined 只在从有到无时才会出现，而现在没有从有到无的路）。
+
+## 命令面
+
+九条，全登记在本件名下、都包 `ctx.effect`（条目停了名字就从表上摘掉）。带路径参数的五条共用[那堵墙](/docs#两条判据)。
+
+**选中与置顶四条**是 0.3 新加的、服务面的命令入口。`select` 是浏览器半点树时调的那条，agent 想替人「切到某个单元」
+也调它；它算出所属单元、记下、变了就广播：
+
+{/* ref file="../src/index.ts" lines="336-352" */}
+
+`current` 无参数，回 `{ ok: true, data: current() ?? null }`——信封形状跟本件其余命令一致，没有「当前」时 data 是 null
+而不是缺字段：
+
+{/* ref file="../src/index.ts" lines="354-360" */}
+
+`pin` 只认容器根下一层的单元目录，落 data 文档 `pinned`（`{ path }`），**不改最近一次点击**；`unpin` 写 `{ path: null }`。
+两条的回执都等落盘完成——写没写成进回执，不静默：
+
+{/* ref file="../src/index.ts" lines="362-392" */}
+
+**浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）0.2 就有，形状没动；变的只有 `list` 回包里的 `pinned`
+——从设置里按目录名找，改成从 data 那份置顶路径找，找不到那条单元回 null、字段名不变：
+
+{/* ref file="../src/index.ts" lines="258-277" */}
+
+## 置顶文档
+
+`<home>/data/<条目 id>/pinned.json`。读回来要验形状——盘上那份是人手改得到的 JSON，`path` 不是非空字符串就当没置顶，
+取消置顶写的 `{ path: null }` 也走这条：
+
+{/* ref file="../src/current.ts" lines="56-65" */}
