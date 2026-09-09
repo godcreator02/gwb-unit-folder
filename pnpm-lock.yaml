@@ -14,6 +14,9 @@ importers:
       '@godcreator02/gwb-plugin-api':
         specifier: 0.1.0
         version: 0.1.0(cordis@4.0.0-rc.9)
+      '@godcreator02/gwb-settings':
+        specifier: 0.1.0
+        version: 0.1.0(@godcreator02/gwb-plugin-api@0.1.0(cordis@4.0.0-rc.9))(cordis@4.0.0-rc.9)
       '@godcreator02/gwb-shared-react':
         specifier: 0.0.2
         version: 0.0.2
@@ -269,6 +272,12 @@ packages:
   '@godcreator02/gwb-plugin-api@0.1.0':
     resolution: {integrity: sha512-lHcK2jaE+dKjNcF7obgZUP3UKP6MWU9G6TJDLyRSSk8HrH4vaHldy9LX1PlL1Z7CAehPaJPlf55wXG/8YRIiyA==}
     peerDependencies:
+      cordis: ^4.0.0-rc.9
+
+  '@godcreator02/gwb-settings@0.1.0':
+    resolution: {integrity: sha512-mxMfOUOFFdJi0F3qpAcP1k/uaL4DLeB6GhaIhY+c8OnhFevowj4jHIaqyYkh4pKLaWGA21knf/tPHfrsyypI6w==}
+    peerDependencies:
+      '@godcreator02/gwb-plugin-api': '>=0.1.0'
       cordis: ^4.0.0-rc.9
 
   '@godcreator02/gwb-shared-react@0.0.2':
@@ -2135,6 +2144,11 @@ snapshots:
 
   '@godcreator02/gwb-plugin-api@0.1.0(cordis@4.0.0-rc.9)':
     dependencies:
+      cordis: 4.0.0-rc.9
+
+  '@godcreator02/gwb-settings@0.1.0(@godcreator02/gwb-plugin-api@0.1.0(cordis@4.0.0-rc.9))(cordis@4.0.0-rc.9)':
+    dependencies:
+      '@godcreator02/gwb-plugin-api': 0.1.0(cordis@4.0.0-rc.9)
       cordis: 4.0.0-rc.9
 
   '@godcreator02/gwb-shared-react@0.0.2': {}
