@@ -72,7 +72,7 @@ pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   # 先抬版本�
 
 实机验证按 devkit 手册（skill `gwb-devkit`）：开隔离 home、装包、给 `units-root`、看日志与命令回执。
 
-文档站：`cd docs-site && pnpm install && pnpm doc`（livedoc check）、`pnpm dev`（http://localhost:4310）。
+文档站：`cd docs-site && pnpm install && pnpm doc`（docfirst check）、`pnpm dev`（http://localhost:4310）。
 
 ## 结构
 
@@ -81,4 +81,4 @@ pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   # 先抬版本�
 - `src/index.ts` —— cordis Service：两格窗格注册 + 九条命令 + 服务面 `gwbUnitFolder` + 事件
 - `src/client/` —— 浏览器半：树格 / 原文格，`mountPane` 契约，shadcn 组件自 vendor
 - `skills/unit-folder/` —— agent 说明书（gwb-skills 挂载）
-- `docs-site/` —— fumadocs 站 + livedoc；`docs-god-flow/trajectory/` 轨迹卡
+- `docs-site/` —— fumadocs 站 + docfirst；`docs-god-flow/trajectory/` 轨迹卡

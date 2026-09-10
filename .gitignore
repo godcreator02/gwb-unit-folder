@@ -2,7 +2,7 @@ node_modules/
 /dist/
 *.log
 *.tsbuildinfo
-# 文档站的构建产物与 livedoc 的投影输出（站本身进 git）
+# 文档站的构建产物与 docfirst 的投影输出（站本身进 git）
 docs-site/.next/
 docs-site/.source/
 docs-site/out/
