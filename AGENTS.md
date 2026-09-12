@@ -1,0 +1,47 @@
+# gwb-unit-folder
+
+单元文件夹件（gwb 内核正线）：现扫单元容器根读出生证、树里展开单元看文件、点文件在第二格看原文；
+往外报「人现在看的是哪个单元」——服务 `ctx.gwbUnitFolder`（`current()` / `pinned()`）与事件
+`unit-folder/selection`。消费方 inject 它，它不认识任何消费方。
+
+## 硬约束
+
+* **服务面与命令面是契约**：`gwbUnitFolder` 两个方法、事件 `unit-folder/selection` 的载荷、九条命令
+  的名字与参数都有别人对着写代码，改任何一样先问人
+* **带路径参数的命令共用一堵墙**：先解设置里的 `units-root`，再把路径验成容器根内的绝对路径，
+  越出根的一律回「路径不在容器根内」
+* **配置与数据分家**：`units-root` 是设置（`gwbSettings.define`）；置顶是数据（`gwbData` 文档
+  `pinned`）。设置项 `pinned-unit` 已删，产物守卫钉着它不许回来
+* **依赖单向**：纯逻辑层（`scan` / `browse` / `current`）不知道 cordis 存在；浏览器半只经命令总线
+  说话；本件不 import 任何消费方
+
+## 怎么跑
+
+```powershell
+pnpm check      # typecheck + lint + 纯逻辑测试
+pnpm build      # tsc（node 半）+ esbuild（浏览器半）+ 样式 scope
+pnpm test:all   # 全量测试（含产物守卫，要先 build）
+pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   # 先抬版本号
+```
+
+装进 home：`plugins.install {"pkg":"@godcreator02/gwb-unit-folder"}`，或进 home `pnpm add` +
+`cordis.yml` 条目 `id: unit-folder`（没有 `config`），再到设置面填 `units-root`。
+实机验证照 `gwb-devkit` 手册走隔离 home，别拿 default 试；发完版就去升 default home。
+
+## 文档
+
+文档站在 `docs-site/`，docfirst 六区（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈）：
+`cd docs-site && pnpm exec docfirst check`，dev 口 4319。现状论断钉在源码上（钉码只在 docs 区），
+被钉的代码动了就 `docfirst confirm` 认新行或改论断。仓根 `README.md` 与这份 `AGENTS.md`
+都是生成物，正本在 `content/outputs/`，改正本后 `pnpm exec docfirst render --target ai` 重摆，
+一起提交，别手改生成物。
+
+实验与测量的材料落仓根 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm
+workspace；evidence 卡在依据段用相对仓根的路径指过去。
+
+## 代码地图
+
+* `src/scan.ts` / `src/browse.ts` / `src/current.ts` —— 纯机与纯逻辑，`tests/` 里喂输入看输出
+* `src/index.ts` —— cordis Service：窗格注册、九条命令、服务面、事件（先读它）
+* `src/client/` —— 浏览器半：树格 / 原文格，只经命令总线说话
+* `skills/unit-folder/` —— agent 说明书；写文档站前读 docfirst 件里的 `docfirst-docs` skill

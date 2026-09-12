@@ -1,24 +1,31 @@
 /**
- * 这个站怎么挂机制：用哪个格式包、文档在哪、组件名册是什么。命令行和站读的是同一份。
+ * 这个站怎么挂 docfirst：格式包、哪几区进 check、卡目录在哪、产物摆放、组件名册。
+ * 命令行和站读的是同一份。
  *
  * 项目根是这个站目录，钉的代码在仓根——引用里写 `../src/…`，读取器按项目根拼路径。
- * 比较器不写死：仓里有 git 就用 git 比，没有就退回按内容摘要比。
+ * 比较器不写死会漂：仓里有 git，就用 git 比（只钉已提交内容，动了被引用的源码先 commit 再 confirm）。
+ * 六区里只有 docs（现状）与 outputs（生成正本）进 check——只有这两区对代码说话；
+ * 轨迹、交接、未来、反馈四区的草稿记号与卡天然不进门禁，卡不许钉活代码。
  *
- * 想让仓根 README.md 变成生成物，加一条 outputs 映射，正本写成站里的一篇 mdx：
- *   outputs: { 'content/docs/readme.mdx': ['../README.md'] }
- * 加了之后改 mdx 源要跑 `pnpm docfirst render --target ai` 重摆，两份一起提交，
- * check 会守着生成物跟源一致。模板里不预置——没重摆过的映射一上来就是红的。
+ * trajectory：轨迹卡住站内 content/trajectory/（六区正典）。眼下卡还住仓根
+ * docs-god-flow/trajectory/（旧约定），站内轨迹区先空着；卡迁入时走 git mv 保历史。
  *
- * trajectory：轨迹卡住仓根的 docs-god-flow/trajectory/（跟 docfirst 自己那个仓同一条约定），
- * check 顺带跑卡校验。卡不许钉代码——要说现状去 content/docs 里写、在那儿钉。
+ * outputs：仓根 README.md 与 AGENTS.md 都是生成物，正本是 content/outputs/readme.mdx
+ * 与 agents.mdx。改 mdx 源，`pnpm docfirst render --target ai` 重摆，一起提交，
+ * check 守着生成物跟源一致。
  */
 import * as fumadocs from '@godcreator02/docfirst-workflow/fumadocs'
 
 export default {
   formats: [fumadocs],
-  docs: 'content/docs',
+  docs: ['content/docs', 'content/outputs'],
   out: 'out',
-  trajectory: '../docs-god-flow/trajectory',
+  comparator: 'git',
+  trajectory: 'content/trajectory',
+  outputs: {
+    'content/outputs/readme.mdx': ['../README.md'],
+    'content/outputs/agents.mdx': ['../AGENTS.md'],
+  },
   components: {
     ...fumadocs.defaultRoster,
   },

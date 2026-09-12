@@ -5,9 +5,9 @@
   "type": "module",
   "description": "单元文件夹 的文档站：论断钉在这个仓的真实源码上，README 与机读版由 render 摆出",
   "scripts": {
-    "dev": "next dev -p 4310",
+    "dev": "next dev -p 4319",
     "build": "next build",
-    "start": "next start -p 4310",
+    "start": "next start -p 4319",
     "docfirst": "docfirst",
     "doc": "docfirst check",
     "doc:confirm": "docfirst confirm",
