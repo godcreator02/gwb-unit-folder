@@ -8,7 +8,7 @@
  * 轨迹、交接、未来、反馈四区的草稿记号与卡天然不进门禁，卡不许钉活代码。
  *
  * trajectory：轨迹卡住站内 content/trajectory/（六区正典）。眼下卡还住仓根
- * docs-god-flow/trajectory/（旧约定），站内轨迹区先空着；卡迁入时走 git mv 保历史。
+ * 卡住站内 content/trajectory/（2026-09-12 已从仓根旧约定迁入，git mv 保历史）。
  *
  * outputs：仓根 README.md 与 AGENTS.md 都是生成物，正本是 content/outputs/readme.mdx
  * 与 agents.mdx。改 mdx 源，`pnpm docfirst render --target ai` 重摆，一起提交，
