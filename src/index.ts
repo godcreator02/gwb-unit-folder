@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { Service } from 'cordis'
-import type { GwbContext } from '@godcreator02/gwb-plugin-api'
+import { requireKernel, type GwbContext, type GwbKernelApi } from '@godcreator02/gwb-plugin-api'
 // 只为激活那几个件的 `declare module 'cordis'`——它们给 ctx 加上各自那个名字
 import type { GwbCommandDef } from '@godcreator02/gwb-commands'
 import type {} from '@godcreator02/gwb-data'
@@ -12,10 +12,12 @@ import type {} from '@godcreator02/gwb-settings'
 import { listDir, readFilePreview, resolveInside } from './browse.js'
 import { takeInventory } from './scan.js'
 import { findPinned, isUnitDir, parsePinnedDoc, PINNED_DOC, resolveCurrent, selectionFor, type UnitSelection } from './current.js'
+import { TOOLBAR_EVENT, createToolbarButtonRegistry, type ToolbarButtonRegistry, type ToolbarButtonSpec } from './toolbar.js'
 
 export const name = 'gwb-unit-folder'
 
 export type { UnitSelection, PinnedDoc } from './current.js'
+export type { ToolbarButtonSpec } from './toolbar.js'
 
 /**
  * 浏览器半与样式表的地址，注册窗格时报给外壳。产物 `dist/index.js`、`dist/client.js`、
@@ -62,6 +64,12 @@ export interface GwbUnitFolderApi {
   current(): UnitSelection | undefined
   /** 置顶单元的绝对路径。落在 data 文档 `pinned` 里，没装 data 件时只活在内存 */
   pinned(): string | undefined
+  /**
+   * 往单元树格的工具条里登记一颗按钮，排在自家那几颗的后面。皮在浏览器半，点击与
+   * 「亮不亮」的问询都经命令总线回到登记方——形状与判据见 `toolbar.ts` 的
+   * `ToolbarButtonSpec`。回注销函数；件卸载时自动摘
+   */
+  registerToolbarButton(spec: ToolbarButtonSpec): () => void
 }
 
 /** 总线递来的参数是 `unknown`：按对象收下，字段各自再判 */
@@ -113,12 +121,18 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
   private data: DataDocs | undefined
   /** 「没装 data 件、置顶落不了盘」只说一次 */
   private dataWarned = false
+  /** 工具条按钮表：键是 (entryId, 按钮 id)。皮经 unit-folder.toolbarButtons 取表 */
+  private readonly toolbarTable: ToolbarButtonRegistry
+  /** 内核事件口——登记表一变推一声，页面那侧听见重取按钮表 */
+  private readonly kernel: GwbKernelApi
   private readonly log: ReturnType<GwbContext['logger']>
 
   constructor(ctx: GwbContext) {
     super(ctx, 'gwbUnitFolder')
     // 构造时 this.ctx 还是**提供方**自己的，logger 绑的是本件
     this.log = ctx.logger(name)
+    this.kernel = requireKernel(ctx)
+    this.toolbarTable = createToolbarButtonRegistry((message) => ctx.logger(name).warn(message))
   }
 
   [Service.init](): void {
@@ -193,7 +207,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       scoped.effect(() => scoped.gwbSkills.register(new URL('../skills/', import.meta.url)))
     })
 
-    this.log.info(`服务就绪（ctx.gwbUnitFolder）：current / pinned；选中变化经 ${SELECTION_EVENT} 广播`)
+    this.log.info(`服务就绪（ctx.gwbUnitFolder）：current / pinned / registerToolbarButton；选中变化经 ${SELECTION_EVENT} 广播，按钮表经 unit-folder.toolbarButtons 过桥`)
   }
 
   current(): UnitSelection | undefined {
@@ -202,6 +216,44 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
 
   pinned(): string | undefined {
     return this.pinnedPath
+  }
+
+  /**
+   * 取它的是哪个件（工具条按钮的身份）。方法里的 `this.ctx` 是**消费者**的 ctx，
+   * `fiber.entry` 是 loader 挂上的——跟外壳 `registerPane` 认窗格归属同一条路：
+   * 身份不由登记方自己报
+   */
+  private toolbarOwner(): { entryId: string; pkg: string } {
+    const fiber = this.ctx.fiber as unknown as { entry?: { id?: unknown; options?: { name?: unknown } } } | undefined
+    const entry = fiber?.entry
+    const entryId = entry?.id
+    const pkg = entry?.options?.name
+    if (typeof entryId !== 'string' || entryId === '' || typeof pkg !== 'string' || pkg === '') {
+      throw new Error('取不到调用方的身份——ctx.gwbUnitFolder 只能在经 cordis.yml 挂上的件里用')
+    }
+    return { entryId, pkg }
+  }
+
+  /**
+   * 登记一颗工具条按钮。收尾挂在**调用方**的 effect 上（this.ctx 在方法里是消费者的），
+   * 件卸载时自动摘——忘了收的症状是「件卸了按钮还在，点了没人应」，静默的错，这层
+   * 自动消掉。摘完也推一声，让页面把按钮从工具条上拿下去
+   */
+  registerToolbarButton(spec: ToolbarButtonSpec): () => void {
+    const owner = this.toolbarOwner()
+    const off = this.toolbarTable.register(owner, spec)
+    this.log.info(`工具条按钮 ${spec.id}（${spec.label}）登记上了（${owner.pkg}）`)
+    this.nudgeToolbar()
+    this.ctx.effect(() => () => {
+      off()
+      this.nudgeToolbar()
+    })
+    return off
+  }
+
+  /** 登记表一变推这一声。页面那侧听见就重取 unit-folder.toolbarButtons */
+  private nudgeToolbar(): void {
+    this.kernel.emit({ t: TOOLBAR_EVENT })
   }
 
   /** 容器根：**用时现读**，绝对化归 `rootFromSetting` 一处 */
@@ -275,6 +327,14 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
         this.log.info(`unit-folder.list 结束：${total} 个单元，耗时 ${Date.now() - started}ms`)
         return { ok: true, data: { ...outcome.data, pinned: findPinned(outcome.data, this.pinnedPath) } }
       },
+    )
+
+    register(
+      {
+        name: 'unit-folder.toolbarButtons',
+        description: '此刻有哪些件往单元树格的工具条里登记了按钮（浏览器半取表用，人一般不调）。无参数',
+      },
+      () => ({ ok: true, data: { buttons: this.toolbarTable.list() } }),
     )
 
     register(

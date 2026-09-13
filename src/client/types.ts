@@ -39,3 +39,13 @@ export interface PaneArgs {
     instance: string
   }
 }
+
+/** 页面的公共面里本件用得着的一条。按形状收，正本在内核的词汇表包 */
+declare global {
+  interface Window {
+    gwb: {
+      /** 内核事件口的页面那半：node 半 gwbKernel.emit 推的载荷全从这儿出（工具条按钮表那一声） */
+      on(listener: (payload: unknown) => void): () => void
+    }
+  }
+}

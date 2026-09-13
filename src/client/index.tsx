@@ -27,8 +27,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { IconButton } from '@/components/ui/icon-button'
 import { PortalContainer } from './portal.js'
+import { ToolbarButtons } from './toolbar-buttons.js'
 import { FILE_SELECTED, VIEWER_PANE, lastSelection, noteViewerFocus, openDuplicated, pickPayload, releaseViewerFocus, routeToFocused, viewerMounted, type SelectionPayload } from './selection.js'
 import type { HostBridge, PaneArgs, ShellBridge } from './types.js'
 
@@ -200,30 +202,6 @@ function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-/** 一个图标按钮 + 悬停说明。DSH 的 IconButton 模式，官方件拼的 */
-function IconButton({
-  label,
-  icon,
-  onClick,
-  disabled,
-}: {
-  label: string
-  icon: React.ReactNode
-  onClick(): void
-  disabled?: boolean
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button size="icon" className="size-7" variant="ghost" disabled={disabled} onClick={onClick}>
-          {icon}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  )
 }
 
 // ── 文件树（单元展开后的附页） ────────────────────────────────────────────────
@@ -844,6 +822,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
   return (
     <div className="flex h-full flex-col">
       <PaneHeader
+        host={host}
         total={total}
         containerRoot={containerRoot}
         rootExists={data?.rootExists}
@@ -944,8 +923,9 @@ function ViewerPane({
   )
 }
 
-/** 工具条：标题 + 总数、根路径、筛选框、一键折叠、VSCode 下拉、打开根、刷新；未配置与报错的两句话也归这层 */
+/** 工具条：标题 + 总数、根路径、筛选框、一键折叠、VSCode 下拉、打开根、刷新、扩展按钮排；未配置与报错的两句话也归这层 */
 function PaneHeader({
+  host,
   total,
   containerRoot,
   rootExists,
@@ -961,6 +941,7 @@ function PaneHeader({
   onEnsureDirs,
   onOpenInCode,
 }: {
+  host: HostBridge
   total: number
   containerRoot: string
   rootExists?: boolean | undefined
@@ -1042,6 +1023,9 @@ function PaneHeader({
           onClick={() => onOpenRoot(containerRoot)}
         />
         <IconButton label="现扫一次" icon={<RefreshCwIcon className="size-4" />} disabled={loading} onClick={onRefresh} />
+        {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
+            亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
+        <ToolbarButtons host={host} unitPath={activeUnitPath} />
       </div>
       {error !== null &&
         (error.unconfigured ? (
