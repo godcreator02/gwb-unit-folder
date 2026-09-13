@@ -1,6 +1,6 @@
 ---
 name: unit-folder
-description: 用户提到「单元」「容器根」「unitfolders」「当前单元」，或者要你找某个项目住在哪个目录、这台机器上有哪些单元、某个单元里有什么文件、人现在在工作台里看的是哪个单元、想置顶或用 VSCode 打开某个目录时用。这个件把单元容器根现扫一遍读出生证，九条命令能列清单（带置顶条）、列目录、读文件原文、报/查当前选中、置顶/取消、在资源管理器或 VSCode 里打开；另给别的件一个服务面 ctx.gwbUnitFolder。
+description: 用户提到「单元」「容器根」「unitfolders」「当前单元」，或者要你找某个项目住在哪个目录、这台机器上有哪些单元、某个单元里有什么文件、人现在在工作台里看的是哪个单元、想置顶或用 VSCode 打开某个目录时用。这个件把单元容器根现扫一遍读出生证，十条命令能列清单（带置顶条）、列目录、读文件原文、报/查当前选中、置顶/取消、在资源管理器或 VSCode 里打开；另给别的件一个服务面 ctx.gwbUnitFolder（读选中之外，还有往树格工具条登记动作按钮的口）。
 ---
 
 # 单元文件夹：这台机器的组织结构
@@ -12,11 +12,12 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 条目上没有 `config` 面，也没有环境变量、没有应用级配置）。没配时命令回 `code: 'unconfigured'`，
 那不是出错，是还没配——让用户到「设置」里给单元文件夹填 `units-root`。**这是它唯一的设置项。**
 
-## 九条命令
+## 十条命令
 
 | 命令 | 干什么 |
 | --- | --- |
 | `unit-folder.list` | 现扫容器根，回全部单元：认领过的按 `kind` 分组，没出生证的落 `unidentified`；回包另带 `pinned`（置顶的那条，没置顶或不在清单里是 null）。无参数 |
+| `unit-folder.toolbarButtons` | 此刻有哪些件往树格工具条登记了按钮（浏览器半取表用）。无参数 |
 | `unit-folder.listDir` | 列容器根内一个目录的一层：`{path}` |
 | `unit-folder.readFile` | 读容器根内一个文件的原文（截断预览）：`{path}` |
 | `unit-folder.open` | 在资源管理器里打开一个目录：`{path}` |
@@ -53,7 +54,19 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 置顶 / 取消置顶在没点过时也会让 `current()` 变、所以也广播。`pinned()` 另给置顶单元的绝对路径。
 
 这面被别人 inject：**改它的方法签名、事件形状、命令名与参数形状之前先问人。**
-判据与否掉的两条路（扩展点、共享上下文件）见文档站的轨迹卡「选中往外报」。
+判据与否掉的两条路见文档站的轨迹卡「选中往外报」；其中「注册按钮」那条 0.4 起翻案——
+第二个消费者（站件）到货了，判据的前提变了，见轨迹卡「工具条按钮登记口」。登记的形状
+（`ToolbarButtonSpec`：id / icon / label / command / state? / args?）也在契约里：
+
+```ts
+const off = ctx.gwbUnitFolder.registerToolbarButton({
+  id: 'sites',
+  icon: 'book-open',
+  label: '启动站点',
+  command: 'docs-site.viewUnit',   // 点击调，参数 { unitPath, item? }
+  state: 'docs-site.unitSites',    // 问亮不亮（可省=常亮），参数 { unitPath }，回 { enabled, items? }
+})
+```
 
 ## 怎么用它回答问题
 
