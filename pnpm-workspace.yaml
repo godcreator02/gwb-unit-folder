@@ -1,2 +1,6 @@
 allowBuilds:
   esbuild: true
+
+# 供应链门豁免：私有源包龄不设限（带本 yaml 的仓整份盖掉用户级配置，须自带）
+minimumReleaseAgeExclude:
+  - '@godcreator/*'
