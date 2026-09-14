@@ -1,6 +1,6 @@
 {
   "name": "@godcreator02/gwb-unit-folder",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "单元文件夹：现扫单元容器根读出生证，树里展开单元看文件、点文件在第二格看原文。gwb-kernel 正线的第一个仓外件，自 26090620ufd 旧线件按新线契约重做。0.2 起容器根走 gwbSettings（条目上没有 config 面）。0.3 起提供服务 ctx.gwbUnitFolder（current / pinned）与事件 unit-folder/selection 往外报「人现在看的是哪个单元」；置顶改成树上点出来、落 gwbData（设置项 pinned-unit 删了）；命令加 select / current / pin / unpin。0.4.0 起服务面添 registerToolbarButton：别的件往单元树格工具条登记动作按钮（身份由服务层填，皮在浏览器半，点击与亮不亮都走命令总线——state 命令拉式问询、跟选中单元走），按钮表经新命令 unit-folder.toolbarButtons 过桥，登记表一变经内核事件口推一声",
   "type": "module",
   "main": "dist/index.js",
@@ -17,6 +17,7 @@
   },
   "//files": "skills 必须在这儿：漏了包照发、照装得上，直到那个件挂载去扫目录时才报「读不动」",
   "files": [
+    "catalog.md",
     "dist",
     "skills",
     "src"
