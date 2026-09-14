@@ -14,7 +14,7 @@
  * 与 agents.mdx。改 mdx 源，`pnpm docfirst render --target ai` 重摆，一起提交，
  * check 守着生成物跟源一致。
  */
-import * as fumadocs from '@team/docfirst-workflow/fumadocs'
+import * as fumadocs from '@godcreator/docfirst-workflow/fumadocs'
 
 export default {
   formats: [fumadocs],
