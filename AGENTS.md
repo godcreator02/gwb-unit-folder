@@ -21,10 +21,10 @@
 pnpm check      # typecheck + lint + 纯逻辑测试
 pnpm build      # tsc（node 半）+ esbuild（浏览器半）+ 样式 scope
 pnpm test:all   # 全量测试（含产物守卫，要先 build）
-pnpm publish --registry http://127.0.0.1:4873/ --no-git-checks   # 先抬版本号
+pnpm publish --registry https://git.tianshen02.online:28377/api/packages/team/npm/ --no-git-checks   # 先抬版本号
 ```
 
-装进 home：`plugins.install {"pkg":"@godcreator02/gwb-unit-folder"}`，或进 home `pnpm add` +
+装进 home：`plugins.install {"pkg":"@team/gwb-unit-folder"}`，或进 home `pnpm add` +
 `cordis.yml` 条目 `id: unit-folder`（没有 `config`），再到设置面填 `units-root`。
 实机验证照 `gwb-devkit` 手册走隔离 home，别拿 default 试；发完版就去升 default home。
 
