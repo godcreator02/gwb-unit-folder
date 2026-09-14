@@ -41,7 +41,7 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 本件把这件事**往外报**，不认识任何消费方——方向是特殊认识一般：
 
 ```ts
-import type {} from '@godcreator02/gwb-unit-folder'   // 拿 Context / Events 上的名字
+import type {} from '@team/gwb-unit-folder'   // 拿 Context / Events 上的名字
 
 ctx.inject(['gwbUnitFolder'], (scoped) => {
   const now = scoped.gwbUnitFolder.current()          // { unitPath, unitName, path } | undefined
@@ -96,18 +96,18 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 
 ## 装法（gwb-kernel 新线）
 
-正路是 `plugins.install {"pkg":"@godcreator02/gwb-unit-folder"}`；手动路：
+正路是 `plugins.install {"pkg":"@team/gwb-unit-folder"}`；手动路：
 
 ```powershell
 cd $env:APPDATA\gwb-kernel\homes\<home 名>
-pnpm add @godcreator02/gwb-unit-folder@<版本>
+pnpm add @team/gwb-unit-folder@<版本>
 ```
 
 再往 `<home>\cordis.yml` 加一条（id 手写，**没有 config**）：
 
 ```yaml
 - id: unit-folder
-  name: "@godcreator02/gwb-unit-folder"
+  name: "@team/gwb-unit-folder"
 ```
 
 容器根装完到界面的「设置」里填 `units-root`（如 `D:\unitfolders`）。硬依赖 `gwb-shell` / `gwb-commands` / `cordis`
