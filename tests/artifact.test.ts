@@ -36,7 +36,7 @@ const BARE = /^import\s+(?:[^'"]*from\s*)?['"]([^'".][^'"]*)['"]/gm
 
 describe.skipIf(!built)('产物', () => {
   const all = built ? fs.readdirSync(distDir).filter((f) => f.endsWith('.js')) : []
-  // `.d.ts` 那份是消费方 `import type {} from '@godcreator02/gwb-unit-folder'` 拿到的契约面，
+  // `.d.ts` 那份是消费方 `import type {} from '@team/gwb-unit-folder'` 拿到的契约面，
   // 跟 index.js 一起查；不是 `.js` 所以不在 nodeHalf 里
   const nodeHalf = all.filter((f) => f !== CLIENT)
 
@@ -56,7 +56,7 @@ describe.skipIf(!built)('产物', () => {
   })
 
   it('node 半：裸名只许 cordis 与词汇表包——Service 基类必须是宿主那一份；其余类型面 import 全在编译期蒸发了', () => {
-    const allowed = new Set(['cordis', '@godcreator02/gwb-plugin-api'])
+    const allowed = new Set(['cordis', '@team/gwb-plugin-api'])
     const bare: string[] = []
     for (const file of nodeHalf) {
       for (const spec of specsIn(read(file), BARE)) {
@@ -104,7 +104,7 @@ describe.skipIf(!built)('产物', () => {
 
   it('样式表整张 scope 过，scope 名是完整包名', () => {
     const css = fs.readFileSync(path.join(distDir, 'style.css'), 'utf8')
-    expect(css).toContain(':where([data-gwb-plugin="@godcreator02/gwb-unit-folder"])')
+    expect(css).toContain(':where([data-gwb-plugin="@team/gwb-unit-folder"])')
   })
 
   it('图标块三态的样式进了表——它们住在 styles.css，不在这份就说明样式线断了', () => {
