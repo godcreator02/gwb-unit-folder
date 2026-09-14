@@ -76,6 +76,6 @@ scan.ts / browse.ts / current.ts     纯机 / 纯逻辑：只认 node:fs 与路�
 
 ## 怎么用
 
-装：`plugins.install {"pkg":"@team/gwb-unit-folder"}`，或进 home `pnpm add` 再在 `cordis.yml` 手写一条 `id: unit-folder`
+装：`plugins.install {"pkg":"@godcreator/gwb-unit-folder"}`，或进 home `pnpm add` 再在 `cordis.yml` 手写一条 `id: unit-folder`
 的条目（没有 `config`）。装完到「设置」填 `units-root`。确认它真在干活：日志里有 `服务就绪（ctx.gwbUnitFolder）`，
 在树上点一个单元后 `unit-folder.current` 回那个单元的 `{ unitPath, unitName, path }`。开发循环与发版见仓根 README。
