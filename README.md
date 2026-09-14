@@ -10,18 +10,18 @@
 
 ## 装
 
-正路是经工作台 `plugins.install {"pkg":"@team/gwb-unit-folder"}`；手动路：
+正路是经工作台 `plugins.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动路：
 
 ```powershell
 cd $env:APPDATA\gwb-kernel\homes\<home 名>
-pnpm add @team/gwb-unit-folder@<版本>
+pnpm add @godcreator/gwb-unit-folder@<版本>
 ```
 
 `<home>\cordis.yml` 加条目（id 手写，**没有 config**——件不吃 `cordis.yml` 的 `config`）：
 
 ```yaml
 - id: unit-folder
-  name: "@team/gwb-unit-folder"
+  name: "@godcreator/gwb-unit-folder"
 ```
 
 装完到「设置」里给单元文件夹填 **`units-root`**（容器根的绝对路径，如 `D:\unitfolders`）——这是它唯一的设置项，
@@ -36,7 +36,7 @@ pnpm add @team/gwb-unit-folder@<版本>
 ## 服务面（给写件的人）
 
 ```ts
-import type {} from '@team/gwb-unit-folder'
+import type {} from '@godcreator/gwb-unit-folder'
 
 ctx.inject(['gwbUnitFolder'], (scoped) => {
   scoped.gwbUnitFolder.current()   // { unitPath, unitName, path } | undefined
@@ -67,7 +67,7 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 pnpm check        # typecheck + lint + 纯逻辑测试
 pnpm build        # tsc（node 半）+ esbuild（浏览器半）+ 样式 scope
 pnpm test:all     # 全量测试（含产物守卫，要先 build）
-pnpm publish --registry https://git.tianshen02.online:28377/api/packages/team/npm/ --no-git-checks   # 先抬版本号
+pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcreator/npm/ --no-git-checks   # 先抬版本号
 ```
 
 实机验证按 devkit 手册（skill `gwb-devkit`）：开隔离 home、装包、给 `units-root`、看日志与命令回执。
