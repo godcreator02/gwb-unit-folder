@@ -141,12 +141,11 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
 
     // 注册在 init 里，同步的，不用自己包 effect（服务内部挂在调用方的 effect 上了）。
     // 身份不用报——服务从 fiber 上认。两格各自报自己的浏览器半与样式表地址。
-    // viewer 声明 duplicable：想并排看两个文件时开得起第二份
+    // duplicable（并排开第二份）随 shell 0.7 的 PaneSpec 收紧被摘除——特性休眠待作者适配新 API 后恢复
     ctx.gwbShell.registerPane({
       id: 'main',
       title: '单元',
       icon: 'folder-open',
-      duplicable: true,
       client: CLIENT_URL,
       style: STYLE_URL,
     })
@@ -154,7 +153,6 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       id: 'viewer',
       title: '文件原文',
       icon: 'file-text',
-      duplicable: true,
       client: CLIENT_URL,
       style: STYLE_URL,
     })
