@@ -6,7 +6,7 @@ import { TOOLBAR_EVENT, createToolbarButtonRegistry, isToolbarNudge, parseButton
  * 登记表一变那一声的认法。
  */
 
-const owner = { entryId: 'home:docs-site', pkg: '@team/gwb-docs-site' }
+const owner = { entryId: 'home:docs-site', pkg: '@godcreator/gwb-docs-site' }
 
 function spec(over: Partial<Parameters<ReturnType<typeof createToolbarButtonRegistry>['register']>[1]> = {}) {
   return { id: 'sites', icon: 'book-open', label: '启动站点', command: 'docs-site.viewUnit', ...over }
@@ -16,10 +16,10 @@ describe('createToolbarButtonRegistry', () => {
   it('登记进表、按先后列出，身份由表填', () => {
     const reg = createToolbarButtonRegistry(() => {})
     reg.register(owner, spec())
-    reg.register({ entryId: 'home:other', pkg: '@team/gwb-other' }, spec({ id: 'x', command: 'other.go' }))
+    reg.register({ entryId: 'home:other', pkg: '@godcreator/gwb-other' }, spec({ id: 'x', command: 'other.go' }))
     expect(reg.list()).toEqual([
       { ...spec(), ...owner },
-      { ...spec({ id: 'x', command: 'other.go' }), entryId: 'home:other', pkg: '@team/gwb-other' },
+      { ...spec({ id: 'x', command: 'other.go' }), entryId: 'home:other', pkg: '@godcreator/gwb-other' },
     ])
   })
 
