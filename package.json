@@ -61,6 +61,7 @@
     "@godcreator/gwb-commands": "0.4.0",
     "@godcreator/gwb-data": "0.1.1",
     "@godcreator/gwb-plugin-api": "0.1.1",
+    "@godcreator/gwb-repo-kit": "0.1.0",
     "@godcreator/gwb-settings": "0.2.0",
     "@godcreator/gwb-shared-react": "0.0.4",
     "@godcreator/gwb-shell": "0.7.0",

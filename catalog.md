@@ -1,6 +1,6 @@
 # catalog · gwb-unit-folder
 
-插件的身份卡：是谁、提供什么、靠谁。命令清单不存卡——现扫 `/surface`。
+插件的身份卡：是谁、提供什么、靠谁。命令清单不存卡——现扫门的 `index`。
 登记面变了这张卡要跟着改，tests/catalog.test.ts 钉着防漏。
 
 **定位**：单元文件夹件——现扫单元容器根读出生证（unit.json），树里展开看文件、点文件读原文；「当前单元」事件（unit-folder/selection）往外报人现在看的是哪个单元，消费方局部注入 ctx.gwbUnitFolder、它不认识消费方。
