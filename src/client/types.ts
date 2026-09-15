@@ -40,12 +40,12 @@ export interface PaneArgs {
   }
 }
 
-/** 页面的公共面里本件用得着的一条。按形状收，正本在内核的词汇表包 */
+import type { GwbWindowApi } from '@godcreator/gwb-plugin-api'
+
+// 页面的公共面。直接用词汇表的本体声明——本地另收窄一份会撞 TS2717（词汇表在 node 侧
+// 编译里也全局声明了它，两份形状不同就红）
 declare global {
   interface Window {
-    gwb: {
-      /** 内核事件口的页面那半：node 半 gwbKernel.emit 推的载荷全从这儿出（工具条按钮表那一声） */
-      on(listener: (payload: unknown) => void): () => void
-    }
+    gwb: GwbWindowApi
   }
 }

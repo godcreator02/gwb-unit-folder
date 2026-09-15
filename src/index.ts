@@ -302,13 +302,14 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     // 注销函数，不包的话条目停了、fiber 灭了，名字还留在表上
     if (cli === undefined) return
     const register = (def: Omit<GwbCommandDef, 'plugin'>, handler: Parameters<typeof cli.register>[1]): void => {
-      ctx.effect(() => cli.register({ ...def, plugin: name }, handler))
+      ctx.effect(() => cli.register({ ...def, plugin: '@godcreator/gwb-unit-folder' }, handler))
     }
 
     register(
       {
         name: 'unit-folder.list',
-        description: '现扫单元容器，回全部单元清单（认领过的按 kind 分组、没出生证的落 unidentified、另带 pinned 一条：置顶的那个单元，没置顶或不在清单里是 null）。无参数',
+        description: '现扫单元容器，回全部单元清单',
+        usage: '认领过的按 kind 分组、没出生证的落 unidentified、另带 pinned 一条：置顶的那个单元，没置顶或不在清单里是 null。无参数',
       },
       () => {
         const root = this.resolveUnitsRoot()
@@ -330,7 +331,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.toolbarButtons',
-        description: '此刻有哪些件往单元树格的工具条里登记了按钮（浏览器半取表用，人一般不调）。无参数',
+        description: '此刻有哪些件往单元树格的工具条里登记了按钮',
+        usage: '浏览器半取表用，人一般不调。无参数',
       },
       () => ({ ok: true, data: { buttons: this.toolbarTable.list() } }),
     )
@@ -338,7 +340,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.listDir',
-        description: '列容器根内一个目录的一层（不递归）。参数 { path: string }——要列的目录，容器根内的绝对路径',
+        description: '列容器根内一个目录的一层（不递归）',
+        usage: '参数 { path: string }——要列的目录，容器根内的绝对路径',
       },
       (args) =>
         this.withTarget(args, (_root, target) => {
@@ -351,7 +354,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.readFile',
-        description: '读容器根内一个文件的原文（截断预览）。参数 { path: string }——要读的文件，容器根内的绝对路径',
+        description: '读容器根内一个文件的原文（截断预览）',
+        usage: '参数 { path: string }——要读的文件，容器根内的绝对路径',
       },
       (args) => this.withTarget(args, (_root, target) => readFilePreview(target)),
     )
@@ -359,7 +363,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.open',
-        description: '在资源管理器里打开容器根内一个目录。参数 { path: string }——要打开的目录，容器根内的绝对路径',
+        description: '在资源管理器里打开容器根内一个目录',
+        usage: '参数 { path: string }——要打开的目录，容器根内的绝对路径',
       },
       (args) =>
         this.withTarget(args, (_root, target) => {
@@ -374,7 +379,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.code',
-        description: '用 VSCode 新窗口打开容器根内一个目录（code -n）。参数 { path: string }——要打开的目录，容器根内的绝对路径',
+        description: '用 VSCode 新窗口打开容器根内一个目录（code -n）',
+        usage: '参数 { path: string }——要打开的目录，容器根内的绝对路径',
       },
       (args) =>
         this.withTarget(args, (_root, target) => {
@@ -394,8 +400,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.select',
-        description:
-          '报一次选中（树里点了单元行或单元内目录时浏览器半调它；agent 也能调）。参数 { path: string }——点的那个目录，容器根内的绝对路径。回 { unitPath, unitName, path }，并在 current() 变了时广播 unit-folder/selection',
+        description: '报一次选中（树里点行，agent 也能调）',
+        usage: '参数 { path: string }——点的那个目录，容器根内的绝对路径。回 { unitPath, unitName, path }，并在 current() 变了时广播 unit-folder/selection',
       },
       (args) =>
         this.withTarget(args, (root, target) => {
@@ -412,7 +418,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.current',
-        description: '此刻的「当前单元」：最近一次点击，没点过回落到置顶单元，都没有 data 是 null。回 { unitPath, unitName, path } | null。无参数',
+        description: '此刻的「当前单元」',
+        usage: '最近一次点击，没点过回落到置顶单元，都没有 data 是 null。回 { unitPath, unitName, path } | null。无参数',
       },
       () => ({ ok: true, data: this.current() ?? null }),
     )
@@ -420,7 +427,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.pin',
-        description: '把一个单元置顶（清单最上那块「当前会话」）。参数 { path: string }——单元目录，必须是容器根下一层；落 data 文档 pinned。不改最近一次点击',
+        description: '把一个单元置顶（清单最上那块「当前会话」）',
+        usage: '参数 { path: string }——单元目录，必须是容器根下一层；落 data 文档 pinned。不改最近一次点击',
       },
       (args) =>
         this.withTarget(args, (root, target) => {
@@ -438,7 +446,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.unpin',
-        description: '取消置顶（data 文档 pinned 写成 { path: null }）。没置顶时也回 ok。无参数',
+        description: '取消置顶',
+        usage: 'data 文档 pinned 写成 { path: null }。没置顶时也回 ok。无参数',
       },
       () => {
         const before = this.current()
