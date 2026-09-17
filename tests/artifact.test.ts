@@ -34,6 +34,22 @@ function specsIn(text: string, pattern: RegExp): string[] {
 const RELATIVE = /^import\s+(?:[^'"]*from\s*)?['"](\.[^'"]*)['"]/gm
 const BARE = /^import\s+(?:[^'"]*from\s*)?['"]([^'".][^'"]*)['"]/gm
 
+const CSS_COMMENT = /\/\*[\s\S]*?\*\//g
+const PRELUDE = /(?:^|[{};])([^{};]*)\{/g
+const CLASS_SELECTOR = /\.(?:\\.|[A-Za-z0-9_-])+/g
+/** `.dark` 是页面级的亮暗标志，只以祖先身份出现在 `unitfolder:dark:*` 编出的选择器里 */
+const DARK_FLAG = new Set(['.dark'])
+
+function classSelectors(css: string): string[] {
+  const found = new Set<string>()
+  for (const rule of css.replaceAll(CSS_COMMENT, '').matchAll(PRELUDE)) {
+    const prelude = rule[1]!.trim()
+    if (prelude.startsWith('@')) continue
+    for (const cls of prelude.matchAll(CLASS_SELECTOR)) found.add(cls[0])
+  }
+  return [...found]
+}
+
 describe.skipIf(!built)('产物', () => {
   const all = built ? fs.readdirSync(distDir).filter((f) => f.endsWith('.js')) : []
   // `.d.ts` 那份是消费方 `import type {} from '@godcreator/gwb-unit-folder'` 拿到的契约面，
@@ -102,22 +118,37 @@ describe.skipIf(!built)('产物', () => {
     expect(leaked).toEqual([])
   })
 
-  it('样式表整张 scope 过，scope 名是完整包名', () => {
-    const css = fs.readFileSync(path.join(distDir, 'style.css'), 'utf8')
-    expect(css).toContain(':where([data-gwb-plugin="@godcreator/gwb-unit-folder"])')
+  it('style.css 里的类选择器一律 .unitfolder\\: 开头——围栏就是前缀本身', () => {
+    const bad = classSelectors(read('style.css'))
+      .filter((s) => !s.startsWith('.unitfolder\\:') && !DARK_FLAG.has(s))
+      .sort()
+    expect(bad).toEqual([])
   })
 
-  it('图标块三态的样式进了表——它们住在 styles.css，不在这份就说明样式线断了', () => {
-    const css = fs.readFileSync(path.join(distDir, 'style.css'), 'utf8')
-    expect(css).toContain('uico-live')
+  it('style.css 里没有 data-gwb-plugin——围栏不依赖任何祖先关系，存档里那格的包名对不对都不影响', () => {
+    expect(read('style.css')).not.toContain('data-gwb-plugin')
+  })
+
+  it('图标块三态与选中高亮带进了表，而且带前缀——它们是 styles.css 里的 @utility', () => {
+    const css = read('style.css')
+    for (const cls of ['uico-live', 'uico-dead', 'uico-unknown', 'urow-active']) {
+      expect(css).toContain(`.unitfolder\\:${cls}`)
+    }
   })
 
   it('radix 打进了本束——外置成裸名就是运行期一句 Failed to resolve', () => {
     // Tooltip 走 radix，认它编译后产物里的字面量
     expect(read(CLIENT)).toContain('tooltip')
   })
+})
 
-  it('**弹层挂回本件容器**，不挂 body——挂出去样式一条都匹配不上', () => {
-    expect(read(CLIENT)).toContain('PortalContainer')
+describe('前缀三处对得上', () => {
+  const root = path.resolve(distDir, '..')
+
+  it('Tailwind 前缀是 unitfolder（不是 unit-folder：v4 的 prefix 只收 a-z）：styles.css、components.json、源码', () => {
+    expect(fs.readFileSync(path.join(root, 'src', 'client', 'styles.css'), 'utf8')).toContain('prefix(unitfolder)')
+    const components = JSON.parse(fs.readFileSync(path.join(root, 'components.json'), 'utf8')) as { tailwind?: { prefix?: string } }
+    expect(components.tailwind?.prefix).toBe('unitfolder')
+    expect(fs.readFileSync(path.join(root, 'src', 'client', 'index.tsx'), 'utf8')).toContain('unitfolder:')
   })
 })

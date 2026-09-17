@@ -70,7 +70,7 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 
 ```powershell
 pnpm check        # typecheck + lint + 纯逻辑测试
-pnpm build        # tsc（node 半）+ esbuild（浏览器半）+ 样式 scope
+pnpm build        # tsc（node 半）+ esbuild（浏览器半）+ tailwindcss（样式表，类名前缀 unitfolder）
 pnpm test:all     # 全量测试（含产物守卫，要先 build）
 pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcreator/npm/ --no-git-checks   # 先抬版本号
 ```

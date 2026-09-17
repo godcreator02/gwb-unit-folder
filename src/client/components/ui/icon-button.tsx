@@ -20,7 +20,7 @@ export function IconButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button size="icon" className="size-7" variant="ghost" disabled={disabled} onClick={onClick}>
+        <Button size="icon" className="unitfolder:size-7" variant="ghost" disabled={disabled} onClick={onClick}>
           {icon}
         </Button>
       </TooltipTrigger>

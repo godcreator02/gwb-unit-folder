@@ -115,16 +115,16 @@ export function ToolbarButtons({ host, unitPath }: { host: HostBridge; unitPath:
           return (
             <DropdownMenu key={keyOf(b)} onOpenChange={(open) => { if (open) query(b) }}>
               <DropdownMenuTrigger asChild disabled={!enabled}>
-                <Button size="icon" className="size-7" variant="ghost">
-                  <Icon className="size-4" />
+                <Button size="icon" className="unitfolder:size-7" variant="ghost">
+                  <Icon className="unitfolder:size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+              <DropdownMenuContent align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
                 {items.map((it) => (
                   <DropdownMenuItem key={it.id} onClick={() => fire(b, it.id)}>
                     {it.label}
                     {it.detail !== undefined && (
-                      <span className="text-muted-foreground ml-auto font-mono text-xs">{it.detail}</span>
+                      <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{it.detail}</span>
                     )}
                   </DropdownMenuItem>
                 ))}
@@ -136,7 +136,7 @@ export function ToolbarButtons({ host, unitPath }: { host: HostBridge; unitPath:
           <IconButton
             key={keyOf(b)}
             label={b.label}
-            icon={<Icon className="size-4" />}
+            icon={<Icon className="unitfolder:size-4" />}
             disabled={!enabled}
             onClick={() => {
               const only = items.length === 1 ? items[0] : undefined

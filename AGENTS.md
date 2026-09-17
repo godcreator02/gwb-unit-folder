@@ -14,12 +14,14 @@
   `pinned`）。设置项 `pinned-unit` 已删，产物守卫钉着它不许回来
 * **依赖单向**：纯逻辑层（`scan` / `browse` / `current`）不知道 cordis 存在；浏览器半只经命令总线
   说话；本件不 import 任何消费方
+* **样式围栏是类名前缀**：`src/client` 里每个类名都带 `unitfolder:`（本件自己的类写成 `@utility`），
+  漏写完全静默，`tests/prefix.test.ts` 守着；样式不靠窗格容器上的 `data-gwb-plugin`
 
 ## 怎么跑
 
 ```powershell
 pnpm check      # typecheck + lint + 纯逻辑测试
-pnpm build      # tsc（node 半）+ esbuild（浏览器半）+ 样式 scope
+pnpm build      # tsc（node 半）+ esbuild（浏览器半）+ tailwindcss（样式表，类名前缀 unitfolder）
 pnpm test:all   # 全量测试（含产物守卫，要先 build）
 pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcreator/npm/ --no-git-checks   # 先抬版本号
 ```

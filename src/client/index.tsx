@@ -29,7 +29,6 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { IconButton } from '@/components/ui/icon-button'
-import { PortalContainer } from './portal.js'
 import { ToolbarButtons } from './toolbar-buttons.js'
 import { FILE_SELECTED, VIEWER_PANE, lastSelection, noteViewerFocus, openDuplicated, pickPayload, releaseViewerFocus, routeToFocused, viewerMounted, type SelectionPayload } from './selection.js'
 import type { HostBridge, PaneArgs, ShellBridge } from './types.js'
@@ -231,14 +230,14 @@ function PageRows({
   const listing = listings.get(dir)
   if (listing === undefined || listing.status === 'loading') {
     return (
-      <div className="flex items-center gap-2 py-1" style={{ paddingLeft: depth * 16 + 8 }}>
-        <Skeleton className="h-3.5 w-40" />
+      <div className="unitfolder:flex unitfolder:items-center unitfolder:gap-2 unitfolder:py-1" style={{ paddingLeft: depth * 16 + 8 }}>
+        <Skeleton className="unitfolder:h-3.5 unitfolder:w-40" />
       </div>
     )
   }
   if (listing.status === 'error') {
     return (
-      <p className="text-destructive m-0 py-1 text-xs" style={{ paddingLeft: depth * 16 + 8 }}>
+      <p className="unitfolder:text-destructive unitfolder:m-0 unitfolder:py-1 unitfolder:text-xs" style={{ paddingLeft: depth * 16 + 8 }}>
         {listing.message}
       </p>
     )
@@ -254,17 +253,17 @@ function PageRows({
               <div
                 role="treeitem"
                 aria-expanded={open}
-                className="hover:bg-accent/40 flex min-w-0 cursor-default items-center gap-1.5 rounded-sm py-1 pr-2 text-sm"
+                className="unitfolder:hover:bg-accent/40 unitfolder:flex unitfolder:min-w-0 unitfolder:cursor-default unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:py-1 unitfolder:pr-2 unitfolder:text-sm"
                 style={{ paddingLeft: depth * 16 + 8 }}
                 onClick={() => onToggle(abs)}
               >
-                <span className={cn('shrink-0', open && 'rotate-90')}>
-                  <ChevronRightIcon className="size-3.5 text-muted-foreground" />
+                <span className={cn('unitfolder:shrink-0', open && 'unitfolder:rotate-90')}>
+                  <ChevronRightIcon className="unitfolder:size-3.5 unitfolder:text-muted-foreground" />
                 </span>
-                <span className="text-muted-foreground shrink-0">
-                  {open ? <FolderOpenIcon className="size-4" /> : <FolderIcon className="size-4" />}
+                <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
+                  {open ? <FolderOpenIcon className="unitfolder:size-4" /> : <FolderIcon className="unitfolder:size-4" />}
                 </span>
-                <span className="truncate">{entry.name}</span>
+                <span className="unitfolder:truncate">{entry.name}</span>
               </div>
               {open && (
                 <PageRows
@@ -287,18 +286,18 @@ function PageRows({
             role="treeitem"
             aria-selected={isSelected}
             className={cn(
-              'hover:bg-accent/40 flex min-w-0 cursor-default items-center gap-1.5 rounded-sm py-1 pr-2 text-sm',
-              isSelected && 'bg-accent/60',
+              'unitfolder:hover:bg-accent/40 unitfolder:flex unitfolder:min-w-0 unitfolder:cursor-default unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:py-1 unitfolder:pr-2 unitfolder:text-sm',
+              isSelected && 'unitfolder:bg-accent/60',
             )}
             style={{ paddingLeft: depth * 16 + 8 + 18 }}
             onClick={(e) => onOpenFile(abs, entry.name, e.ctrlKey || e.metaKey)}
           >
-            <span className="text-muted-foreground shrink-0">
-              <FileIcon className="size-4" />
+            <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
+              <FileIcon className="unitfolder:size-4" />
             </span>
-            <span className="truncate">{entry.name}</span>
+            <span className="unitfolder:truncate">{entry.name}</span>
             {entry.size !== undefined && (
-              <span className="text-muted-foreground ml-auto shrink-0 font-mono text-[10.5px]">{fmtSize(entry.size)}</span>
+              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px]">{fmtSize(entry.size)}</span>
             )}
           </div>
         )
@@ -315,7 +314,7 @@ function joinPath(dir: string, name: string): string {
 /** 展开容器的浅底与缩进参考线（定稿效果图里那圈 twrapper） */
 function TreePage(props: Omit<Parameters<typeof PageRows>[0], 'depth'>): React.ReactNode {
   return (
-    <div className="bg-accent/20 mx-2 mb-1.5 rounded-sm border-l-2 py-1 pl-1">
+    <div className="unitfolder:bg-accent/20 unitfolder:mx-2 unitfolder:mb-1.5 unitfolder:rounded-sm unitfolder:border-l-2 unitfolder:py-1 unitfolder:pl-1">
       <PageRows {...props} depth={0} />
     </div>
   )
@@ -333,16 +332,16 @@ function TreePage(props: Omit<Parameters<typeof PageRows>[0], 'depth'>): React.R
 function renderCode(text: string, wrap: boolean): React.ReactNode {
   const lines = text.split('\n')
   return (
-    <div className="flex flex-col">
+    <div className="unitfolder:flex unitfolder:flex-col">
       {lines.map((line, i) => (
-        <div key={i} className="flex items-baseline">
-          <span className="w-9 shrink-0 select-none pr-3 text-right font-mono text-xs leading-relaxed text-muted-foreground/60">
+        <div key={i} className="unitfolder:flex unitfolder:items-baseline">
+          <span className="unitfolder:w-9 unitfolder:shrink-0 unitfolder:select-none unitfolder:pr-3 unitfolder:text-right unitfolder:font-mono unitfolder:text-xs unitfolder:leading-relaxed unitfolder:text-muted-foreground/60">
             {i + 1}
           </span>
           <span
             className={cn(
-              'min-w-0 flex-1 font-mono text-xs leading-relaxed',
-              wrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre',
+              'unitfolder:min-w-0 unitfolder:flex-1 unitfolder:font-mono unitfolder:text-xs unitfolder:leading-relaxed',
+              wrap ? 'unitfolder:whitespace-pre-wrap unitfolder:break-words' : 'unitfolder:whitespace-pre',
             )}
           >
             {line === '' ? '\u200b' : line}
@@ -411,8 +410,8 @@ function UnitsViewer({
 
   if (selected === null) {
     return (
-      <div className="flex h-full flex-col">
-        <div className="text-muted-foreground flex h-full items-center justify-center px-4 text-center text-sm">
+      <div className="unitfolder:flex unitfolder:h-full unitfolder:flex-col">
+        <div className="unitfolder:text-muted-foreground unitfolder:flex unitfolder:h-full unitfolder:items-center unitfolder:justify-center unitfolder:px-4 unitfolder:text-center unitfolder:text-sm">
           在左边树里点一个文件看原文；Ctrl+单击另开一份。
         </div>
       </div>
@@ -420,51 +419,51 @@ function UnitsViewer({
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col">
-      <div className="flex flex-none items-center gap-2 border-b px-3 py-2">
+    <div className="unitfolder:flex unitfolder:h-full unitfolder:min-w-0 unitfolder:flex-col">
+      <div className="unitfolder:flex unitfolder:flex-none unitfolder:items-center unitfolder:gap-2 unitfolder:border-b unitfolder:px-3 unitfolder:py-2">
         {/* 点路径复制绝对路径：DSH 的老交互，贴进终端或别处都顺手 */}
         <button
           type="button"
-          className="text-foreground hover:text-primary m-0 min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-mono text-xs"
+          className="unitfolder:text-foreground unitfolder:hover:text-primary unitfolder:m-0 unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:truncate unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left unitfolder:font-mono unitfolder:text-xs"
           title={copied ? '已复制' : `点一下复制\n${selected.path}`}
           onClick={copyPath}
         >
           {copied ? '已复制' : (displayPath ?? selected.path)}
         </button>
         {preview.status === 'loaded' && (
-          <span className="text-muted-foreground shrink-0 font-mono text-xs">
+          <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-xs">
             {fmtSize(preview.data.size)}
             {preview.data.truncated ? ' · 超长截断' : ''}
           </span>
         )}
         <IconButton
           label={wrap ? '不折行' : '折行'}
-          icon={<WrapTextIcon className={cn('size-4', wrap ? 'text-foreground' : 'text-muted-foreground')} />}
+          icon={<WrapTextIcon className={cn('unitfolder:size-4', wrap ? 'unitfolder:text-foreground' : 'unitfolder:text-muted-foreground')} />}
           onClick={() => setWrap((v) => !v)}
         />
         <IconButton
           label="重读"
-          icon={<RefreshCwIcon className="size-4" />}
+          icon={<RefreshCwIcon className="unitfolder:size-4" />}
           disabled={preview.status === 'loading'}
           onClick={() => load(selected.path)}
         />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="unitfolder:min-h-0 unitfolder:flex-1 unitfolder:overflow-auto">
         {preview.status === 'loading' ? (
-          <div className="flex flex-col gap-2 p-3">
-            <Skeleton className="h-4 w-2/5" />
-            <Skeleton className="h-4 w-4/5" />
-            <Skeleton className="h-4 w-3/5" />
-            <Skeleton className="h-4 w-2/3" />
+          <div className="unitfolder:flex unitfolder:flex-col unitfolder:gap-2 unitfolder:p-3">
+            <Skeleton className="unitfolder:h-4 unitfolder:w-2/5" />
+            <Skeleton className="unitfolder:h-4 unitfolder:w-4/5" />
+            <Skeleton className="unitfolder:h-4 unitfolder:w-3/5" />
+            <Skeleton className="unitfolder:h-4 unitfolder:w-2/3" />
           </div>
         ) : preview.status === 'error' ? (
-          <p className="text-destructive m-0 p-3 text-sm" role="status">
+          <p className="unitfolder:text-destructive unitfolder:m-0 unitfolder:p-3 unitfolder:text-sm" role="status">
             {preview.message}
           </p>
         ) : preview.status === 'loaded' && preview.data.binary ? (
-          <p className="text-muted-foreground m-0 p-3 text-sm">二进制文件——预览不了，也不该硬看。</p>
+          <p className="unitfolder:text-muted-foreground unitfolder:m-0 unitfolder:p-3 unitfolder:text-sm">二进制文件——预览不了，也不该硬看。</p>
         ) : preview.status === 'loaded' ? (
-          <div className="p-3">{renderCode(preview.data.text, wrap)}</div>
+          <div className="unitfolder:p-3">{renderCode(preview.data.text, wrap)}</div>
         ) : null}
       </div>
     </div>
@@ -682,15 +681,15 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
       <div key={unit.path}>
         <div
           className={cn(
-            'flex min-w-0 items-center gap-2.5 rounded-md py-1.5 pl-2 pr-2 hover:bg-accent/40',
-            face.dim && 'text-muted-foreground',
-            active && open && 'urow-active',
+            'unitfolder:flex unitfolder:min-w-0 unitfolder:items-center unitfolder:gap-2.5 unitfolder:rounded-md unitfolder:py-1.5 unitfolder:pl-2 unitfolder:pr-2 unitfolder:hover:bg-accent/40',
+            face.dim && 'unitfolder:text-muted-foreground',
+            active && open && 'unitfolder:urow-active',
           )}
         >
           <button
             type="button"
             title={face.title}
-            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0 text-left"
+            className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2.5 unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left"
             onClick={() => {
               if (active) {
                 // 再点一下选中的那行：收起并取消选中
@@ -706,17 +705,17 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
           >
             <span
               className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-lg border',
-                face.tone === 'live' && 'uico-live',
-                face.tone === 'dead' && 'uico-dead',
-                face.tone === 'unknown' && 'uico-unknown',
+                'unitfolder:flex unitfolder:size-8 unitfolder:shrink-0 unitfolder:items-center unitfolder:justify-center unitfolder:rounded-lg unitfolder:border',
+                face.tone === 'live' && 'unitfolder:uico-live',
+                face.tone === 'dead' && 'unitfolder:uico-dead',
+                face.tone === 'unknown' && 'unitfolder:uico-unknown',
               )}
             >
-              <ArchiveIcon className="size-4" />
+              <ArchiveIcon className="unitfolder:size-4" />
             </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-px">
-              <span className={cn('truncate text-[13px] font-medium', face.dim && 'line-through decoration-1')}>{face.head}</span>
-              <span className={cn('w-full truncate text-left text-xs', active ? 'text-foreground/85' : 'text-muted-foreground')}>
+            <span className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:flex-col unitfolder:gap-px">
+              <span className={cn('unitfolder:truncate unitfolder:text-[13px] unitfolder:font-medium', face.dim && 'unitfolder:line-through unitfolder:decoration-1')}>{face.head}</span>
+              <span className={cn('unitfolder:w-full unitfolder:truncate unitfolder:text-left unitfolder:text-xs', active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground')}>
                 {face.subtitle}
               </span>
             </span>
@@ -726,9 +725,9 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
             label={pinnedHere ? '取消置顶' : '置顶到「当前会话」'}
             icon={
               pinnedHere ? (
-                <PinOffIcon className="size-3.5" />
+                <PinOffIcon className="unitfolder:size-3.5" />
               ) : (
-                <PinIcon className="text-muted-foreground size-3.5" />
+                <PinIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
               )
             }
             onClick={() => togglePin(unit.path, pinnedHere)}
@@ -752,10 +751,10 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
     const collapsed = !filtered && collapsedKinds.has(group.kindKey)
     const retiredOpen = filtered || openRetired.has(group.kindKey)
     return (
-      <div key={group.kindKey} className="mb-1">
+      <div key={group.kindKey} className="unitfolder:mb-1">
         {/* 种类分组头：吸顶。筛选时全部摊开（收着找东西等于把结果藏起来） */}
         <div
-          className="bg-background/95 sticky top-0 z-10 flex cursor-pointer items-center gap-2 px-2 py-1.5 backdrop-blur-sm"
+          className="unitfolder:bg-background/95 unitfolder:sticky unitfolder:top-0 unitfolder:z-10 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2 unitfolder:px-2 unitfolder:py-1.5 unitfolder:backdrop-blur-sm"
           onClick={() => {
             if (filtered) return
             setCollapsedKinds((prev) => {
@@ -766,11 +765,11 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
             })
           }}
         >
-          <span className={cn('transition-transform', !collapsed && 'rotate-90')}>
-            <ChevronRightIcon className="text-muted-foreground size-3.5" />
+          <span className={cn('unitfolder:transition-transform', !collapsed && 'unitfolder:rotate-90')}>
+            <ChevronRightIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
           </span>
-          <span className="text-muted-foreground text-xs font-semibold tracking-wider">{group.label}</span>
-          <span className="text-muted-foreground/70 ml-auto font-mono text-xs">{group.live.length + group.retired.length}</span>
+          <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-wider">{group.label}</span>
+          <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{group.live.length + group.retired.length}</span>
         </div>
         {!collapsed && (
           <>
@@ -779,7 +778,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
               <>
                 {!retiredOpen ? (
                   <div
-                    className="text-muted-foreground/70 hover:text-muted-foreground hover:bg-accent/30 flex cursor-pointer items-center gap-1.5 rounded-sm px-2 py-1 text-xs"
+                    className="unitfolder:text-muted-foreground/70 unitfolder:hover:text-muted-foreground unitfolder:hover:bg-accent/30 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:px-2 unitfolder:py-1 unitfolder:text-xs"
                     onClick={() =>
                       setOpenRetired((prev) => {
                         const next = new Set(prev)
@@ -788,14 +787,14 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
                       })
                     }
                   >
-                    <ChevronRightIcon className="size-3" />
+                    <ChevronRightIcon className="unitfolder:size-3" />
                     已废（{group.retired.length}）
                   </div>
                 ) : (
                   <>
                     {!filtered && (
                       <div
-                        className="text-muted-foreground/70 hover:text-muted-foreground hover:bg-accent/30 flex cursor-pointer items-center gap-1.5 rounded-sm px-2 py-1 text-xs"
+                        className="unitfolder:text-muted-foreground/70 unitfolder:hover:text-muted-foreground unitfolder:hover:bg-accent/30 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:px-2 unitfolder:py-1 unitfolder:text-xs"
                         onClick={() =>
                           setOpenRetired((prev) => {
                             const next = new Set(prev)
@@ -804,7 +803,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
                           })
                         }
                       >
-                        <ChevronRightIcon className="size-3 rotate-90" />
+                        <ChevronRightIcon className="unitfolder:size-3 unitfolder:rotate-90" />
                         已废（{group.retired.length}）
                       </div>
                     )}
@@ -820,7 +819,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="unitfolder:flex unitfolder:h-full unitfolder:flex-col">
       <PaneHeader
         host={host}
         total={total}
@@ -841,14 +840,14 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
       {/* 滚动走**原生滚动条**（外壳全局的 ::-webkit-scrollbar 细条胶囊），容器直接
           贴窗格边——原生条画在自己盒子里、占布局空间，贴边也不会被 dockview 的
           边框裁掉；radix 的浮动条才会越界 */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-2 py-1">
+      <div className="unitfolder:min-h-0 unitfolder:flex-1 unitfolder:overflow-y-auto unitfolder:overflow-x-hidden">
+        <div className="unitfolder:px-2 unitfolder:py-1">
           {/* 「当前会话」置顶块：data 里置顶了单元才显（图钉点出来的）——
               新线还没有会话概念，这个位先由置顶担着 */}
           {data?.pinned !== undefined && data.pinned !== null && (
-            <div className="mx-1 mb-2.5 border-b pb-2">
-              <div className="text-muted-foreground flex items-center gap-1.5 px-1.5 pb-1 pt-0.5 text-[11px] tracking-widest">
-                <PinIcon className="size-3" />
+            <div className="unitfolder:mx-1 unitfolder:mb-2.5 unitfolder:border-b unitfolder:pb-2">
+              <div className="unitfolder:text-muted-foreground unitfolder:flex unitfolder:items-center unitfolder:gap-1.5 unitfolder:px-1.5 unitfolder:pb-1 unitfolder:pt-0.5 unitfolder:text-[11px] unitfolder:tracking-widest">
+                <PinIcon className="unitfolder:size-3" />
                 当前会话
               </div>
               {renderUnitRow(data.pinned)}
@@ -856,7 +855,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
           )}
           {groups.map(renderGroup)}
           {inventory.status === 'loaded' && groups.length === 0 && (
-            <p className="text-muted-foreground m-0 px-2 py-4 text-sm">
+            <p className="unitfolder:text-muted-foreground unitfolder:m-0 unitfolder:px-2 unitfolder:py-4 unitfolder:text-sm">
               {filtered ? '没有筛中的单元。' : '容器根里还没有单元。'}
             </p>
           )}
@@ -960,25 +959,25 @@ function PaneHeader({
   onOpenInCode(path: string): void
 }) {
   return (
-    <div className="flex flex-none flex-col gap-2 px-3 py-2.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold">
+    <div className="unitfolder:flex unitfolder:flex-none unitfolder:flex-col unitfolder:gap-2 unitfolder:px-3 unitfolder:py-2.5">
+      <div className="unitfolder:flex unitfolder:flex-wrap unitfolder:items-center unitfolder:gap-2">
+        <span className="unitfolder:text-sm unitfolder:font-semibold">
           单元
-          {total > 0 && <b className="text-muted-foreground ml-1.5 font-mono text-xs font-normal">{total}</b>}
+          {total > 0 && <b className="unitfolder:text-muted-foreground unitfolder:ml-1.5 unitfolder:font-mono unitfolder:text-xs unitfolder:font-normal">{total}</b>}
         </span>
         {containerRoot !== '' && (
-          <span className="text-muted-foreground max-w-44 truncate font-mono text-xs" title={containerRoot}>
+          <span className="unitfolder:text-muted-foreground unitfolder:max-w-44 unitfolder:truncate unitfolder:font-mono unitfolder:text-xs" title={containerRoot}>
             {containerRoot}
           </span>
         )}
-        <span className="min-w-40 flex-1" />
-        <div className="relative flex items-center">
-          <SearchIcon className="text-muted-foreground/80 pointer-events-none absolute left-2.5 size-3.5" />
+        <span className="unitfolder:min-w-40 unitfolder:flex-1" />
+        <div className="unitfolder:relative unitfolder:flex unitfolder:items-center">
+          <SearchIcon className="unitfolder:text-muted-foreground/80 unitfolder:pointer-events-none unitfolder:absolute unitfolder:left-2.5 unitfolder:size-3.5" />
           <Input
             value={query}
             spellCheck={false}
             placeholder="筛选单元…"
-            className="h-8 w-44 pl-8"
+            className="unitfolder:h-8 unitfolder:w-44 unitfolder:pl-8"
             autoComplete="off"
             onChange={(e) => onQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -989,18 +988,18 @@ function PaneHeader({
             }}
           />
         </div>
-        <IconButton label="一键折叠" icon={<ChevronsDownUpIcon className="size-4" />} onClick={onCollapse} />
+        <IconButton label="一键折叠" icon={<ChevronsDownUpIcon className="unitfolder:size-4" />} onClick={onCollapse} />
         {/* VSCode 新窗口打开：选中单元才可用。下拉首项是单元文件夹本身，
             后面是它的第一级子目录（目录清单在下拉打开时现拉，复用树格的缓存）。
             这颗按钮不套 Tooltip——TooltipTrigger 与 DropdownMenuTrigger 两层 asChild
             会互相覆盖事件，菜单点不开；下拉里的标题就是说明 */}
         <DropdownMenu onOpenChange={(open) => { if (open) onEnsureDirs() }}>
           <DropdownMenuTrigger asChild disabled={activeUnitPath === null}>
-            <Button size="icon" className="size-7" variant="ghost">
-              <CodeXmlIcon className="size-4" />
+            <Button size="icon" className="unitfolder:size-7" variant="ghost">
+              <CodeXmlIcon className="unitfolder:size-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+          <DropdownMenuContent align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
             <DropdownMenuLabel>从 VSCode 新窗口打开</DropdownMenuLabel>
             {activeUnitPath !== null && (
               <DropdownMenuItem onClick={() => onOpenInCode(activeUnitPath)}>单元文件夹</DropdownMenuItem>
@@ -1018,25 +1017,25 @@ function PaneHeader({
         </DropdownMenu>
         <IconButton
           label="在资源管理器打开容器根"
-          icon={<ArrowUpRightIcon className="size-4" />}
+          icon={<ArrowUpRightIcon className="unitfolder:size-4" />}
           disabled={containerRoot === ''}
           onClick={() => onOpenRoot(containerRoot)}
         />
-        <IconButton label="现扫一次" icon={<RefreshCwIcon className="size-4" />} disabled={loading} onClick={onRefresh} />
+        <IconButton label="现扫一次" icon={<RefreshCwIcon className="unitfolder:size-4" />} disabled={loading} onClick={onRefresh} />
         {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
             亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
         <ToolbarButtons host={host} unitPath={activeUnitPath} />
       </div>
       {error !== null &&
         (error.unconfigured ? (
-          <p className="text-muted-foreground m-0 text-sm">{error.message}</p>
+          <p className="unitfolder:text-muted-foreground unitfolder:m-0 unitfolder:text-sm">{error.message}</p>
         ) : (
-          <p className="text-destructive m-0 text-sm" role="status">
+          <p className="unitfolder:text-destructive unitfolder:m-0 unitfolder:text-sm" role="status">
             出错：{error.message}
           </p>
         ))}
       {error === null && rootExists === false && (
-        <p className="text-muted-foreground m-0 text-sm">容器根不存在：{containerRoot}——路径可以先于目录写下。</p>
+        <p className="unitfolder:text-muted-foreground unitfolder:m-0 unitfolder:text-sm">容器根不存在：{containerRoot}——路径可以先于目录写下。</p>
       )}
     </div>
   )
@@ -1049,8 +1048,7 @@ function PaneHeader({
  *
  * 原文格这边多两件事：**挂载即登记焦点**、容器上挂 `mousedown` 记焦点（焦点 =
  * 最后一次鼠标点过的原文格，单击路由的落点，见 selection.ts）；`dispose` 摘监听并
- * 释放焦点。本件的表 scope 在窗格容器之下，悬停说明的弹层得挂回容器（见 portal.tsx）
- * ——`PortalContainer` 在顶层把容器供出去，组件自己去读。
+ * 释放焦点。
  */
 export function mountPane({ host, shell, pane }: PaneArgs, container: HTMLElement): { dispose(): void } {
   const isViewer = pane.id === VIEWER_PANE
@@ -1061,16 +1059,14 @@ export function mountPane({ host, shell, pane }: PaneArgs, container: HTMLElemen
   }
   const root = createRoot(container)
   root.render(
-    <PortalContainer.Provider value={container}>
-      {/* 新版 shadcn 的 Tooltip.Root 要求外层有 Provider——窗格顶层给一把，IconButton 里各归各 */}
-      <TooltipProvider delayDuration={200}>
-        {pane.id === VIEWER_PANE ? (
-          <ViewerPane host={host} shell={shell} instance={pane.instance} />
-        ) : (
-          <UnitFolderPane host={host} shell={shell} />
-        )}
-      </TooltipProvider>
-    </PortalContainer.Provider>,
+    // 新版 shadcn 的 Tooltip.Root 要求外层有 Provider——窗格顶层给一把，IconButton 里各归各
+    <TooltipProvider delayDuration={200}>
+      {pane.id === VIEWER_PANE ? (
+        <ViewerPane host={host} shell={shell} instance={pane.instance} />
+      ) : (
+        <UnitFolderPane host={host} shell={shell} />
+      )}
+    </TooltipProvider>,
   )
   return {
     dispose() {

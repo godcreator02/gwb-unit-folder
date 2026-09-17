@@ -7,9 +7,9 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       type={type}
       data-slot="input"
       className={cn(
-        "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30",
-        "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
-        "aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+        "unitfolder:h-9 unitfolder:w-full unitfolder:min-w-0 unitfolder:rounded-md unitfolder:border unitfolder:border-input unitfolder:bg-transparent unitfolder:px-3 unitfolder:py-1 unitfolder:text-base unitfolder:shadow-xs unitfolder:transition-[color,box-shadow] unitfolder:outline-none unitfolder:selection:bg-primary unitfolder:selection:text-primary-foreground unitfolder:file:inline-flex unitfolder:file:h-7 unitfolder:file:border-0 unitfolder:file:bg-transparent unitfolder:file:text-sm unitfolder:file:font-medium unitfolder:file:text-foreground unitfolder:placeholder:text-muted-foreground unitfolder:disabled:pointer-events-none unitfolder:disabled:cursor-not-allowed unitfolder:disabled:opacity-50 unitfolder:md:text-sm unitfolder:dark:bg-input/30",
+        "unitfolder:focus-visible:border-ring unitfolder:focus-visible:ring-[3px] unitfolder:focus-visible:ring-ring/50",
+        "unitfolder:aria-invalid:border-destructive unitfolder:aria-invalid:ring-destructive/20 unitfolder:dark:aria-invalid:ring-destructive/40",
         className
       )}
       {...props}

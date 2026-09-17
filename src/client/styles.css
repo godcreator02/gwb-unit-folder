@@ -1,30 +1,42 @@
 /*
- * 本件自己的样式规则。写在这儿的东西会被追加到构建输入的末尾，
- * 跟工具类一起编进 dist/style.css，同样整张 scope 在本件的 data-gwb-plugin 之下。
+ * 本件的样式入口。件自己就是一个完整的 Tailwind 入口，围栏是**类名前缀**：类名从源头就是
+ * `unitfolder:flex` 这种，全页有效，但只可能匹配到本件画出来的元素——弹层挂到 body 下也一样。
+ * 前缀写 `unitfolder` 不写 `unit-folder`：Tailwind v4 的 prefix 只收小写 a-z，带连字符当场抛。
  *
- * 别在这儿 `@import 'tailwindcss'`——入口那几行由 tools/build-styles.ts 给。
- * 也别写 `:root { … }`：令牌是共享的那一份，在这儿改只会 scope 成
- * 「本件容器」的局部变量，跟别处不一致。
- *
- * 眼下只有单元图标块的三态配色。**蓝色不在共享令牌表里**——定稿效果图里那个
- * 单元图标蓝先在本件住着；哪天 gwb-tokens 收了蓝，把这三条搬过去、这边删掉。
+ * 五行各有各的必要（正本见 gwb-devkit 手册「带界面的件」）：theme.css 带 prefix 让类名解析得
+ * 出来但不输出变量；令牌包的映射面给语义色（不引颜色类整个是空的）；utilities 不带 preflight、
+ * source(none) 只认下面那条 @source；tw-animate-css 给 animate-in 一族；@source 只扫 src/client。
  */
-.uico-live {
+
+@import 'tailwindcss/theme.css' theme(reference) prefix(unitfolder);
+@import '@godcreator/gwb-tokens/theme.reference.css' theme(reference);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@import 'tw-animate-css';
+@source "./";
+
+/*
+ * 本件自己的类一律写成 `@utility`，跟工具类一样带前缀（`unitfolder:uico-live`）。写成裸的
+ * `.uico-live` 就出了围栏，全页谁叫这个名字都会被染上。
+ *
+ * 单元图标块的三态配色：**蓝色不在共享令牌表里**，定稿效果图里那个单元图标蓝先在本件住着；
+ * 哪天 gwb-tokens 收了蓝，把这三条搬过去、这边删掉。
+ */
+@utility uico-live {
   color: oklch(0.746 0.16 255);
   border-color: oklch(0.623 0.214 259.815 / 45%);
   background-color: oklch(0.623 0.214 259.815 / 9%);
 }
-.uico-dead {
+@utility uico-dead {
   color: oklch(0.705 0.015 286.067 / 55%);
   border-color: oklch(1 0 0 / 10%);
 }
-.uico-unknown {
+@utility uico-unknown {
   color: var(--muted-foreground);
   border-style: dashed;
   border-color: oklch(1 0 0 / 18%);
 }
 
 /* 展开选中那一行的高亮带（照 DSH 单元树的选中态） */
-.urow-active {
+@utility urow-active {
   background-color: oklch(0.32 0.05 262 / 90%);
 }

@@ -3,7 +3,6 @@
 import * as React from "react"
 import { cn } from "cn"
 import { Tooltip as TooltipPrimitive } from "radix-ui"
-import { usePortalContainer } from "@/portal"
 
 function TooltipProvider({
   delayDuration = 0,
@@ -36,23 +35,19 @@ function TooltipContent({
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  // **弹层必须挂回本件容器**：件的样式表整张 scope 在 data-gwb-plugin 之下，挂到 body
-  // 上一条规则都匹配不上——症状是「弹层是一片没样式的白板」，不报错。容器由 mountPane
-  // 在顶层经 PortalContainer 供出来（本件的 portal.tsx），没供上就退回默认的 body
-  const container = usePortalContainer()
   return (
-    <TooltipPrimitive.Portal container={container}>
+    <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          "z-50 w-fit origin-(--radix-tooltip-content-transform-origin) animate-in rounded-md bg-foreground px-3 py-1.5 text-xs text-balance text-background fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          "unitfolder:z-50 unitfolder:w-fit unitfolder:origin-(--radix-tooltip-content-transform-origin) unitfolder:animate-in unitfolder:rounded-md unitfolder:bg-foreground unitfolder:px-3 unitfolder:py-1.5 unitfolder:text-xs unitfolder:text-balance unitfolder:text-background unitfolder:fade-in-0 unitfolder:zoom-in-95 unitfolder:data-[side=bottom]:slide-in-from-top-2 unitfolder:data-[side=left]:slide-in-from-right-2 unitfolder:data-[side=right]:slide-in-from-left-2 unitfolder:data-[side=top]:slide-in-from-bottom-2 unitfolder:data-[state=closed]:animate-out unitfolder:data-[state=closed]:fade-out-0 unitfolder:data-[state=closed]:zoom-out-95",
           className
         )}
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground" />
+        <TooltipPrimitive.Arrow className="unitfolder:z-50 unitfolder:size-2.5 unitfolder:translate-y-[calc(-50%_-_2px)] unitfolder:rotate-45 unitfolder:rounded-[2px] unitfolder:bg-foreground unitfolder:fill-foreground" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )
