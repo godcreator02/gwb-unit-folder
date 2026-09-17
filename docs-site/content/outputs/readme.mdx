@@ -30,9 +30,12 @@ pnpm add @godcreator/gwb-unit-folder@<版本>
 ```
 
 装完到「设置」里给单元文件夹填 **`units-root`**（容器根的绝对路径，如 `D:\unitfolders`）——这是它唯一的设置项，
-不填九条命令全回 `code: 'unconfigured'`。
+不填碰容器根的命令全回 `code: 'unconfigured'`。
 
-**置顶不是设置**：单元行右侧那颗图钉点出来，落 `gwbData` 的文档 `pinned`（`<home>/data/unit-folder/pinned.json`）。
+**出生证 `unit.json` 六项全部必给**（`kind` / `title` / `purpose` / `status` / `icon` / `createdAt`），多一项不认识的也不行；
+字段表见文档站「服务面与命令面」或随包说明书。新开单元走 `unit-folder.create`。
+
+**置顶不是设置**：单元行右侧那颗图钉点出来（可以有多个），落 `gwbData` 的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。
 判据跟外壳的布局档一样：人在设置面里手填的是设置，件因人的操作自己写下的是数据。没装 data 件置顶只活在内存。
 
 硬依赖 `gwb-shell` / `gwb-commands` 与 `cordis` 由 peer 自动带进 home；`gwb-settings` / `gwb-data` / `gwb-skills`
@@ -45,24 +48,25 @@ import type {} from '@godcreator/gwb-unit-folder'
 
 ctx.inject(['gwbUnitFolder'], (scoped) => {
   scoped.gwbUnitFolder.current()   // { unitPath, unitName, path } | undefined
-  scoped.gwbUnitFolder.pinned()    // 置顶单元的绝对路径 | undefined
+  scoped.gwbUnitFolder.pinned()    // 全部置顶单元的绝对路径，按置顶先后：string[]
   scoped.on('unit-folder/selection', (selection) => { /* 同一个形状，变了就来 */ })
 })
 ```
 
 方向是**特殊认识一般**：消费方认识本件，本件不认识任何消费方。`current()` 是最近一次点击（多开的格以最后一次为准），
-本会话没点过时回落到置顶单元，都没有是 undefined。**这面被别人 inject，改它先问人。**
+本会话没点过时回落到第一个置顶单元，都没有是 undefined。**这面被别人 inject，改它先问人。**
 
 ## 命令
 
 | 命令 | 参数 |
 | --- | --- |
-| `unit-folder.list` | 无参数。回包 `pinned` 是置顶的那条（没置顶或不在清单里是 null） |
+| `unit-folder.create` | `{ kind, title, purpose, icon, status? }`——建单元：算目录名、建目录、写出生证 |
+| `unit-folder.list` | 无参数。回包 `pinned` 是置顶单元条目的数组（按置顶先后，目录已不在的顺手摘掉） |
 | `unit-folder.listDir` / `readFile` / `open` / `code` | `{ path }`，容器根内的绝对路径 |
 | `unit-folder.select` | `{ path }`——报一次选中，浏览器半点树时调；agent 也能调 |
 | `unit-folder.current` | 无参数，回 `current()`（null = 没有） |
-| `unit-folder.pin` | `{ path }`，必须是单元目录（容器根下一层） |
-| `unit-folder.unpin` | 无参数 |
+| `unit-folder.pin` | `{ path }`，必须是单元目录（容器根下一层）；追加进置顶 |
+| `unit-folder.unpin` | `{ path }`，从置顶里摘掉这一个 |
 
 原文格的接力棒**不跟随状态**：树里单击文件进「焦点原文格」，Ctrl+单击再开一份，接力棒只住内存，重启即空。
 
@@ -81,10 +85,11 @@ pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcrea
 
 ## 结构
 
-- `src/scan.ts` / `src/browse.ts` —— 纯机：容器现扫 + 出生证 + 路径校验/列目录/读原文
-- `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶文档形状、`current()` 回落规则
-- `src/index.ts` —— cordis Service：两格窗格注册 + 九条命令 + 服务面 `gwbUnitFolder` + 事件
-- `src/client/` —— 浏览器半：树格 / 原文格，`mountPane` 契约，shadcn 组件自 vendor
+- `src/scan.ts` / `src/browse.ts` —— 纯机：容器现扫 + 出生证字段表与校验 + 路径校验/列目录/读原文
+- `src/create.ts` —— 建单元：目录名、出生证落盘
+- `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表形状与加摘、`current()` 回落规则
+- `src/index.ts` —— cordis Service：两格窗格注册 + 十一条命令 + 服务面 `gwbUnitFolder` + 事件
+- `src/client/` —— 浏览器半：树格 / 原文格，`mountPane` 契约，过滤纯逻辑在 `units.ts`，shadcn 组件自 vendor
 - `skills/unit-folder/` —— agent 说明书（gwb-skills 挂载）
 - `docs-site/` —— fumadocs 站 + docfirst 六区（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈）
 

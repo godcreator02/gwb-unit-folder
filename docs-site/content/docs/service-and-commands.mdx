@@ -1,18 +1,30 @@
 ---
 title: 服务面与命令面
-description: ctx.gwbUnitFolder 的三个方法（读选中两个、工具条按钮登记一个）、事件 unit-folder/selection 的载荷、十条命令的名字与参数——导出面就是契约，逐条钉在源码上
+description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、工具条按钮登记一个）、事件 unit-folder/selection 的载荷、十一条命令的名字与参数、出生证的字段表——导出面就是契约，逐条钉在源码上
 ---
 
 # 服务面与命令面
 
-这一页是契约。**这里钉着的每一样都有别人对着写代码**：服务面被别的件 inject，命令面被浏览器半与 agent 调。
-改任何一样之前先问人——判据见轨迹卡「选中往外报」的「代价与遗留」。
+这一页是契约。**这里钉着的每一样都有别人对着写代码**：服务面被别的件 inject，命令面被浏览器半与 agent 调，
+出生证被人与 agent 手写、被站件读。改任何一样之前先问人——判据见轨迹卡「选中往外报」的「代价与遗留」。
+
+## 出生证 `unit.json`
+
+六项全部必给，`status` 只认三档，`icon` 是 lucide 的 kebab-case 名：
+
+{/* ref file="../src/scan.ts" lines="18-40" */}
+
+**严格读**：缺项、类型不对、值不在表里、多出不认识的字段，这个单元整行落「读不出」并带上原因。多出的字段也拒，
+是因为出生证是手写的——拼错一个键名、留着旧写法（`retired: true`），宽松读法会把它静默吞掉。读盘与建单元
+共用这一处，字段表只有一份：
+
+{/* ref file="../src/scan.ts" lines="101-133" */}
 
 ## 服务 `ctx.gwbUnitFolder`
 
 消费方写 `ctx.inject(['gwbUnitFolder'], …)`（或硬 `inject`）拿到这一格。读的两个方法都同步，写的一个（登记按钮）回注销函数：
 
-{/* ref file="../src/index.ts" lines="52-73" */}
+{/* ref file="../src/index.ts" lines="54-75" */}
 
 `current()` 的回值形状与事件载荷是同一个 `UnitSelection`。三个字段：`unitPath` 是容器根下那一层的单元目录、
 `unitName` 是目录名、`path` 是人点的那个目录（点单元行时等于 `unitPath`，点单元内目录时是那个目录）——
@@ -20,8 +32,8 @@ description: ctx.gwbUnitFolder 的三个方法（读选中两个、工具条按�
 
 {/* ref file="../src/current.ts" lines="14-22" */}
 
-**为什么读的那半是两个方法而不是一个。** `current()` 会回落到置顶，所以光看它分不出「人点了」还是「没点过、只是置顶了」；
-文档站件不用分，但将来要「只在人真点了时才动」的消费方得分——`pinned()` 单独给出来，两者一比就知道。
+**为什么读的那半是两个方法而不是一个。** `current()` 会回落到第一个置顶，所以光看它分不出「人点了」还是「没点过、只是置顶了」；
+文档站件不用分，但将来要「只在人真点了时才动」的消费方得分——`pinned()` 单独给出来（全部置顶，按置顶先后），两者一比就知道。
 
 **写的那半是登记口**（0.4 起）：`registerToolbarButton(spec)` 把一颗动作按钮放进单元树格的工具条，排在
 自家那几颗后面。形状纯声明式、皮不认识登记方——点击与「亮不亮」都按登记里给的命令名走总线，
@@ -40,39 +52,45 @@ description: ctx.gwbUnitFolder 的三个方法（读选中两个、工具条按�
 类型面：消费方只要 `import type {} from '@godcreator/gwb-unit-folder'`，Context 上的 `gwbUnitFolder` 与
 Events 上的 `'unit-folder/selection'` 就都有了。两条声明合在文件末尾：
 
-{/* ref file="../src/index.ts" lines="456-463" */}
+{/* ref file="../src/index.ts" lines="493-500" */}
 
-**它不做的事**：不跨会话（`current()` 只住内存，重启之后是置顶或空）；不给「清空」的口（眼下没有清空的动作，
-undefined 只在从有到无时才会出现，而现在没有从有到无的路）。
+**它不做的事**：不跨会话（`current()` 只住内存，重启之后是第一个置顶或空）；不给「清空」的口（眼下没有清空的动作，
+undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶）。
 
 ## 命令面
 
-十条，全登记在本件名下、都包 `ctx.effect`（条目停了名字就从表上摘掉）。带路径参数的五条共用[那堵墙](/docs#两条判据)。
-`toolbarButtons` 不带路径、也不碰盘——回的就是服务里那张按钮表：
+十一条，全登记在本件名下、都包 `ctx.effect`（条目停了名字就从表上摘掉）。带路径参数的七条共用[那堵墙](/docs#两条判据)。
+`toolbarButtons` 不带路径、也不碰盘——回的就是服务里那张按钮表。
 
-**选中与置顶四条**是 0.3 新加的、服务面的命令入口。`select` 是浏览器半点树时调的那条，agent 想替人「切到某个单元」
+**建单元**（0.7 起）：`create` 不带路径参数，解出容器根之后把 `kind / title / purpose / icon / status?` 交给
+`src/create.ts` 算目录名、建目录、写出生证；字段不成立一个目录都不建：
+
+{/* ref file="../src/index.ts" lines="348-364" */}
+
+**选中与置顶四条**是服务面的命令入口。`select` 是浏览器半点树时调的那条，agent 想替人「切到某个单元」
 也调它；它算出所属单元、记下、变了就广播：
 
-{/* ref file="../src/index.ts" lines="396-412" */}
+{/* ref file="../src/index.ts" lines="435-451" */}
 
 `current` 无参数，回 `{ ok: true, data: current() ?? null }`——信封形状跟本件其余命令一致，没有「当前」时 data 是 null
 而不是缺字段：
 
-{/* ref file="../src/index.ts" lines="414-420" */}
+{/* ref file="../src/index.ts" lines="453-460" */}
 
-`pin` 只认容器根下一层的单元目录，落 data 文档 `pinned`（`{ path }`），**不改最近一次点击**；`unpin` 写 `{ path: null }`。
-两条的回执都等落盘完成——写没写成进回执，不静默：
+`pin` 只认容器根下一层的单元目录，追加到置顶表末尾（已经在的不挪位置），落 data 文档 `pinned`（`{ paths }`），
+**不改最近一次点击**；`unpin` 要给 `path`，摘掉那一个。两条的回执都等落盘完成——写没写成进回执，不静默：
 
-{/* ref file="../src/index.ts" lines="422-452" */}
+{/* ref file="../src/index.ts" lines="462-489" */}
 
-**浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）0.2 就有，形状没动；变的只有 `list` 回包里的 `pinned`
-——从设置里按目录名找，改成从 data 那份置顶路径找，找不到那条单元回 null、字段名不变：
+**浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）形状没动；变的只有 `list` 回包里的 `pinned`——
+0.7 起是置顶单元条目的数组，按置顶先后。置顶了但清单里找不到的（目录删了、换了容器根）这一趟顺手摘掉并落盘，
+不然一个删掉的单元会一直占着「当前」的回落位：
 
-{/* ref file="../src/index.ts" lines="310-329" */}
+{/* ref file="../src/index.ts" lines="318-346" */}
 
 ## 置顶文档
 
-`<home>/data/<条目 id>/pinned.json`。读回来要验形状——盘上那份是人手改得到的 JSON，`path` 不是非空字符串就当没置顶，
-取消置顶写的 `{ path: null }` 也走这条：
+`<home>/data/<条目 id>/pinned.json`，形状 `{ paths: string[] }`。读回来要验形状——盘上那份是人手改得到的 JSON，
+`paths` 不是数组就当没置顶，数组里的空串与非字符串扔掉、重复的只留第一次：
 
-{/* ref file="../src/current.ts" lines="56-65" */}
+{/* ref file="../src/current.ts" lines="58-73" */}

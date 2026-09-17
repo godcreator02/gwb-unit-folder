@@ -6,8 +6,9 @@ description: 这个件解决什么问题、拆成几块、块与块之间怎么�
 # 单元文件夹
 
 `gwb-unit-folder` 是 gwb 内核线的一个件。它管的是**「单元」这个纯目录约定在工作台里长什么样**：
-容器根下一层一个目录、目录里一张 `unit.json` 出生证——这个件把它画成一棵树（现扫、读证、展开、看原文），
-并且**把「人现在看的是哪个单元」这个事实往外报**给别的件。
+容器根下一层一个目录、目录里一张 `unit.json` 出生证——这个件建单元、把它们画成一棵树（现扫、读证、按状态与种类过滤、
+展开、看原文），并且**把「人现在看的是哪个单元」这个事实往外报**给别的件。出生证的字段表是本件的正本
+（读盘与 `unit-folder.create` 共用一处校验），见 [服务面与命令面](/docs/service-and-commands#出生证-unitjson)。
 
 这一页讲原理与模块划分；服务面、事件与命令面在 [服务面与命令面](/docs/service-and-commands)；
 为什么是「往外报」而不是扩展点、置顶为什么从设置改成数据，在轨迹卡[「选中往外报」](/trajectory/2026-09-09-report-selection-not-extension-point)。
@@ -24,50 +25,53 @@ description: 这个件解决什么问题、拆成几块、块与块之间怎么�
 早在挂载时局部注入了本件、`on` 了这条事件，于是它知道该换哪个单元的文档站了。
 
 置顶走的是同一条墙，但落点不同：`unit-folder.pin { path }` 要求 path 是容器根下一层的单元目录，
-写进内存镜像、再写 `gwbData` 的文档 `pinned`。`current()` 没点过时回落到置顶，所以置顶在那种局面下
-也会让 `current()` 变、也会广播。
+追加进内存里那张置顶表、再写 `gwbData` 的文档 `pinned`（`{ paths }`）。置顶可以有多个；`current()` 没点过时回落到
+第一个置顶，所以置顶在那种局面下也会让 `current()` 变、也会广播。
 
 ## 拆成几块，依赖是单向的
 
 ```
 scan.ts / browse.ts / current.ts     纯机 / 纯逻辑：只认 node:fs 与路径形状，不知道 cordis 存在
+create.ts                            （create.ts 建单元，复用 scan.ts 的出生证校验）
           ↑
-      index.ts                        cordis Service：把上面三块接到窗格、命令、服务面、事件上
+      index.ts                        cordis Service：把上面几块接到窗格、命令、服务面、事件上
           ↑
    client/index.tsx                   浏览器半：只经命令总线说话，不 import 宿主半一个符号
+   client/units.ts                    （过滤与图标名换算的纯逻辑，tests/units.test.ts 测）
           ↑
    别的件（消费方）                    inject('gwbUnitFolder')、on('unit-folder/selection')
 ```
 
 三条边界各自「不知道什么」：
 
-**纯逻辑那层不知道 cordis 存在。** `current.ts` 里的四个函数——从路径推所属单元、置顶文档验形状、
-`current()` 的回落规则、清单里找置顶——全是「喂输入看输出」，所以全在 `tests/current.test.ts` 里测，
+**纯逻辑那层不知道 cordis 存在。** `current.ts` 里的函数——从路径推所属单元、置顶文档验形状、
+置顶表的加与摘、`current()` 的回落规则、清单里找置顶——全是「喂输入看输出」，所以全在 `tests/current.test.ts` 里测，
 `index.ts` 只剩接线。回落规则是整个服务面的语义核心，它长这样：
 
-{/* ref file="../src/current.ts" lines="66-76" */}
+{/* ref file="../src/current.ts" lines="85-95" */}
 
 **宿主半不知道任何消费方。** 方向是**特殊认识一般**：文档站件认识单元文件夹，单元文件夹不认识文档站件。
 本件往 ctx 上挂的名字只有一个，`static inject` 只放两个硬依赖——外壳（没它两格没处挂）与命令总线
 （没它浏览器半调不到任何东西）：
 
-{/* ref file="../src/index.ts" lines="110-112" */}
+{/* ref file="../src/index.ts" lines="112-114" */}
 
 设置、数据、说明书三件都是**局部注入**：缺哪个本件照挂、只少那一面。data 件那一格顺带定了置顶怎么落盘、
 以及「人先点了置顶、data 件后挂上」那种顺序谁赢：
 
-{/* ref file="../src/index.ts" lines="183-197" */}
+{/* ref file="../src/index.ts" lines="178-197" */}
 
 **浏览器半不知道宿主半的实现。** 它只经命令总线说话（`host.call`），按形状收回包；报选中那一下
 是 fire-and-forget、失败只在控制台说一声：
 
-{/* ref file="../src/client/index.tsx" lines="546-570" */}
+{/* ref file="../src/client/index.tsx" lines="502-526" */}
 
 ## 两条判据
 
 **配置与数据分家。** `units-root` 是人在设置面里手填的，所以是设置（`gwbSettings.define`）；置顶是人在树上
 点图钉、件因这个动作自己写下的，所以是数据（`gwbData` 文档 `pinned`）。判据跟外壳把布局档落 data 是同一条。
-0.2 那个手填目录名的设置项 `pinned-unit` 因此删了，产物守卫钉着它不许回来。
+设置项 `pinned-unit` 因此不存在，产物守卫钉着它不许回来。树格的过滤（状态与种类标签）两样都不是：它只住窗格内存，
+重开窗格回到默认（藏起退役的、种类不限）。
 
 **带路径参数的命令共用一堵墙。** 命令总线对外暴露（agent 经 MCP 也在调），参数不能默认是界面自己递来的
 那份清单上的：每条都先解 `units-root`、再把路径验成根内的绝对路径，越出根的一律回「路径不在容器根内」：
