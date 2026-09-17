@@ -1,31 +1,60 @@
 ---
 name: unit-folder
-description: 用户提到「单元」「容器根」「unitfolders」「当前单元」，或者要你找某个项目住在哪个目录、这台机器上有哪些单元、某个单元里有什么文件、人现在在工作台里看的是哪个单元、想置顶或用 VSCode 打开某个目录时用。这个件把单元容器根现扫一遍读出生证，十条命令能列清单（带置顶条）、列目录、读文件原文、报/查当前选中、置顶/取消、在资源管理器或 VSCode 里打开；另给别的件一个服务面 ctx.gwbUnitFolder（读选中之外，还有往树格工具条登记动作按钮的口）。
+description: 用户提到「单元」「容器根」「unitfolders」「当前单元」「出生证 unit.json」，或者要你新开一个单元（新项目还没有落点）、找某个项目住在哪个目录、这台机器上有哪些单元、某个单元里有什么文件、人现在在工作台里看的是哪个单元、想置顶或用 VSCode 打开某个目录时用。这个件把单元容器根现扫一遍读出生证，十一条命令能建单元、列清单（带置顶的几条）、列目录、读文件原文、报/查当前选中、置顶/取消、在资源管理器或 VSCode 里打开；另给别的件一个服务面 ctx.gwbUnitFolder（读选中与置顶之外，还有往树格工具条登记动作按钮的口）。
 ---
 
 # 单元文件夹：这台机器的组织结构
 
-「单元」是个纯目录约定：**容器根下一层一个目录，目录里有一张 `unit.json` 当出生证**
-（`kind` 说它是什么、`purpose` 说它干什么）。没有出生证的目录不是故障，是**还没认领**。
+「单元」是个纯目录约定：**容器根下一层一个目录，目录里有一张 `unit.json` 当出生证**。
+没有出生证的目录不是故障，是**还没认领**。
+
+## 出生证 `unit.json`
+
+六项，**全部必给，多一项不认识的也不行**（拼错的键、旧写法都会让这个单元整行变成「读不出」）：
+
+```json
+{
+  "kind": "插件仓",
+  "title": "gwb-unit-folder",
+  "purpose": "这个单元是什么、为什么存在、边界在哪、跟谁不是一回事",
+  "status": "active",
+  "icon": "folder-tree",
+  "createdAt": "2026-09-08T11:47:30+08:00"
+}
+```
+
+| 字段 | 写什么 |
+| --- | --- |
+| `kind` | 中文种类短词，树里按它分组。先 `unit-folder.list` 看已有的种类，能归进去就别造新词 |
+| `title` | 短名，树里第一行 |
+| `purpose` | 唯一的自述，**写厚一点**——往后所有人（包括 agent）靠它认路。树里显示两行，全文在悬停说明里 |
+| `status` | `active`（在做）/ `paused`（搁着）/ `retired`（退役）。退役的树里默认藏起来，站件也不扫它里面的站 |
+| `icon` | [lucide](https://lucide.dev/icons) 图标名，kebab-case（`puzzle`、`book-open`、`server`）。认不出的名字画兜底文件夹 |
+| `createdAt` | ISO 8601 带时区。建单元时本件自动填 |
+
+**新开单元走 `unit-folder.create`**，别手建目录：它算目录名（`yyMMddHH` + 三个小写字母，撞名重摇）、
+建目录、写出生证，到 `unit.json` 为止。仓怎么建、要不要文档站，交给目标线自己的工具
+（插件仓走 `devkit.scaffold`，站走 `docs-site.create`）。改已有单元的状态、标题、图标，直接改那份 `unit.json`。
 
 容器根在哪由**设置**里的 `units-root` 说了算（`gwb-settings` 那份，值落 `<home>\settings.json`；
 条目上没有 `config` 面，也没有环境变量、没有应用级配置）。没配时命令回 `code: 'unconfigured'`，
 那不是出错，是还没配——让用户到「设置」里给单元文件夹填 `units-root`。**这是它唯一的设置项。**
 
-## 十条命令
+## 十一条命令
 
 | 命令 | 干什么 |
 | --- | --- |
-| `unit-folder.list` | 现扫容器根，回全部单元：认领过的按 `kind` 分组，没出生证的落 `unidentified`；回包另带 `pinned`（置顶的那条，没置顶或不在清单里是 null）。无参数 |
+| `unit-folder.create` | 建一个新单元：`{kind, title, purpose, icon, status?}`，`status` 省了是 `active`。回 `{ name, path, identity }` |
+| `unit-folder.list` | 现扫容器根，回全部单元：认领过的按 `kind` 分组，没出生证或读不出的落 `unidentified`（读不出的带 `reason`）；回包另带 `pinned`（置顶的单元条目数组，按置顶先后；目录已不在的这一趟顺手摘掉）。无参数 |
 | `unit-folder.toolbarButtons` | 此刻有哪些件往树格工具条登记了按钮（浏览器半取表用）。无参数 |
 | `unit-folder.listDir` | 列容器根内一个目录的一层：`{path}` |
 | `unit-folder.readFile` | 读容器根内一个文件的原文（截断预览）：`{path}` |
 | `unit-folder.open` | 在资源管理器里打开一个目录：`{path}` |
 | `unit-folder.code` | 用 VSCode 新窗口打开一个目录（`code -n`）：`{path}` |
 | `unit-folder.select` | 报一次选中：`{path}`（单元目录或单元内目录）。回 `{ unitPath, unitName, path }`。树里点一下就是这条，agent 想替人「切到某个单元」也调它 |
-| `unit-folder.current` | 此刻的「当前单元」：最近一次点击，没点过回落到置顶，都没有是 null。无参数 |
-| `unit-folder.pin` | 置顶一个单元：`{path}`，**必须是容器根下一层的单元目录**。落 data 文档 `pinned` |
-| `unit-folder.unpin` | 取消置顶。无参数 |
+| `unit-folder.current` | 此刻的「当前单元」：最近一次点击，没点过回落到第一个置顶，都没有是 null。无参数 |
+| `unit-folder.pin` | 把一个单元加进置顶（可以有多个，追加到末尾）：`{path}`，**必须是容器根下一层的单元目录**。落 data 文档 `pinned`。回 `{ paths }` |
+| `unit-folder.unpin` | 把一个单元从置顶里摘掉：`{path}`。回 `{ paths }` |
 
 窗格那边的交互约定：树里**单击**文件，内容进「焦点原文格」（最后一次鼠标点过的那格，
 没有开着就自动开一格）；**Ctrl+单击**再开一份原文格显示，新格接管焦点。接力棒只住
@@ -50,8 +79,8 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 ```
 
 `unitPath` 是容器根下那一层的单元目录，`unitName` 是目录名，`path` 是人点的那个目录（点单元行时等于
-`unitPath`，点单元内目录时是那个目录）。**多开的格以最后一次为准**；本会话没点过时回落到置顶单元；
-置顶 / 取消置顶在没点过时也会让 `current()` 变、所以也广播。`pinned()` 另给置顶单元的绝对路径。
+`unitPath`，点单元内目录时是那个目录）。**多开的格以最后一次为准**；本会话没点过时回落到第一个置顶单元；
+置顶 / 取消置顶在没点过时也会让 `current()` 变、所以也广播。`pinned()` 另给全部置顶单元的绝对路径（`string[]`，按置顶先后）。
 
 这面被别人 inject：**改它的方法签名、事件形状、命令名与参数形状之前先问人。**
 判据与否掉的两条路见文档站的轨迹卡「选中往外报」；其中「注册按钮」那条 0.4 起翻案——
@@ -70,7 +99,7 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 
 ## 怎么用它回答问题
 
-**「X 项目住哪儿」**：先 `unit-folder.list`，在回包里按 `purpose` 找——出生证那句话通常
+**「X 项目住哪儿」**：先 `unit-folder.list`，在回包里按 `title` 与 `purpose` 找——出生证那句话通常
 写着这个单元是干什么的，比目录名好认。目录名是时间码加随机码（如 `26090811jjr`），
 **不表意，别指望从名字猜出内容**。
 
@@ -90,8 +119,8 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 先于目录写下（换机器、待挂载的盘都会这样），那是正常状态；后者才报错，说明配置指错了
 地方或者权限不对。别把前者当成「这儿没有单元」报给用户。
 
-**置顶是数据不是设置。** 人在树上点图钉，本件把它写进 `gwbData` 的文档 `pinned`（`{ path }`，
-取消是 `{ path: null }`）。判据跟外壳的布局档一样：设置面里手填的是设置，件因人的操作自己写下的是数据。
+**置顶是数据不是设置。** 人在树上点图钉，本件把它写进 `gwbData` 的文档 `pinned`（`{ paths: [...] }`，
+按置顶先后）。判据跟外壳的布局档一样：设置面里手填的是设置，件因人的操作自己写下的是数据。
 没装 data 件置顶只活在内存，日志会 warn 一次。
 
 ## 装法（gwb-kernel 新线）

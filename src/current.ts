@@ -21,11 +21,12 @@ export interface UnitSelection {
   path: string
 }
 
-/** 置顶落的那份 data 文档的名字。形状是 `PinnedDoc`；取消置顶写 `{ path: null }` */
+/** 置顶落的那份 data 文档的名字。形状是 `PinnedDoc` */
 export const PINNED_DOC = 'pinned'
 
+/** 置顶的单元，绝对路径，按置顶先后排 */
 export interface PinnedDoc {
-  path: string | null
+  paths: string[]
 }
 
 /** 越出根的三种形状：空、`..` 打头、或 relative 回了个绝对路径（Windows 跨盘符） */
@@ -55,24 +56,42 @@ export function isUnitDir(root: string, target: string): boolean {
 }
 
 /**
- * 读置顶文档：盘上那份是 JSON、人手改得到，形状要验。`path` 不是非空字符串就当没置顶
- * ——取消置顶写的 `{ path: null }` 也走这条。
+ * 读置顶文档：盘上那份是 JSON、人手改得到，形状要验。`paths` 不是数组就当没置顶；
+ * 数组里不是非空字符串的项扔掉，同一处写了两遍的只留第一次。
  */
-export function parsePinnedDoc(raw: unknown): string | undefined {
-  if (typeof raw !== 'object' || raw === null) return undefined
-  const value = (raw as Record<string, unknown>).path
-  return typeof value === 'string' && value.trim() !== '' ? value : undefined
+export function parsePinnedDoc(raw: unknown): string[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const value = (raw as Record<string, unknown>).paths
+  if (!Array.isArray(value)) return []
+  const out: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'string' || item.trim() === '') continue
+    if (out.some((p) => samePath(p, item))) continue
+    out.push(item)
+  }
+  return out
+}
+
+/** 追加一个置顶。已经在表里就原样回，不挪位置 */
+export function addPinned(pinned: readonly string[], target: string): string[] {
+  return pinned.some((p) => samePath(p, target)) ? [...pinned] : [...pinned, target]
+}
+
+/** 摘掉一个置顶。不在表里就原样回 */
+export function removePinned(pinned: readonly string[], target: string): string[] {
+  return pinned.filter((p) => !samePath(p, target))
 }
 
 /**
- * `current()` 的回落规则：本会话点过就是最近那一次；没点过回落到置顶单元（那时 `path`
- * 就是单元目录本身）；都没有就是 undefined。**置顶只在没点过时起作用**——点过之后
+ * `current()` 的回落规则：本会话点过就是最近那一次；没点过回落到**第一个**置顶单元（那时
+ * `path` 就是单元目录本身）；都没有就是 undefined。**置顶只在没点过时起作用**——点过之后
  * 置顶只是清单最上那一块，不再是「当前」。
  */
-export function resolveCurrent(clicked: UnitSelection | undefined, pinned: string | undefined): UnitSelection | undefined {
+export function resolveCurrent(clicked: UnitSelection | undefined, pinned: readonly string[]): UnitSelection | undefined {
   if (clicked !== undefined) return clicked
-  if (pinned === undefined) return undefined
-  return { unitPath: pinned, unitName: path.basename(pinned), path: pinned }
+  const first = pinned[0]
+  if (first === undefined) return undefined
+  return { unitPath: first, unitName: path.basename(first), path: first }
 }
 
 /**
@@ -85,9 +104,21 @@ export function samePath(a: string, b: string): boolean {
   return process.platform === 'win32' ? na.toLowerCase() === nb.toLowerCase() : na === nb
 }
 
-/** 清单里置顶的那条。置顶指的单元不在清单里（换了容器根、目录删了）就回 null，不报错 */
-export function findPinned(inventory: Pick<UnitInventory, 'byKind' | 'unidentified'>, pinned: string | undefined): UnitEntry | null {
-  if (pinned === undefined) return null
+/**
+ * 清单里置顶的那几条，按置顶先后。`gone` 是置顶了但清单里找不到的（目录删了、换了容器根），
+ * 调用方据此把它们从置顶表里摘掉——不然一个删掉的单元会一直占着「当前」的回落位。
+ */
+export function findPinned(
+  inventory: Pick<UnitInventory, 'byKind' | 'unidentified'>,
+  pinned: readonly string[],
+): { entries: UnitEntry[]; gone: string[] } {
   const all = [...inventory.byKind.flatMap((g) => g.units), ...inventory.unidentified]
-  return all.find((u) => samePath(u.path, pinned)) ?? null
+  const entries: UnitEntry[] = []
+  const gone: string[] = []
+  for (const p of pinned) {
+    const hit = all.find((u) => samePath(u.path, p))
+    if (hit === undefined) gone.push(p)
+    else entries.push(hit)
+  }
+  return { entries, gone }
 }

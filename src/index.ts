@@ -11,12 +11,14 @@ import type {} from '@godcreator/gwb-skills'
 import type {} from '@godcreator/gwb-settings'
 import { listDir, readFilePreview, resolveInside } from './browse.js'
 import { takeInventory } from './scan.js'
-import { findPinned, isUnitDir, parsePinnedDoc, PINNED_DOC, resolveCurrent, selectionFor, type UnitSelection } from './current.js'
+import { createUnit } from './create.js'
+import { addPinned, findPinned, isUnitDir, parsePinnedDoc, PINNED_DOC, removePinned, resolveCurrent, selectionFor, type UnitSelection } from './current.js'
 import { TOOLBAR_EVENT, createToolbarButtonRegistry, type ToolbarButtonRegistry, type ToolbarButtonSpec } from './toolbar.js'
 
 export const name = 'gwb-unit-folder'
 
 export type { UnitSelection, PinnedDoc } from './current.js'
+export type { UnitIdentity, UnitStatus } from './scan.js'
 export type { ToolbarButtonSpec } from './toolbar.js'
 
 /**
@@ -58,12 +60,12 @@ export function rootFromSetting(raw: unknown): string | undefined {
  */
 export interface GwbUnitFolderApi {
   /**
-   * 最近一次点击（多开的格以最后一次为准）；本会话还没点过时回落到置顶单元；
+   * 最近一次点击（多开的格以最后一次为准）；本会话还没点过时回落到第一个置顶单元；
    * 都没有回 undefined。规则本体在 `current.ts` 的 resolveCurrent
    */
   current(): UnitSelection | undefined
-  /** 置顶单元的绝对路径。落在 data 文档 `pinned` 里，没装 data 件时只活在内存 */
-  pinned(): string | undefined
+  /** 置顶单元的绝对路径，按置顶先后。落在 data 文档 `pinned` 里，没装 data 件时只活在内存 */
+  pinned(): string[]
   /**
    * 往单元树格的工具条里登记一颗按钮，排在自家那几颗的后面。皮在浏览器半，点击与
    * 「亮不亮」的问询都经命令总线回到登记方——形状与判据见 `toolbar.ts` 的
@@ -114,7 +116,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
   /** 本会话最近一次点击；没点过是 undefined，`current()` 那时回落到置顶 */
   private clicked: UnitSelection | undefined
   /** 置顶单元的绝对路径——data 文档 `pinned` 在内存里的镜像，写时同步落盘 */
-  private pinnedPath: string | undefined
+  private pinnedPaths: string[] = []
   /** 设置件的 get；没装设置件一直是 undefined */
   private settings: { get(key: string): unknown } | undefined
   /** data 件的两面；没装 data 件一直是 undefined，置顶只活在内存 */
@@ -181,13 +183,13 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     ctx.inject(['gwbData'], (scoped) => {
       this.data = scoped.gwbData
       void (async () => {
-        if (this.pinnedPath !== undefined) {
+        if (this.pinnedPaths.length > 0) {
           await this.persistPinned()
           return
         }
         const before = this.current()
-        this.pinnedPath = parsePinnedDoc(await scoped.gwbData.readDoc(PINNED_DOC))
-        this.log.info(this.pinnedPath === undefined ? '置顶：盘上没有' : `置顶：${this.pinnedPath}`)
+        this.pinnedPaths = parsePinnedDoc(await scoped.gwbData.readDoc(PINNED_DOC))
+        this.log.info(this.pinnedPaths.length === 0 ? '置顶：盘上没有' : `置顶 ${this.pinnedPaths.length} 个：${this.pinnedPaths.join('、')}`)
         this.announceIfChanged(before)
       })().catch((err: unknown) => {
         this.log.warn(`读置顶文档失败：${err instanceof Error ? err.message : String(err)}`)
@@ -209,11 +211,11 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
   }
 
   current(): UnitSelection | undefined {
-    return resolveCurrent(this.clicked, this.pinnedPath)
+    return resolveCurrent(this.clicked, this.pinnedPaths)
   }
 
-  pinned(): string | undefined {
-    return this.pinnedPath
+  pinned(): string[] {
+    return [...this.pinnedPaths]
   }
 
   /**
@@ -293,7 +295,15 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       }
       return
     }
-    await this.data.writeDoc(PINNED_DOC, { path: this.pinnedPath ?? null })
+    await this.data.writeDoc(PINNED_DOC, { paths: this.pinnedPaths })
+  }
+
+  /** 换一张置顶表：变了才落盘，`current()` 的回落值跟着变了就广播 */
+  private setPinned(next: string[]): Promise<void> {
+    const before = this.current()
+    this.pinnedPaths = next
+    this.announceIfChanged(before)
+    return this.persistPinned()
   }
 
   private registerCommands(ctx: GwbContext): void {
@@ -309,9 +319,9 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       {
         name: 'unit-folder.list',
         description: '现扫单元容器，回全部单元清单',
-        usage: '认领过的按 kind 分组、没出生证的落 unidentified、另带 pinned 一条：置顶的那个单元，没置顶或不在清单里是 null。无参数',
+        usage: '认领过的按 kind 分组（出生证读不出的带 reason 落 unidentified）、另带 pinned：置顶的单元条目数组，按置顶先后。置顶了但目录已不在的，这一趟顺手从置顶表里摘掉并落盘。无参数',
       },
-      () => {
+      async () => {
         const root = this.resolveUnitsRoot()
         if (root === undefined) return { ok: false, code: 'unconfigured', error: MISSING_UNITS_ROOT }
         const started = Date.now()
@@ -324,7 +334,32 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
         }
         const total = outcome.data.byKind.reduce((n, g) => n + g.units.length, 0) + outcome.data.unidentified.length
         this.log.info(`unit-folder.list 结束：${total} 个单元，耗时 ${Date.now() - started}ms`)
-        return { ok: true, data: { ...outcome.data, pinned: findPinned(outcome.data, this.pinnedPath) } }
+        const pinned = findPinned(outcome.data, this.pinnedPaths)
+        if (pinned.gone.length > 0) {
+          this.log.info(`置顶里 ${pinned.gone.length} 个单元已不在，摘掉：${pinned.gone.join('、')}`)
+          let next = this.pinnedPaths
+          for (const p of pinned.gone) next = removePinned(next, p)
+          await this.setPinned(next)
+        }
+        return { ok: true, data: { ...outcome.data, pinned: pinned.entries } }
+      },
+    )
+
+    register(
+      {
+        name: 'unit-folder.create',
+        description: '在容器根下建一个新单元：算目录名、建目录、写出生证 unit.json',
+        usage:
+          '参数 { kind, title, purpose, icon, status? }，全是非空字符串。kind 是中文种类短词（先 unit-folder.list 看已有的种类，能归进去就别造新词）；title 是树里显示的短名；purpose 写厚一点——这个单元是什么、为什么存在、边界在哪、跟谁不是一回事；icon 是 lucide 图标名，kebab-case（https://lucide.dev/icons ，如 puzzle / book-open / server）；status 是 active / paused / retired，省了是 active。目录名 yyMMddHH + 三个小写字母，撞名重摇；createdAt 由本件填。到 unit.json 为止，仓与文档站交给目标线自己的工具。回 { name, path, identity }',
+      },
+      (args) => {
+        const root = this.resolveUnitsRoot()
+        if (root === undefined) return { ok: false, code: 'unconfigured', error: MISSING_UNITS_ROOT }
+        const a = argsOf(args)
+        const outcome = createUnit(root, { kind: a.kind, title: a.title, purpose: a.purpose, icon: a.icon, status: a.status })
+        if (outcome.ok) this.log.info(`建了单元 ${outcome.data.name}（${outcome.data.identity.kind}：${outcome.data.identity.title}）`)
+        else this.log.warn(`建单元没成：${outcome.error}`)
+        return outcome
       },
     )
 
@@ -419,7 +454,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       {
         name: 'unit-folder.current',
         description: '此刻的「当前单元」',
-        usage: '最近一次点击，没点过回落到置顶单元，都没有 data 是 null。回 { unitPath, unitName, path } | null。无参数',
+        usage: '最近一次点击，没点过回落到第一个置顶单元，都没有 data 是 null。回 { unitPath, unitName, path } | null。无参数',
       },
       () => ({ ok: true, data: this.current() ?? null }),
     )
@@ -427,35 +462,30 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.pin',
-        description: '把一个单元置顶（清单最上那块「当前会话」）',
-        usage: '参数 { path: string }——单元目录，必须是容器根下一层；落 data 文档 pinned。不改最近一次点击',
+        description: '把一个单元加进置顶（清单最上那块「置顶」，可以有多个）',
+        usage: '参数 { path: string }——单元目录，必须是容器根下一层；追加到置顶表末尾，已经置顶的不挪位置；落 data 文档 pinned（{ paths }）。不改最近一次点击。回 { paths }',
       },
       (args) =>
         this.withTarget(args, (root, target) => {
           if (!isUnitDir(root, target)) return { ok: false, error: `置顶只认单元目录（容器根下一层）：${target}` }
           if (!isDirectory(target)) return { ok: false, error: `不是目录：${target}` }
-          const before = this.current()
-          this.pinnedPath = target
           this.log.info(`置顶 ${path.basename(target)}`)
-          this.announceIfChanged(before)
           // registry.run 会 await 这个 promise，落盘的成败进回执
-          return this.persistPinned().then(() => ({ ok: true, data: { path: target } }))
+          return this.setPinned(addPinned(this.pinnedPaths, target)).then(() => ({ ok: true, data: { paths: this.pinned() } }))
         }),
     )
 
     register(
       {
         name: 'unit-folder.unpin',
-        description: '取消置顶',
-        usage: 'data 文档 pinned 写成 { path: null }。没置顶时也回 ok。无参数',
+        description: '把一个单元从置顶里摘掉',
+        usage: '参数 { path: string }——要摘的单元目录，容器根内的绝对路径；不在置顶表里也回 ok。回 { paths }',
       },
-      () => {
-        const before = this.current()
-        this.pinnedPath = undefined
-        this.log.info('取消置顶')
-        this.announceIfChanged(before)
-        return this.persistPinned().then(() => ({ ok: true }))
-      },
+      (args) =>
+        this.withTarget(args, (_root, target) => {
+          this.log.info(`取消置顶 ${path.basename(target)}`)
+          return this.setPinned(removePinned(this.pinnedPaths, target)).then(() => ({ ok: true, data: { paths: this.pinned() } }))
+        }),
     )
   }
 }

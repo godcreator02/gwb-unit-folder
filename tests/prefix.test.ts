@@ -23,6 +23,13 @@ const PREFIX = 'unitfolder:'
 /** 模板串里的插值段——静态段之外的部分，不是字面量文本 */
 const INTERPOLATION = /\$\{[^{}]*\}/g
 
+/**
+ * 恰好也是工具类的词：`paused` 是单元状态的字面量（`status === 'paused'`），而 Tailwind 有
+ * `animation-play-state: paused` 这条。排掉整个 token 的代价是「真把它单独写成类名」这一种
+ * 漏报——实际写法里不会光秃秃出现
+ */
+const NOT_A_CLASS = new Set(['paused'])
+
 function tsxFiles(dir: string): string[] {
   const out: string[] = []
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -81,7 +88,7 @@ describe('忘加前缀的守卫', () => {
     for (const file of files) {
       for (const literal of literals(fs.readFileSync(file, 'utf8'))) {
         for (const token of literal.split(/\s+/)) {
-          if (token === '' || token.startsWith(PREFIX)) continue
+          if (token === '' || token.startsWith(PREFIX) || NOT_A_CLASS.has(token)) continue
           tokens.add(token)
         }
       }

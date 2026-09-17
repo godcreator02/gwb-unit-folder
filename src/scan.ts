@@ -15,13 +15,29 @@ import path from 'node:path'
 /** 出生证文件名（单元根下） */
 export const IDENTITY_FILE = 'unit.json'
 
-/** 出生证里那几项。`kind` 与 `purpose` 必给，另两项可有可无 */
+/** 单元的状态，固定三档：在做 / 搁着 / 退役 */
+export const UNIT_STATUSES = ['active', 'paused', 'retired'] as const
+export type UnitStatus = (typeof UNIT_STATUSES)[number]
+
+/** 出生证的六项，全部必给，多一项不认识的也不行 */
 export interface UnitIdentity {
+  /** 种类，一个中文短词（「插件仓」「论文」），树里按它分组 */
   kind: string
+  /** 短名，树里第一行 */
+  title: string
+  /** 这个单元是什么、为什么存在、跟谁什么关系——唯一的自述 */
   purpose: string
-  createdAt?: string
-  status?: string
+  status: UnitStatus
+  /** lucide 图标名，kebab-case（`folder-tree`）；界面认不出就画兜底 */
+  icon: string
+  /** 出生时刻，ISO 8601 带时区 */
+  createdAt: string
 }
+
+const IDENTITY_KEYS: readonly (keyof UnitIdentity)[] = ['kind', 'title', 'purpose', 'status', 'icon', 'createdAt']
+
+/** lucide 图标名的形状：小写字母数字，连字符分段 */
+const ICON_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 /**
  * 一个单元的身份读数，三档：
@@ -83,11 +99,42 @@ function isDirectory(target: string): boolean {
 }
 
 /**
+ * 验一份出生证的形状。读盘（`readIdentity`）与建单元（`unit-folder.create`）共用这一处，
+ * 字段表只有一份。
+ *
+ * **严格**：六项缺一、类型不对、多出不认识的字段，都回不出身份。多出的字段也拒，是因为
+ * 出生证是人与 agent 手写的，拼错一个键名（`tittle`）或留着旧写法，宽松读法会把它静默吞掉。
+ */
+export function validateIdentity(raw: unknown): { ok: true; identity: UnitIdentity } | { ok: false; reason: string } {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return { ok: false, reason: '顶层不是一个对象' }
+  const record = raw as Record<string, unknown>
+  const unknownKeys = Object.keys(record).filter((k) => !(IDENTITY_KEYS as readonly string[]).includes(k))
+  if (unknownKeys.length > 0) return { ok: false, reason: `有不认识的字段：${unknownKeys.join('、')}` }
+  for (const key of IDENTITY_KEYS) {
+    if (!isFilledString(record[key])) return { ok: false, reason: `缺 ${key}，或它不是非空字符串` }
+  }
+  const status = record.status as string
+  if (!(UNIT_STATUSES as readonly string[]).includes(status)) {
+    return { ok: false, reason: `status 只认 ${UNIT_STATUSES.join(' / ')}，给的是 ${status}` }
+  }
+  const icon = record.icon as string
+  if (!ICON_NAME.test(icon)) return { ok: false, reason: `icon 要写 lucide 的 kebab-case 名（如 folder-tree），给的是 ${icon}` }
+  return {
+    ok: true,
+    identity: {
+      kind: record.kind as string,
+      title: record.title as string,
+      purpose: record.purpose as string,
+      status: status as UnitStatus,
+      icon,
+      createdAt: record.createdAt as string,
+    },
+  }
+}
+
+/**
  * 读一个单元根下的出生证。**任何失败都收敛成一档读数，不抛**——调用方是一张清单，
  * 它要的是「这一行显示什么」，一个坏文件不该让整张表崩掉。
- *
- * 文件是人可以手编辑的外部输入，所以形状要验：`kind` 与 `purpose` 缺一或为空都算读
- * 不出来。清单靠这两项显示，空着等于没身份却伪装成有。
  */
 export function readIdentity(unitDir: string): UnitIdentityRead {
   let raw: string
@@ -103,22 +150,8 @@ export function readIdentity(unitDir: string): UnitIdentityRead {
   } catch (error) {
     return { status: 'unreadable', reason: `不是合法 JSON：${describe(error)}` }
   }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    return { status: 'unreadable', reason: '顶层不是一个对象' }
-  }
-  const record = parsed as Record<string, unknown>
-  if (!isFilledString(record.kind)) return { status: 'unreadable', reason: '缺 kind，或它不是非空字符串' }
-  if (!isFilledString(record.purpose)) return { status: 'unreadable', reason: '缺 purpose，或它不是非空字符串' }
-  const identity: UnitIdentity = { kind: record.kind, purpose: record.purpose }
-  if (record.createdAt !== undefined) {
-    if (!isFilledString(record.createdAt)) return { status: 'unreadable', reason: 'createdAt 给了但不是非空字符串' }
-    identity.createdAt = record.createdAt
-  }
-  if (record.status !== undefined) {
-    if (!isFilledString(record.status)) return { status: 'unreadable', reason: 'status 给了但不是非空字符串' }
-    identity.status = record.status
-  }
-  return { status: 'claimed', identity }
+  const checked = validateIdentity(parsed)
+  return checked.ok ? { status: 'claimed', identity: checked.identity } : { status: 'unreadable', reason: checked.reason }
 }
 
 /**

@@ -82,9 +82,10 @@ describe.skipIf(!built)('产物', () => {
     expect(bare).toEqual([])
   })
 
-  it('node 半：九条命令一个不少——命令名是总线上的公共面，改名就是破约', () => {
+  it('node 半：十条命令一个不少——命令名是总线上的公共面，改名就是破约', () => {
     const host = read('index.js')
     for (const command of [
+      'unit-folder.create',
       'unit-folder.list',
       'unit-folder.listDir',
       'unit-folder.readFile',
@@ -129,11 +130,12 @@ describe.skipIf(!built)('产物', () => {
     expect(read('style.css')).not.toContain('data-gwb-plugin')
   })
 
-  it('图标块三态与选中高亮带进了表，而且带前缀——它们是 styles.css 里的 @utility', () => {
-    const css = read('style.css')
-    for (const cls of ['uico-live', 'uico-dead', 'uico-unknown', 'urow-active']) {
-      expect(css).toContain(`.unitfolder\\:${cls}`)
-    }
+  it('选中高亮带进了表，而且带前缀——它是 styles.css 里的 @utility', () => {
+    expect(read('style.css')).toContain('.unitfolder\\:urow-active')
+  })
+
+  it('两行 purpose 的 line-clamp-2 进了表', () => {
+    expect(read('style.css')).toContain('.unitfolder\\:line-clamp-2')
   })
 
   it('radix 打进了本束——外置成裸名就是运行期一句 Failed to resolve', () => {

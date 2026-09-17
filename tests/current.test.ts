@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { findPinned, isUnitDir, parsePinnedDoc, resolveCurrent, samePath, selectionFor, type UnitSelection } from '../src/current.js'
+import { addPinned, findPinned, isUnitDir, parsePinnedDoc, removePinned, resolveCurrent, samePath, selectionFor, type UnitSelection } from '../src/current.js'
 import type { UnitEntry } from '../src/scan.js'
 
 /**
@@ -59,14 +59,35 @@ describe('isUnitDir：置顶只认容器根下一层', () => {
 })
 
 describe('parsePinnedDoc：盘上那份是人手改得到的 JSON', () => {
-  it('{ path: 非空字符串 } 才算置顶', () => {
-    expect(parsePinnedDoc({ path: unit })).toBe(unit)
+  const other = path.join(root, '26090811jjr')
+
+  it('{ paths: [...] } 按原顺序读出', () => {
+    expect(parsePinnedDoc({ paths: [unit, other] })).toEqual([unit, other])
   })
 
-  it('取消置顶写的 { path: null }、缺字段、空串、不是对象，一律当没置顶', () => {
-    for (const raw of [{ path: null }, {}, { path: '' }, { path: '  ' }, { path: 42 }, null, undefined, 'x', [], 7]) {
-      expect(parsePinnedDoc(raw), JSON.stringify(raw)).toBeUndefined()
+  it('不是数组、缺字段、不是对象，一律当没置顶；旧形态 { path } 同样不认', () => {
+    for (const raw of [{ path: unit }, {}, { paths: unit }, { paths: null }, null, undefined, 'x', [], 7]) {
+      expect(parsePinnedDoc(raw), JSON.stringify(raw)).toEqual([])
     }
+  })
+
+  it('数组里空串与非字符串扔掉，重复的只留第一次', () => {
+    expect(parsePinnedDoc({ paths: ['', '  ', 42, unit, other, unit] })).toEqual([unit, other])
+  })
+})
+
+describe('addPinned / removePinned：置顶表按先后', () => {
+  const a = path.join(root, 'a')
+  const b = path.join(root, 'b')
+
+  it('追加到末尾；已经在的不挪位置、不重复', () => {
+    expect(addPinned([a], b)).toEqual([a, b])
+    expect(addPinned([a, b], a)).toEqual([a, b])
+  })
+
+  it('摘掉一个，不在表里原样回', () => {
+    expect(removePinned([a, b], a)).toEqual([b])
+    expect(removePinned([a], b)).toEqual([a])
   })
 })
 
@@ -75,37 +96,39 @@ describe('resolveCurrent：current() 的回落规则', () => {
   const other = path.join(root, '26090811jjr')
 
   it('点过就是最近那一次，置顶不插手', () => {
-    expect(resolveCurrent(clicked, other)).toBe(clicked)
-    expect(resolveCurrent(clicked, undefined)).toBe(clicked)
+    expect(resolveCurrent(clicked, [other])).toBe(clicked)
+    expect(resolveCurrent(clicked, [])).toBe(clicked)
   })
 
-  it('没点过回落到置顶：三个字段都指向单元目录本身', () => {
-    expect(resolveCurrent(undefined, other)).toEqual<UnitSelection>({ unitPath: other, unitName: '26090811jjr', path: other })
+  it('没点过回落到第一个置顶：三个字段都指向单元目录本身', () => {
+    expect(resolveCurrent(undefined, [other, unit])).toEqual<UnitSelection>({ unitPath: other, unitName: '26090811jjr', path: other })
   })
 
   it('都没有就是 undefined', () => {
-    expect(resolveCurrent(undefined, undefined)).toBeUndefined()
+    expect(resolveCurrent(undefined, [])).toBeUndefined()
   })
 })
 
-describe('findPinned：清单里置顶的那条', () => {
+describe('findPinned：清单里置顶的那几条', () => {
   const inventory = {
     byKind: [{ kind: '插件工位', units: [entry('26090811jjr')] }],
     unidentified: [entry('26090520ntn')],
   }
 
-  it('认领过的与未认领的都找得到', () => {
-    expect(findPinned(inventory, path.join(root, '26090811jjr'))?.name).toBe('26090811jjr')
-    expect(findPinned(inventory, unit)?.name).toBe('26090520ntn')
+  it('认领过的与未认领的都找得到，按置顶先后', () => {
+    const found = findPinned(inventory, [unit, path.join(root, '26090811jjr')])
+    expect(found.entries.map((e) => e.name)).toEqual(['26090520ntn', '26090811jjr'])
+    expect(found.gone).toEqual([])
   })
 
-  it('没置顶、或置顶指的单元不在清单里（换了根、目录删了），回 null 不报错', () => {
-    expect(findPinned(inventory, undefined)).toBeNull()
-    expect(findPinned(inventory, path.join(root, 'gone'))).toBeNull()
+  it('置顶指的单元不在清单里（换了根、目录删了），落进 gone 交给调用方摘掉', () => {
+    const gone = path.join(root, 'gone')
+    expect(findPinned(inventory, [gone, unit])).toEqual({ entries: [entry('26090520ntn')], gone: [gone] })
+    expect(findPinned(inventory, [])).toEqual({ entries: [], gone: [] })
   })
 
   it.runIf(process.platform === 'win32')('Windows 下盘符大小写不算差异——置顶那条是参数解出来的，清单那条是扫出来的', () => {
     expect(samePath(unit, unit.replace(/^D:/, 'd:'))).toBe(true)
-    expect(findPinned(inventory, unit.replace(/^D:/, 'd:'))?.name).toBe('26090520ntn')
+    expect(findPinned(inventory, [unit.replace(/^D:/, 'd:')]).entries.map((e) => e.name)).toEqual(['26090520ntn'])
   })
 })

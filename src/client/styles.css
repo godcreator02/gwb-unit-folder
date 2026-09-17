@@ -15,26 +15,9 @@
 @source "./";
 
 /*
- * 本件自己的类一律写成 `@utility`，跟工具类一样带前缀（`unitfolder:uico-live`）。写成裸的
- * `.uico-live` 就出了围栏，全页谁叫这个名字都会被染上。
- *
- * 单元图标块的三态配色：**蓝色不在共享令牌表里**，定稿效果图里那个单元图标蓝先在本件住着；
- * 哪天 gwb-tokens 收了蓝，把这三条搬过去、这边删掉。
+ * 本件自己的类一律写成 `@utility`，跟工具类一样带前缀（`unitfolder:urow-active`）。写成裸的
+ * `.urow-active` 就出了围栏，全页谁叫这个名字都会被染上。
  */
-@utility uico-live {
-  color: oklch(0.746 0.16 255);
-  border-color: oklch(0.623 0.214 259.815 / 45%);
-  background-color: oklch(0.623 0.214 259.815 / 9%);
-}
-@utility uico-dead {
-  color: oklch(0.705 0.015 286.067 / 55%);
-  border-color: oklch(1 0 0 / 10%);
-}
-@utility uico-unknown {
-  color: var(--muted-foreground);
-  border-style: dashed;
-  border-color: oklch(1 0 0 / 18%);
-}
 
 /* 展开选中那一行的高亮带（照 DSH 单元树的选中态） */
 @utility urow-active {

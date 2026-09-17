@@ -2,19 +2,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type * as React from 'react'
 import { createRoot } from 'react-dom/client'
 import {
-  ArchiveIcon,
   ArrowUpRightIcon,
+  CheckIcon,
   ChevronRightIcon,
   ChevronsDownUpIcon,
   CodeXmlIcon,
+  CopyIcon,
   FileIcon,
   FolderIcon,
   FolderOpenIcon,
+  FolderXIcon,
   PinIcon,
   PinOffIcon,
   RefreshCwIcon,
   SearchIcon,
   WrapTextIcon,
+  icons,
+  type LucideIcon,
 } from 'lucide-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -32,14 +36,25 @@ import { IconButton } from '@/components/ui/icon-button'
 import { ToolbarButtons } from './toolbar-buttons.js'
 import { FILE_SELECTED, VIEWER_PANE, lastSelection, noteViewerFocus, openDuplicated, pickPayload, releaseViewerFocus, routeToFocused, viewerMounted, type SelectionPayload } from './selection.js'
 import type { HostBridge, PaneArgs, ShellBridge } from './types.js'
+import {
+  DEFAULT_STATUSES,
+  STATUS_LABEL,
+  UNIT_STATUSES,
+  filterGroups,
+  kindsOf,
+  lucideKey,
+  toggled,
+  type UnitEntry,
+  type UnitInventory,
+  type UnitStatus,
+} from './units.js'
 
 /**
  * 单元文件夹的浏览器半，**两格**（node 半 registerPane 的 main / viewer）：
  *
- * * **树格**（`main`）照 DSH 单元树的版式重做（定稿效果图在旧仓
- *   26090620ufd/gwb-plugin-unit-folder/design/units-pane.html）：单元两行条目配一枚
- *   图标块、种类吸顶可折叠分组、「已废」收进组末一行淡链接、筛选框、一键折叠三步；
- *   单元展开出文件树
+ * * **树格**（`main`）：单元条目是出生证里的 lucide 图标 + title + 两行 purpose；种类吸顶
+ *   可折叠分组；筛选框加状态与种类两排过滤标签（默认藏起退役的）；置顶块可放多个；
+ *   一键折叠三步；单元展开出文件树
  * * **原文格**（`viewer`）：行号、折行开关、点路径复制
  *
  * 两格靠 `shell.bus` 说话——树里**单击**一个文件，内容进「焦点原文格」（最后一次鼠标
@@ -49,7 +64,7 @@ import type { HostBridge, PaneArgs, ShellBridge } from './types.js'
  * 原文格**不跟随状态**：接力棒只住内存，重启之后原文格是空的，等第一次单击
  * （见 selection.ts）。
  *
- * 数据命令全在宿主半现扫现读：`unit-folder.list`（容器清单，带 data 里置顶的那条）、
+ * 数据命令全在宿主半现扫现读：`unit-folder.list`（容器清单，带 data 里置顶的那几条）、
  * `listDir`（单元内一层）、`readFile`（单文件原文）、`open`（资源管理器）。
  *
  * **选中往外报**：点单元行、点单元内目录，除了展开之外还 fire-and-forget 一条
@@ -61,33 +76,6 @@ import type { HostBridge, PaneArgs, ShellBridge } from './types.js'
  */
 
 // ── 数据形状（与宿主半的回包对应） ──────────────────────────────────────────────
-
-interface UnitIdentity {
-  kind: string
-  purpose: string
-  createdAt?: string
-  status?: string
-}
-
-type IdentityRead =
-  | { status: 'unclaimed' }
-  | { status: 'unreadable'; reason: string }
-  | { status: 'claimed'; identity: UnitIdentity }
-
-interface UnitEntry {
-  name: string
-  path: string
-  identity: IdentityRead
-}
-
-interface UnitInventory {
-  container?: string
-  rootExists?: boolean
-  byKind?: Array<{ kind: string; units: UnitEntry[] }>
-  unidentified?: UnitEntry[]
-  /** data 里置顶的那条（「当前会话」置顶块的数据源）；没置顶或不在清单里是 null */
-  pinned?: UnitEntry | null
-}
 
 interface BrowseEntry {
   name: string
@@ -123,77 +111,44 @@ interface Reply<T> {
   code?: string
 }
 
-// ── 纯逻辑 ────────────────────────────────────────────────────────────────────
+// ── 单元行的面孔 ──────────────────────────────────────────────────────────────
 
-/** 短名最长几个字——purpose 切出来的头不能把第一行顶满 */
-const HEAD_LIMIT = 28
+/** 出生证 icon 认不出的名字画这枚；没出生证与读不出各有一枚，一眼分得出「要去补证」 */
+const FALLBACK_ICON = FolderIcon
 
-/** 新根的退役写法：purpose 打了这个前缀视同 status: '已废'（两种写法并存是现状） */
-const RETIRED_PREFIX = '【已退役】'
-
-/**
- * 把 purpose 那句话切成「短名 + 其余」：在 ：——，— 等分隔符里找最早一处，切开后
- * 头当短句用。**半角 `:` 不在列**——Windows 盘符（D:\unitfolders）会把它拦腰切断。
- */
-function splitPurpose(purpose: string): { head: string; tail: string } {
-  const seps = ['：', '——', '，', '—', ' - ', ',']
-  let at = -1
-  let sepLength = 0
-  for (const sep of seps) {
-    const index = purpose.indexOf(sep)
-    if (index > 0 && (at === -1 || index < at)) {
-      at = index
-      sepLength = sep.length
-    }
-  }
-  const head = at > 0 ? purpose.slice(0, at).trim() : purpose.trim()
-  const tail = at > 0 ? purpose.slice(at + sepLength).trim() : ''
-  return { head, tail }
+function iconOf(name: string): LucideIcon {
+  return (icons as Record<string, LucideIcon | undefined>)[lucideKey(name)] ?? FALLBACK_ICON
 }
 
-/** 第二行那句：短名放得下就摆其余的部分，放不下就整句交给 CSS 截断 */
-function subtitleOf(purpose: string): string {
-  const { head, tail } = splitPurpose(purpose)
-  if (head.length > HEAD_LIMIT) return purpose
-  return tail === '' ? head : tail
-}
-
-function isRetiredIdentity(identity: UnitIdentity): boolean {
-  return identity.status === '已废' || identity.purpose.startsWith(RETIRED_PREFIX)
-}
-
-function isRetired(unit: UnitEntry): boolean {
-  return unit.identity.status === 'claimed' && isRetiredIdentity(unit.identity.identity)
-}
-
-/** 一个单元的面孔：两行文案、悬停说明、图标块的三态。已废与无证是树里的一等公民待遇差异 */
+/** 一个单元的面孔：图标、两行文案、悬停说明、状态 */
 function unitFaceOf(unit: UnitEntry): {
+  Icon: LucideIcon
   head: string
   subtitle: string
   title: string
-  dim: boolean
-  tone: 'live' | 'dead' | 'unknown'
+  status: UnitStatus | null
+  /** 读不出的出生证：第二行用错误色 */
+  broken: boolean
 } {
   if (unit.identity.status === 'claimed') {
     const identity = unit.identity.identity
-    const retired = isRetiredIdentity(identity)
-    // 【已退役】前缀是账面上的记号，不是内容——展示时剥掉
-    const display = retired ? identity.purpose.slice(RETIRED_PREFIX.length) : identity.purpose
     return {
-      head: splitPurpose(display).head,
-      subtitle: subtitleOf(display),
-      title: `${identity.purpose}\n${unit.name}  ·  ${unit.path}`,
-      dim: retired,
-      tone: retired ? 'dead' : 'live',
+      Icon: iconOf(identity.icon),
+      head: identity.title,
+      subtitle: identity.purpose,
+      title: `${identity.title}（${identity.kind} · ${STATUS_LABEL[identity.status]}）\n${identity.purpose}\n\n${unit.name}  ·  ${unit.path}`,
+      status: identity.status,
+      broken: false,
     }
   }
-  const reason = unit.identity.status === 'unreadable' ? `出生证读不出：${unit.identity.reason}` : '（无出生证）'
+  const unreadable = unit.identity.status === 'unreadable'
   return {
+    Icon: unreadable ? FolderXIcon : FolderIcon,
     head: unit.name,
-    subtitle: reason,
-    title: `${unit.name}  ·  ${unit.path}${unit.identity.status === 'unreadable' ? `\n${unit.identity.reason}` : ''}`,
-    dim: false,
-    tone: 'unknown',
+    subtitle: unit.identity.status === 'unreadable' ? `出生证读不出：${unit.identity.reason}` : '没有出生证 unit.json',
+    title: `${unit.name}  ·  ${unit.path}`,
+    status: null,
+    broken: unreadable,
   }
 }
 
@@ -477,8 +432,10 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
   const [listings, setListings] = useState<Map<string, ListingState>>(() => new Map())
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [collapsedKinds, setCollapsedKinds] = useState<Set<string>>(() => new Set())
-  const [openRetired, setOpenRetired] = useState<Set<string>>(() => new Set())
   const [query, setQuery] = useState('')
+  /** 过滤只住内存：关掉窗格再开回到默认（退役的藏起来、种类不限） */
+  const [statuses, setStatuses] = useState<ReadonlySet<UnitStatus>>(DEFAULT_STATUSES)
+  const [kinds, setKinds] = useState<ReadonlySet<string>>(() => new Set())
   const [selected, setSelected] = useState<{ path: string; name: string } | null>(null)
   /** 「选中」的那个单元（蓝底高亮带的落点）：点谁谁选中并展开，再点一下收起并取消 */
   const [activeUnit, setActiveUnit] = useState<string | null>(null)
@@ -576,17 +533,15 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
 
   /** 一键折叠三步（DSH 的分寸）：有展开的先全收；然后收组；最后全开 */
   const collapseStep = useCallback(() => {
-    if (inventory.status !== 'loaded') return
-    if (expanded.size > 0 || openRetired.size > 0) {
+    if (data === null) return
+    if (expanded.size > 0) {
       setExpanded(new Set())
-      setOpenRetired(new Set())
       return
     }
-    const kindKeys = [...(data?.byKind ?? []).map((g) => g.kind)]
-    if ((data?.unidentified ?? []).length > 0) kindKeys.push('__unidentified')
+    const kindKeys = kindsOf(data).map((k) => k.key)
     const allCollapsed = kindKeys.every((key) => collapsedKinds.has(key))
     setCollapsedKinds(allCollapsed ? new Set() : new Set(kindKeys))
-  }, [inventory.status, expanded, openRetired, collapsedKinds, data])
+  }, [expanded, collapsedKinds, data])
 
   const openInExplorer = useCallback(
     (path: string) => {
@@ -605,7 +560,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
   /** 置顶 / 取消置顶，落在宿主半的 data 里；成不成都重取清单，置顶块跟着盘上那份走 */
   const togglePin = useCallback(
     (path: string, pinnedNow: boolean) => {
-      const call = pinnedNow ? host.call('unit-folder.unpin') : host.call('unit-folder.pin', { path })
+      const call = host.call(pinnedNow ? 'unit-folder.unpin' : 'unit-folder.pin', { path })
       call.then(
         (res) => {
           const reply = res as Reply<unknown>
@@ -644,52 +599,37 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
     [shell, containerRoot],
   )
 
+  /** 文字筛选时分组全部摊开——收着找东西等于把结果藏起来 */
   const filtered = query.trim() !== ''
 
-  const groups = useMemo(() => {
-    if (data === null) return []
-    const q = query.trim().toLowerCase()
-    const kindGroups = (data.byKind ?? []).map((g) => ({ kindKey: g.kind, label: g.kind, units: g.units }))
-    if ((data.unidentified ?? []).length > 0) {
-      kindGroups.push({ kindKey: '__unidentified', label: '未认领', units: data.unidentified ?? [] })
-    }
-    return kindGroups
-      .map((g) => {
-        const live = g.units.filter((u) => !isRetired(u))
-        const retired = g.units.filter(isRetired)
-        const pick = (units: UnitEntry[]): UnitEntry[] =>
-          q === ''
-            ? units
-            : units.filter((u) => {
-                if (u.name.toLowerCase().includes(q)) return true
-                const face = unitFaceOf(u)
-                return face.head.toLowerCase().includes(q) || face.title.toLowerCase().includes(q)
-              })
-        return { kindKey: g.kindKey, label: g.label, live: pick(live), retired: pick(retired) }
-      })
-      .filter((g) => g.live.length > 0 || g.retired.length > 0)
-  }, [data, query])
+  const groups = useMemo(
+    () => (data === null ? [] : filterGroups(data, { statuses, kinds, query })),
+    [data, statuses, kinds, query],
+  )
 
-  const total = groups.reduce((n, g) => n + g.live.length + g.retired.length, 0)
+  const total = groups.reduce((n, g) => n + g.units.length, 0)
 
-  const renderUnitRow = (unit: UnitEntry): React.ReactNode => {
+  const pinnedPaths = useMemo(() => new Set((data?.pinned ?? []).map((u) => u.path)), [data])
+
+  const renderUnitRow = (unit: UnitEntry, keyPrefix = ''): React.ReactNode => {
     const face = unitFaceOf(unit)
     const open = expanded.has(unit.path)
     const active = activeUnit === unit.path
-    const pinnedHere = data?.pinned !== undefined && data.pinned !== null && data.pinned.path === unit.path
+    const pinnedHere = pinnedPaths.has(unit.path)
+    const retired = face.status === 'retired'
+    const quiet = face.status === 'paused' || retired
     return (
-      <div key={unit.path}>
+      <div key={`${keyPrefix}${unit.path}`}>
         <div
           className={cn(
-            'unitfolder:flex unitfolder:min-w-0 unitfolder:items-center unitfolder:gap-2.5 unitfolder:rounded-md unitfolder:py-1.5 unitfolder:pl-2 unitfolder:pr-2 unitfolder:hover:bg-accent/40',
-            face.dim && 'unitfolder:text-muted-foreground',
+            'unitfolder:flex unitfolder:min-w-0 unitfolder:items-start unitfolder:gap-2.5 unitfolder:rounded-md unitfolder:py-1.5 unitfolder:pl-2 unitfolder:pr-1 unitfolder:hover:bg-accent/40',
             active && open && 'unitfolder:urow-active',
           )}
         >
           <button
             type="button"
             title={face.title}
-            className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2.5 unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left"
+            className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:items-start unitfolder:gap-2.5 unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left unitfolder:text-foreground"
             onClick={() => {
               if (active) {
                 // 再点一下选中的那行：收起并取消选中
@@ -703,26 +643,45 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
               select(unit.path)
             }}
           >
-            <span
+            {/* 图标对齐第一行文字：行高 13px×1.5 ≈ 20px，16px 的图标下移 2px 居中 */}
+            <face.Icon
               className={cn(
-                'unitfolder:flex unitfolder:size-8 unitfolder:shrink-0 unitfolder:items-center unitfolder:justify-center unitfolder:rounded-lg unitfolder:border',
-                face.tone === 'live' && 'unitfolder:uico-live',
-                face.tone === 'dead' && 'unitfolder:uico-dead',
-                face.tone === 'unknown' && 'unitfolder:uico-unknown',
+                'unitfolder:mt-0.5 unitfolder:size-4 unitfolder:shrink-0',
+                quiet || face.status === null ? 'unitfolder:text-muted-foreground' : 'unitfolder:text-foreground',
+                face.broken && 'unitfolder:text-destructive',
               )}
-            >
-              <ArchiveIcon className="unitfolder:size-4" />
-            </span>
-            <span className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:flex-col unitfolder:gap-px">
-              <span className={cn('unitfolder:truncate unitfolder:text-[13px] unitfolder:font-medium', face.dim && 'unitfolder:line-through unitfolder:decoration-1')}>{face.head}</span>
-              <span className={cn('unitfolder:w-full unitfolder:truncate unitfolder:text-left unitfolder:text-xs', active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground')}>
+            />
+            <span className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:flex-col unitfolder:gap-0.5">
+              <span className="unitfolder:flex unitfolder:min-w-0 unitfolder:items-center unitfolder:gap-1.5">
+                <span
+                  className={cn(
+                    'unitfolder:truncate unitfolder:text-[13px] unitfolder:leading-normal unitfolder:font-medium',
+                    quiet && 'unitfolder:text-muted-foreground',
+                    retired && 'unitfolder:line-through unitfolder:decoration-1',
+                  )}
+                >
+                  {face.head}
+                </span>
+                {quiet && face.status !== null && (
+                  <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:rounded-sm unitfolder:border unitfolder:px-1 unitfolder:text-[10px] unitfolder:leading-4">
+                    {STATUS_LABEL[face.status]}
+                  </span>
+                )}
+              </span>
+              {/* purpose 摆两行，再长省略；全文在悬停说明里 */}
+              <span
+                className={cn(
+                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-relaxed unitfolder:break-words',
+                  face.broken ? 'unitfolder:text-destructive' : active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground',
+                )}
+              >
                 {face.subtitle}
               </span>
             </span>
           </button>
           {/* 置顶：人在树上点出来的、落 data——不是设置。置顶块里那条同样带这颗，点它就是取消 */}
           <IconButton
-            label={pinnedHere ? '取消置顶' : '置顶到「当前会话」'}
+            label={pinnedHere ? '取消置顶' : '置顶'}
             icon={
               pinnedHere ? (
                 <PinOffIcon className="unitfolder:size-3.5" />
@@ -749,7 +708,6 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
 
   const renderGroup = (group: (typeof groups)[number]): React.ReactNode => {
     const collapsed = !filtered && collapsedKinds.has(group.kindKey)
-    const retiredOpen = filtered || openRetired.has(group.kindKey)
     return (
       <div key={group.kindKey} className="unitfolder:mb-1">
         {/* 种类分组头：吸顶。筛选时全部摊开（收着找东西等于把结果藏起来） */}
@@ -769,51 +727,9 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
             <ChevronRightIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
           </span>
           <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-wider">{group.label}</span>
-          <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{group.live.length + group.retired.length}</span>
+          <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{group.units.length}</span>
         </div>
-        {!collapsed && (
-          <>
-            {group.live.map(renderUnitRow)}
-            {group.retired.length > 0 && (
-              <>
-                {!retiredOpen ? (
-                  <div
-                    className="unitfolder:text-muted-foreground/70 unitfolder:hover:text-muted-foreground unitfolder:hover:bg-accent/30 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:px-2 unitfolder:py-1 unitfolder:text-xs"
-                    onClick={() =>
-                      setOpenRetired((prev) => {
-                        const next = new Set(prev)
-                        next.add(group.kindKey)
-                        return next
-                      })
-                    }
-                  >
-                    <ChevronRightIcon className="unitfolder:size-3" />
-                    已废（{group.retired.length}）
-                  </div>
-                ) : (
-                  <>
-                    {!filtered && (
-                      <div
-                        className="unitfolder:text-muted-foreground/70 unitfolder:hover:text-muted-foreground unitfolder:hover:bg-accent/30 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:px-2 unitfolder:py-1 unitfolder:text-xs"
-                        onClick={() =>
-                          setOpenRetired((prev) => {
-                            const next = new Set(prev)
-                            next.delete(group.kindKey)
-                            return next
-                          })
-                        }
-                      >
-                        <ChevronRightIcon className="unitfolder:size-3 unitfolder:rotate-90" />
-                        已废（{group.retired.length}）
-                      </div>
-                    )}
-                    {group.retired.map(renderUnitRow)}
-                  </>
-                )}
-              </>
-            )}
-          </>
-        )}
+        {!collapsed && group.units.map((u) => renderUnitRow(u))}
       </div>
     )
   }
@@ -829,6 +745,11 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
         loading={inventory.status === 'loading'}
         query={query}
         onQuery={setQuery}
+        statuses={statuses}
+        onToggleStatus={(s) => setStatuses((prev) => toggled(prev, s))}
+        kindOptions={data === null ? [] : kindsOf(data)}
+        kinds={kinds}
+        onToggleKind={(k) => setKinds((prev) => toggled(prev, k))}
         onCollapse={collapseStep}
         onOpenRoot={openInExplorer}
         onRefresh={refresh}
@@ -842,21 +763,20 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
           边框裁掉；radix 的浮动条才会越界 */}
       <div className="unitfolder:min-h-0 unitfolder:flex-1 unitfolder:overflow-y-auto unitfolder:overflow-x-hidden">
         <div className="unitfolder:px-2 unitfolder:py-1">
-          {/* 「当前会话」置顶块：data 里置顶了单元才显（图钉点出来的）——
-              新线还没有会话概念，这个位先由置顶担着 */}
-          {data?.pinned !== undefined && data.pinned !== null && (
+          {/* 置顶块：图钉点出来的，按置顶先后，不受过滤影响——置顶就是「不管筛成什么样都要看得见」 */}
+          {(data?.pinned ?? []).length > 0 && (
             <div className="unitfolder:mx-1 unitfolder:mb-2.5 unitfolder:border-b unitfolder:pb-2">
               <div className="unitfolder:text-muted-foreground unitfolder:flex unitfolder:items-center unitfolder:gap-1.5 unitfolder:px-1.5 unitfolder:pb-1 unitfolder:pt-0.5 unitfolder:text-[11px] unitfolder:tracking-widest">
                 <PinIcon className="unitfolder:size-3" />
-                当前会话
+                置顶
               </div>
-              {renderUnitRow(data.pinned)}
+              {(data?.pinned ?? []).map((u) => renderUnitRow(u, 'pinned:'))}
             </div>
           )}
           {groups.map(renderGroup)}
           {inventory.status === 'loaded' && groups.length === 0 && (
             <p className="unitfolder:text-muted-foreground unitfolder:m-0 unitfolder:px-2 unitfolder:py-4 unitfolder:text-sm">
-              {filtered ? '没有筛中的单元。' : '容器根里还没有单元。'}
+              {kindsOf(data ?? {}).length === 0 ? '容器根里还没有单元。' : '没有筛中的单元。'}
             </p>
           )}
         </div>
@@ -922,7 +842,72 @@ function ViewerPane({
   )
 }
 
-/** 工具条：标题 + 总数、根路径、筛选框、一键折叠、VSCode 下拉、打开根、刷新、扩展按钮排；未配置与报错的两句话也归这层 */
+/** 过滤标签：开着是实底，关着是描边 */
+function FilterChip({ label, on, onToggle }: { label: string; on: boolean; onToggle(): void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onToggle}
+      className={cn(
+        'unitfolder:cursor-pointer unitfolder:rounded-full unitfolder:border unitfolder:px-2 unitfolder:py-0.5 unitfolder:text-[11px] unitfolder:leading-4',
+        on
+          ? 'unitfolder:border-transparent unitfolder:bg-secondary unitfolder:text-secondary-foreground'
+          : 'unitfolder:bg-transparent unitfolder:text-muted-foreground unitfolder:hover:text-foreground',
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+/**
+ * 对选中单元的一个目录做一件事的下拉：首项是单元文件夹本身，后面是它的第一级子目录（仓多半住
+ * 在那一层）。目录清单在下拉打开时现拉，复用树格的缓存；没选中单元时整颗灰掉。
+ *
+ * 这颗按钮不套 Tooltip——TooltipTrigger 与 DropdownMenuTrigger 两层 asChild 会互相覆盖事件，
+ * 菜单点不开；下拉里的标题就是说明
+ */
+function DirMenu({
+  label,
+  icon,
+  activeUnitPath,
+  activeDirs,
+  onEnsureDirs,
+  onPick,
+}: {
+  label: string
+  icon: React.ReactNode
+  activeUnitPath: string | null
+  activeDirs: BrowseEntry[] | null
+  onEnsureDirs(): void
+  onPick(path: string): void
+}) {
+  return (
+    <DropdownMenu onOpenChange={(open) => { if (open) onEnsureDirs() }}>
+      <DropdownMenuTrigger asChild disabled={activeUnitPath === null}>
+        <Button size="icon" className="unitfolder:size-7" variant="ghost" aria-label={label}>
+          {icon}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
+        <DropdownMenuLabel>{label}</DropdownMenuLabel>
+        {activeUnitPath !== null && <DropdownMenuItem onClick={() => onPick(activeUnitPath)}>单元文件夹</DropdownMenuItem>}
+        {activeDirs === null ? (
+          <DropdownMenuItem disabled>目录清单读取中…</DropdownMenuItem>
+        ) : (
+          activeDirs.map((d) => (
+            <DropdownMenuItem key={d.name} onClick={() => onPick(joinPath(activeUnitPath ?? '', d.name))}>
+              {d.name}
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+/** 工具条：标题 + 总数、根路径、筛选框、一键折叠、VSCode 与复制路径两个下拉、打开根、刷新、扩展按钮排、过滤标签；未配置与报错的两句话也归这层 */
 function PaneHeader({
   host,
   total,
@@ -932,6 +917,11 @@ function PaneHeader({
   loading,
   query,
   onQuery,
+  statuses,
+  onToggleStatus,
+  kindOptions,
+  kinds,
+  onToggleKind,
   onCollapse,
   onOpenRoot,
   onRefresh,
@@ -948,6 +938,11 @@ function PaneHeader({
   loading: boolean
   query: string
   onQuery(value: string): void
+  statuses: ReadonlySet<UnitStatus>
+  onToggleStatus(status: UnitStatus): void
+  kindOptions: Array<{ key: string; label: string }>
+  kinds: ReadonlySet<string>
+  onToggleKind(kind: string): void
   onCollapse(): void
   onOpenRoot(path: string): void
   onRefresh(): void
@@ -958,6 +953,18 @@ function PaneHeader({
   onEnsureDirs(): void
   onOpenInCode(path: string): void
 }) {
+  const [copied, setCopied] = useState(false)
+  const copyPath = useCallback((path: string) => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return
+    void navigator.clipboard.writeText(path).then(
+      () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
+      },
+      (err: unknown) => console.warn(`[gwb-unit-folder] 复制路径没成：${String(err)}`),
+    )
+  }, [])
+
   return (
     <div className="unitfolder:flex unitfolder:flex-none unitfolder:flex-col unitfolder:gap-2 unitfolder:px-3 unitfolder:py-2.5">
       <div className="unitfolder:flex unitfolder:flex-wrap unitfolder:items-center unitfolder:gap-2">
@@ -989,32 +996,22 @@ function PaneHeader({
           />
         </div>
         <IconButton label="一键折叠" icon={<ChevronsDownUpIcon className="unitfolder:size-4" />} onClick={onCollapse} />
-        {/* VSCode 新窗口打开：选中单元才可用。下拉首项是单元文件夹本身，
-            后面是它的第一级子目录（目录清单在下拉打开时现拉，复用树格的缓存）。
-            这颗按钮不套 Tooltip——TooltipTrigger 与 DropdownMenuTrigger 两层 asChild
-            会互相覆盖事件，菜单点不开；下拉里的标题就是说明 */}
-        <DropdownMenu onOpenChange={(open) => { if (open) onEnsureDirs() }}>
-          <DropdownMenuTrigger asChild disabled={activeUnitPath === null}>
-            <Button size="icon" className="unitfolder:size-7" variant="ghost">
-              <CodeXmlIcon className="unitfolder:size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
-            <DropdownMenuLabel>从 VSCode 新窗口打开</DropdownMenuLabel>
-            {activeUnitPath !== null && (
-              <DropdownMenuItem onClick={() => onOpenInCode(activeUnitPath)}>单元文件夹</DropdownMenuItem>
-            )}
-            {activeDirs === null ? (
-              <DropdownMenuItem disabled>目录清单读取中…</DropdownMenuItem>
-            ) : (
-              activeDirs.map((d) => (
-                <DropdownMenuItem key={d.name} onClick={() => onOpenInCode(joinPath(activeUnitPath ?? '', d.name))}>
-                  {d.name}
-                </DropdownMenuItem>
-              ))
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <DirMenu
+          label="从 VSCode 新窗口打开"
+          icon={<CodeXmlIcon className="unitfolder:size-4" />}
+          activeUnitPath={activeUnitPath}
+          activeDirs={activeDirs}
+          onEnsureDirs={onEnsureDirs}
+          onPick={onOpenInCode}
+        />
+        <DirMenu
+          label={copied ? '已复制' : '复制文件夹路径'}
+          icon={copied ? <CheckIcon className="unitfolder:size-4" /> : <CopyIcon className="unitfolder:size-4" />}
+          activeUnitPath={activeUnitPath}
+          activeDirs={activeDirs}
+          onEnsureDirs={onEnsureDirs}
+          onPick={copyPath}
+        />
         <IconButton
           label="在资源管理器打开容器根"
           icon={<ArrowUpRightIcon className="unitfolder:size-4" />}
@@ -1025,6 +1022,16 @@ function PaneHeader({
         {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
             亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
         <ToolbarButtons host={host} unitPath={activeUnitPath} />
+      </div>
+      {/* 过滤标签：状态三档 + 种类若干，都是多选。种类一个不选 = 不按种类筛 */}
+      <div className="unitfolder:flex unitfolder:flex-wrap unitfolder:items-center unitfolder:gap-1">
+        {UNIT_STATUSES.map((s) => (
+          <FilterChip key={s} label={STATUS_LABEL[s]} on={statuses.has(s)} onToggle={() => onToggleStatus(s)} />
+        ))}
+        {kindOptions.length > 0 && <span className="unitfolder:bg-border unitfolder:mx-1 unitfolder:h-4 unitfolder:w-px" />}
+        {kindOptions.map((k) => (
+          <FilterChip key={k.key} label={k.label} on={kinds.has(k.key)} onToggle={() => onToggleKind(k.key)} />
+        ))}
       </div>
       {error !== null &&
         (error.unconfigured ? (

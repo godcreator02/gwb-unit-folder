@@ -24,6 +24,11 @@ function unit(name: string, identity?: Record<string, unknown> | string): string
   return dir
 }
 
+/** 一份合格的出生证，六项齐全；`extra` 覆盖或追加字段 */
+function ident(kind: string, purpose: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+  return { kind, title: `${kind}的单元`, purpose, status: 'active', icon: 'folder', createdAt: '2026-09-04T12:00:00+08:00', ...extra }
+}
+
 beforeEach(() => {
   container = fs.mkdtempSync(path.join(os.tmpdir(), 'gwb-units-'))
 })
@@ -32,38 +37,47 @@ afterEach(() => {
 })
 
 describe('readIdentity：三档读数，任何失败都不抛', () => {
-  it('读得出的写全：kind / purpose 必给，createdAt 与 status 有就带上', () => {
-    const dir = unit('26090412vav', {
+  it('六项齐全才读得出，原样带出去', () => {
+    const body = {
       kind: '仓库',
+      title: 'god-workbench',
       purpose: 'god 工作台',
+      status: 'paused',
+      icon: 'book-open-2',
       createdAt: '2026-09-04T12:00:00.000+08:00',
-      status: '在役',
-    })
-    expect(readIdentity(dir)).toEqual({
-      status: 'claimed',
-      identity: {
-        kind: '仓库',
-        purpose: 'god 工作台',
-        createdAt: '2026-09-04T12:00:00.000+08:00',
-        status: '在役',
-      },
-    })
+    }
+    expect(readIdentity(unit('26090412vav', body))).toEqual({ status: 'claimed', identity: body })
+  })
+
+  it('status 三档都认', () => {
+    for (const status of ['active', 'paused', 'retired']) {
+      expect(readIdentity(unit(`s-${status}`, ident('仓库', '干点什么', { status }))).status, status).toBe('claimed')
+    }
   })
 
   it('没有出生证是 unclaimed——正常状态，不是故障', () => {
     expect(readIdentity(unit('26090412zzz'))).toEqual({ status: 'unclaimed' })
   })
 
-  it('坏 JSON、顶层不是对象、缺 kind / purpose，一律 unreadable 且说得出是哪一步坏的', () => {
+  it('坏 JSON、顶层不是对象、缺项、类型不对、值不在表里、多出字段，一律 unreadable 且说得出是哪一步坏的', () => {
+    const without = (key: string): Record<string, unknown> => {
+      const body = ident('仓库', '干点什么')
+      delete body[key]
+      return body
+    }
     const cases: [string, Record<string, unknown> | string, string][] = [
       ['半截 JSON', '{ 半截', 'JSON'],
       ['顶层是数组', '[1,2]', '对象'],
       ['顶层是 null', 'null', '对象'],
-      ['缺 kind', { purpose: '干点什么' }, 'kind'],
-      ['缺 purpose', { kind: '仓库' }, 'purpose'],
-      ['kind 是空白', { kind: '   ', purpose: '干点什么' }, 'kind'],
-      ['createdAt 类型不对', { kind: '仓库', purpose: '干点什么', createdAt: 1 }, 'createdAt'],
-      ['status 类型不对', { kind: '仓库', purpose: '干点什么', status: false }, 'status'],
+      ...['kind', 'title', 'purpose', 'status', 'icon', 'createdAt'].map(
+        (key): [string, Record<string, unknown>, string] => [`缺 ${key}`, without(key), key],
+      ),
+      ['kind 是空白', ident('   ', '干点什么'), 'kind'],
+      ['createdAt 类型不对', ident('仓库', '干点什么', { createdAt: 1 }), 'createdAt'],
+      ['status 不在三档里', ident('仓库', '干点什么', { status: '已废' }), 'status'],
+      ['icon 不是 kebab-case', ident('仓库', '干点什么', { icon: 'FolderTree' }), 'icon'],
+      ['旧写法 retired 字段', ident('仓库', '干点什么', { retired: true }), 'retired'],
+      ['拼错的键', ident('仓库', '干点什么', { tittle: 'x' }), 'tittle'],
     ]
     for (const [label, body, hint] of cases) {
       const read = readIdentity(unit(`坏-${label}`, body))
@@ -101,7 +115,7 @@ describe('scanContainer：只认目录、跳过 out、字典序', () => {
   })
 
   it('相对根照扫，条目路径就跟着是相对的——绝对化归调用方（插件的 resolveUnitsRoot）', () => {
-    unit('26090412vav', { kind: '仓库', purpose: 'god 工作台' })
+    unit('26090412vav', ident('仓库', 'god 工作台'))
     // 临时目录跟仓可能不在一个盘上（那时 path.relative 回的是绝对路径），所以先站到
     // 容器的上一层去，让「相对根」这件事在任何盘布局下都成立。cwd 用完立刻还回去
     const saved = process.cwd()
@@ -117,12 +131,12 @@ describe('scanContainer：只认目录、跳过 out、字典序', () => {
   })
 
   it('符号链接指过来的目录跟真目录一个待遇（根与单元两处都是）', () => {
-    unit('26090412vav', { kind: '仓库', purpose: 'god 工作台' })
+    unit('26090412vav', ident('仓库', 'god 工作台'))
     const realUnit = path.join(container, '26090601real')
     fs.mkdirSync(realUnit)
     fs.writeFileSync(
       path.join(realUnit, IDENTITY_FILE),
-      JSON.stringify({ kind: '入口', purpose: '链接过来的' }),
+      JSON.stringify(ident('入口', '链接过来的')),
       'utf8',
     )
     // 造链接要权限（Windows 无开发者模式时 EPERM），造不出来就跳过这条而不是假装通过
@@ -153,15 +167,15 @@ describe('scanContainer：只认目录、跳过 out、字典序', () => {
   })
 
   it('散落文件不进表，名叫 out 的目录也不进', () => {
-    unit('26090412vav', { kind: '仓库', purpose: 'god 工作台' })
+    unit('26090412vav', ident('仓库', 'god 工作台'))
     unit('out')
     fs.writeFileSync(path.join(container, '随手记.txt'), '不是单元', 'utf8')
     expect(entriesOf(scanContainer(container)).map((e) => e.name)).toEqual(['26090412vav'])
   })
 
   it('按目录名字典序，路径跟着根走', () => {
-    unit('26090520ntn', { kind: '入口', purpose: '总控台' })
-    unit('26090315xby', { kind: '仓库', purpose: '文档工位' })
+    unit('26090520ntn', ident('入口', '总控台'))
+    unit('26090315xby', ident('仓库', '文档工位'))
     fs.mkdirSync(path.join(container, '26090315xby', '子目录'), { recursive: true })
     const entries = entriesOf(scanContainer(container))
     expect(entries.map((e) => e.name)).toEqual(['26090315xby', '26090520ntn'])
@@ -177,9 +191,9 @@ function dataOf(outcome: ReturnType<typeof takeInventory>) {
 
 describe('takeInventory：分组形状就是界面吃的那一份', () => {
   it('按种类分组、组间字典序；没身份的单独一摞不混进种类里', () => {
-    unit('26090412vav', { kind: '仓库', purpose: 'god 工作台' })
-    unit('26090520ntn', { kind: '入口', purpose: '总控台' })
-    unit('26090601aaa', { kind: '仓库', purpose: '另一个仓' })
+    unit('26090412vav', ident('仓库', 'god 工作台'))
+    unit('26090520ntn', ident('入口', '总控台'))
+    unit('26090601aaa', ident('仓库', '另一个仓'))
     unit('26090602bbb')
     unit('26090603ccc', '{ 半截')
     const inv = dataOf(takeInventory(container))
@@ -191,13 +205,10 @@ describe('takeInventory：分组形状就是界面吃的那一份', () => {
     expect(inv.unidentified.map((u) => u.name)).toEqual(['26090602bbb', '26090603ccc'])
   })
 
-  it('已废那条照样进它的种类组，状态原样带出去（要不要显示归界面）', () => {
-    unit('26090412vav', { kind: '仓库', purpose: '退役的仓', status: '已废' })
+  it('退役那条照样进它的种类组，状态原样带出去（要不要显示归界面）', () => {
+    unit('26090412vav', ident('仓库', '退役的仓', { status: 'retired' }))
     const units = dataOf(takeInventory(container)).byKind[0]!.units
-    expect(units[0]!.identity).toEqual({
-      status: 'claimed',
-      identity: { kind: '仓库', purpose: '退役的仓', status: '已废' },
-    })
+    expect(units[0]!.identity).toEqual({ status: 'claimed', identity: ident('仓库', '退役的仓', { status: 'retired' }) })
   })
 
   it('容器根不存在：形状齐全、都是空的，rootExists 报 false（界面据此多一行灰字）', () => {
