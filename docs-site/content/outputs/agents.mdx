@@ -28,10 +28,12 @@ description: 仓根 AGENTS.md 由这一页摆出去——每次会话都得知�
 pnpm check      # typecheck + lint + 纯逻辑测试
 pnpm build      # tsc（node 半）+ esbuild（浏览器半）+ tailwindcss（样式表，类名前缀 unitfolder）
 pnpm test:all   # 全量测试（含产物守卫，要先 build）
-pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcreator/npm/ --no-git-checks   # 先抬版本号
 ```
 
-装进 home：`plugins.install {"pkg":"@godcreator/gwb-unit-folder"}`，或进 home `pnpm add` +
+发正式版：先抬 `package.json` 版本号并提交，再经工作台 `devkit.release {"dir":"<仓根>"}`。手工兜底是
+`pnpm publish --no-git-checks`——不手写 `--registry`，`@godcreator` 的 scope 路由住用户级配置。
+
+装进 home：`plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`，或进 home `pnpm add` +
 `cordis.yml` 条目 `id: unit-folder`（没有 `config`），再到设置面填 `units-root`。
 实机验证照 `gwb-devkit` 手册走隔离 home，别拿 default 试；发完版就去升 default home。
 
@@ -40,7 +42,7 @@ pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcrea
 文档站在 `docs-site/`，docfirst 六区（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈）：
 `cd docs-site && pnpm exec docfirst check`，dev 口 4319。现状论断钉在源码上（钉码只在 docs 区），
 被钉的代码动了就 `docfirst confirm` 认新行或改论断。仓根 `README.md` 与这份 `AGENTS.md`
-都是生成物，正本在 `content/outputs/`，改正本后 `pnpm exec docfirst render --target ai` 重摆，
+都是生成物，正本在 `content/outputs/`，改正本后 `pnpm exec docfirst render` 重摆，
 一起提交，别手改生成物。
 
 实验与测量的材料落仓根 `probes/<时间戳>_<目的>/`：一次实验一个目录、自包含、进 git、不进 pnpm

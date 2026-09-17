@@ -15,7 +15,7 @@ description: 仓根 README.md 由这一页摆出去——改这里，跑 docfirs
 
 ## 装
 
-正路是经工作台 `plugins.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动路：
+正路是经工作台 `plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动路：
 
 ```powershell
 cd $env:APPDATA\gwb-kernel\homes\<home 名>
@@ -76,8 +76,10 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 pnpm check        # typecheck + lint + 纯逻辑测试
 pnpm build        # tsc（node 半）+ esbuild（浏览器半）+ tailwindcss（样式表，类名前缀 unitfolder）
 pnpm test:all     # 全量测试（含产物守卫，要先 build）
-pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcreator/npm/ --no-git-checks   # 先抬版本号
 ```
+
+发正式版：先抬 `package.json` 版本号并提交，再经工作台 `devkit.release {"dir":"<仓根>"}`。手工兜底是
+`pnpm publish --no-git-checks`——不手写 `--registry`，`@godcreator` 的 scope 路由住用户级配置。
 
 实机验证按 devkit 手册（skill `gwb-devkit`）：开隔离 home、装包、给 `units-root`、看日志与命令回执。
 
@@ -94,4 +96,4 @@ pnpm publish --registry https://git.tianshen02.online:28377/api/packages/godcrea
 - `docs-site/` —— fumadocs 站 + docfirst 六区（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈）
 
 这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`；仓根 `AGENTS.md` 同理出自
-`agents.mdx`。改完正本在 `docs-site` 跑 `pnpm docfirst render --target ai` 重摆，一起提交。
+`agents.mdx`。改完正本在 `docs-site` 跑 `pnpm exec docfirst render` 重摆，一起提交。

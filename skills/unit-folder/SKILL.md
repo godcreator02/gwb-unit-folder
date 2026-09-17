@@ -125,7 +125,7 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 
 ## 装法（gwb-kernel 新线）
 
-正路是 `plugins.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动路：
+正路是 `plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动路：
 
 ```powershell
 cd $env:APPDATA\gwb-kernel\homes\<home 名>
