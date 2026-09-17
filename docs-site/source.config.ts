@@ -10,7 +10,7 @@
  *   spec        交接：在途 spec 与实施方案，做完拆解归梁删页
  *   future      未来：愿景 + not-doing + roadmap，常改
  *   outputs     生成正本：readme、agents，render 摆到仓根；进 check
- *   feedback    反馈：只有 hatch（本仓反复做的操作候选）——跨仓反馈集中投总控台，不落站里
+ *   feedback    反馈：inbox（别的仓投来的，处理完删）+ hatch（本仓反复做的操作候选）
  * 只有 docs 与 outputs 开 processed markdown——命令行按名字找集合只对进 check 的两区有意义
  * （集合名 = 文档目录的最后一截）。集合定义在这里而不是 src/lib/source.ts 里，
  * 是为了让命令行也能按名字找到它：fumadocs 的 Node loader 只认 source.config 里的集合。
