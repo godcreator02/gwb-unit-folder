@@ -45,12 +45,12 @@
   "//peerRange": "写 >= 不写 ^：caret 在 0.0.x 上锁死 patch（^0.0.1 只匹配 0.0.1），共享包一升版消费方就不匹配了",
   "//components": "radix / cva / cn 是 shadcn 组件的运行时依赖，但**打进本束**——它们不在 importmap 里，外置成裸名就是运行期炸，所以按判据算 dev。tailwindcss / @tailwindcss/cli 是构建输入；@tailwindcss/node 给 tests/prefix.test.ts 在不带前缀的输入下试编；tw-animate-css 给 animate-in 一族",
   "peerDependencies": {
-    "@godcreator/gwb-commands": ">=0.1.0",
-    "@godcreator/gwb-plugin-api": ">=0.1.0",
-    "@godcreator/gwb-shared-react": ">=0.0.2",
-    "@godcreator/gwb-shell": ">=0.1.0",
-    "@godcreator/gwb-skills": ">=0.1.0",
-    "@godcreator/gwb-tokens": ">=0.0.2",
+    "@godcreator/gwb-commands": ">=0.4.1",
+    "@godcreator/gwb-plugin-api": ">=0.1.1",
+    "@godcreator/gwb-shared-react": ">=0.0.4",
+    "@godcreator/gwb-shell": ">=0.7.2",
+    "@godcreator/gwb-skills": ">=0.4.0",
+    "@godcreator/gwb-tokens": ">=0.1.3",
     "cordis": "^4.0.0-rc.9"
   },
   "peerDependenciesMeta": {
@@ -59,15 +59,15 @@
     }
   },
   "devDependencies": {
-    "@godcreator/gwb-commands": "0.4.0",
+    "@godcreator/gwb-commands": "0.4.1",
     "@godcreator/gwb-data": "0.1.1",
     "@godcreator/gwb-plugin-api": "0.1.1",
-    "@godcreator/gwb-repo-kit": "0.1.0",
+    "@godcreator/gwb-repo-kit": "0.2.0",
     "@godcreator/gwb-settings": "0.2.0",
     "@godcreator/gwb-shared-react": "0.0.4",
-    "@godcreator/gwb-shell": "0.7.0",
+    "@godcreator/gwb-shell": "0.7.2",
     "@godcreator/gwb-skills": "0.4.0",
-    "@godcreator/gwb-tokens": "0.1.2",
+    "@godcreator/gwb-tokens": "0.1.3",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/node": "^4.3.3",
     "@types/node": "^24.0.0",
