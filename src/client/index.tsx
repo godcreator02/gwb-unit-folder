@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type * as React from 'react'
 import { createRoot } from 'react-dom/client'
 import {
-  ArrowUpRightIcon,
   CheckIcon,
   ChevronRightIcon,
   ChevronsDownUpIcon,
@@ -12,6 +11,7 @@ import {
   FolderIcon,
   FolderOpenIcon,
   FolderXIcon,
+  ListFilterIcon,
   PinIcon,
   PinOffIcon,
   RefreshCwIcon,
@@ -24,9 +24,11 @@ import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -53,7 +55,7 @@ import {
  * 单元文件夹的浏览器半，**两格**（node 半 registerPane 的 main / viewer）：
  *
  * * **树格**（`main`）：单元条目是出生证里的 lucide 图标 + title + 两行 purpose；种类吸顶
- *   可折叠分组；筛选框加状态与种类两排过滤标签（默认藏起退役的）；置顶块可放多个；
+ *   可折叠分组；筛选框旁一颗筛选下拉管状态与种类（默认藏起退役的）；置顶块可放多个；
  *   一键折叠三步；单元展开出文件树
  * * **原文格**（`viewer`）：行号、折行开关、点路径复制
  *
@@ -750,6 +752,10 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
         kindOptions={data === null ? [] : kindsOf(data)}
         kinds={kinds}
         onToggleKind={(k) => setKinds((prev) => toggled(prev, k))}
+        onResetFilter={() => {
+          setStatuses(DEFAULT_STATUSES)
+          setKinds(new Set())
+        }}
         onCollapse={collapseStep}
         onOpenRoot={openInExplorer}
         onRefresh={refresh}
@@ -842,22 +848,62 @@ function ViewerPane({
   )
 }
 
-/** 过滤标签：开着是实底，关着是描边 */
-function FilterChip({ label, on, onToggle }: { label: string; on: boolean; onToggle(): void }) {
+/**
+ * 过滤下拉：状态三档 + 种类若干，都是多选；种类一个不勾 = 不按种类筛。勾选时菜单不收起，
+ * 连着勾几项不用反复打开。过滤偏离默认时按钮上亮一个点，免得人忘了自己筛过
+ */
+function FilterMenu({
+  statuses,
+  onToggleStatus,
+  kindOptions,
+  kinds,
+  onToggleKind,
+  onReset,
+}: {
+  statuses: ReadonlySet<UnitStatus>
+  onToggleStatus(status: UnitStatus): void
+  kindOptions: Array<{ key: string; label: string }>
+  kinds: ReadonlySet<string>
+  onToggleKind(kind: string): void
+  onReset(): void
+}) {
+  const customized =
+    kinds.size > 0 || statuses.size !== DEFAULT_STATUSES.size || [...statuses].some((s) => !DEFAULT_STATUSES.has(s))
+  const keepOpen = (e: Event): void => e.preventDefault()
   return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={onToggle}
-      className={cn(
-        'unitfolder:cursor-pointer unitfolder:rounded-full unitfolder:border unitfolder:px-2 unitfolder:py-0.5 unitfolder:text-[11px] unitfolder:leading-4',
-        on
-          ? 'unitfolder:border-transparent unitfolder:bg-secondary unitfolder:text-secondary-foreground'
-          : 'unitfolder:bg-transparent unitfolder:text-muted-foreground unitfolder:hover:text-foreground',
-      )}
-    >
-      {label}
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" className="unitfolder:relative unitfolder:size-8 unitfolder:shrink-0" variant="ghost" aria-label="筛选">
+          <ListFilterIcon className="unitfolder:size-4" />
+          {customized && (
+            <span className="unitfolder:bg-primary unitfolder:absolute unitfolder:top-1.5 unitfolder:right-1.5 unitfolder:size-1.5 unitfolder:rounded-full" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="unitfolder:max-h-96 unitfolder:w-44 unitfolder:overflow-y-auto">
+        <DropdownMenuLabel className="unitfolder:text-muted-foreground unitfolder:text-xs">状态</DropdownMenuLabel>
+        {UNIT_STATUSES.map((s) => (
+          <DropdownMenuCheckboxItem key={s} checked={statuses.has(s)} onSelect={keepOpen} onCheckedChange={() => onToggleStatus(s)}>
+            {STATUS_LABEL[s]}
+          </DropdownMenuCheckboxItem>
+        ))}
+        {kindOptions.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="unitfolder:text-muted-foreground unitfolder:text-xs">种类（不勾 = 全部）</DropdownMenuLabel>
+            {kindOptions.map((k) => (
+              <DropdownMenuCheckboxItem key={k.key} checked={kinds.has(k.key)} onSelect={keepOpen} onCheckedChange={() => onToggleKind(k.key)}>
+                {k.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={!customized} onClick={onReset}>
+          恢复默认
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -886,7 +932,7 @@ function DirMenu({
   return (
     <DropdownMenu onOpenChange={(open) => { if (open) onEnsureDirs() }}>
       <DropdownMenuTrigger asChild disabled={activeUnitPath === null}>
-        <Button size="icon" className="unitfolder:size-7" variant="ghost" aria-label={label}>
+        <Button size="icon" className="unitfolder:size-7" variant="ghost" aria-label={label} title={label}>
           {icon}
         </Button>
       </DropdownMenuTrigger>
@@ -907,7 +953,14 @@ function DirMenu({
   )
 }
 
-/** 工具条：标题 + 总数、根路径、筛选框、一键折叠、VSCode 与复制路径两个下拉、打开根、刷新、扩展按钮排、过滤标签；未配置与报错的两句话也归这层 */
+/**
+ * 工具条，固定两行、行内不折行：
+ * - 第一行：标题 + 总数、容器根（放不下就截断）、动作图标——先是对选中单元的（VSCode、复制路径、
+ *   别的件登记的扩展按钮），竖线隔开，再是对整棵树的（打开容器根、一键折叠、现扫）
+ * - 第二行：文字筛选框占满，右边一颗筛选下拉（状态与种类）
+ *
+ * 未配置与报错的两句话也归这层
+ */
 function PaneHeader({
   host,
   total,
@@ -922,6 +975,7 @@ function PaneHeader({
   kindOptions,
   kinds,
   onToggleKind,
+  onResetFilter,
   onCollapse,
   onOpenRoot,
   onRefresh,
@@ -943,6 +997,7 @@ function PaneHeader({
   kindOptions: Array<{ key: string; label: string }>
   kinds: ReadonlySet<string>
   onToggleKind(kind: string): void
+  onResetFilter(): void
   onCollapse(): void
   onOpenRoot(path: string): void
   onRefresh(): void
@@ -967,24 +1022,53 @@ function PaneHeader({
 
   return (
     <div className="unitfolder:flex unitfolder:flex-none unitfolder:flex-col unitfolder:gap-2 unitfolder:px-3 unitfolder:py-2.5">
-      <div className="unitfolder:flex unitfolder:flex-wrap unitfolder:items-center unitfolder:gap-2">
-        <span className="unitfolder:text-sm unitfolder:font-semibold">
+      <div className="unitfolder:flex unitfolder:min-w-0 unitfolder:items-center unitfolder:gap-2">
+        <span className="unitfolder:shrink-0 unitfolder:text-sm unitfolder:font-semibold">
           单元
           {total > 0 && <b className="unitfolder:text-muted-foreground unitfolder:ml-1.5 unitfolder:font-mono unitfolder:text-xs unitfolder:font-normal">{total}</b>}
         </span>
-        {containerRoot !== '' && (
-          <span className="unitfolder:text-muted-foreground unitfolder:max-w-44 unitfolder:truncate unitfolder:font-mono unitfolder:text-xs" title={containerRoot}>
-            {containerRoot}
-          </span>
-        )}
-        <span className="unitfolder:min-w-40 unitfolder:flex-1" />
-        <div className="unitfolder:relative unitfolder:flex unitfolder:items-center">
+        <span className="unitfolder:text-muted-foreground unitfolder:min-w-0 unitfolder:flex-1 unitfolder:truncate unitfolder:font-mono unitfolder:text-xs" title={containerRoot}>
+          {containerRoot}
+        </span>
+        <div className="unitfolder:flex unitfolder:shrink-0 unitfolder:items-center unitfolder:gap-0.5">
+          <DirMenu
+            label="从 VSCode 新窗口打开"
+            icon={<CodeXmlIcon className="unitfolder:size-4" />}
+            activeUnitPath={activeUnitPath}
+            activeDirs={activeDirs}
+            onEnsureDirs={onEnsureDirs}
+            onPick={onOpenInCode}
+          />
+          <DirMenu
+            label={copied ? '已复制' : '复制文件夹路径'}
+            icon={copied ? <CheckIcon className="unitfolder:size-4" /> : <CopyIcon className="unitfolder:size-4" />}
+            activeUnitPath={activeUnitPath}
+            activeDirs={activeDirs}
+            onEnsureDirs={onEnsureDirs}
+            onPick={copyPath}
+          />
+          {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
+              亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
+          <ToolbarButtons host={host} unitPath={activeUnitPath} />
+          <span className="unitfolder:bg-border unitfolder:mx-1 unitfolder:h-4 unitfolder:w-px" />
+          <IconButton
+            label="在资源管理器打开容器根"
+            icon={<FolderOpenIcon className="unitfolder:size-4" />}
+            disabled={containerRoot === ''}
+            onClick={() => onOpenRoot(containerRoot)}
+          />
+          <IconButton label="一键折叠" icon={<ChevronsDownUpIcon className="unitfolder:size-4" />} onClick={onCollapse} />
+          <IconButton label="现扫一次" icon={<RefreshCwIcon className="unitfolder:size-4" />} disabled={loading} onClick={onRefresh} />
+        </div>
+      </div>
+      <div className="unitfolder:flex unitfolder:items-center unitfolder:gap-1">
+        <div className="unitfolder:relative unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:items-center">
           <SearchIcon className="unitfolder:text-muted-foreground/80 unitfolder:pointer-events-none unitfolder:absolute unitfolder:left-2.5 unitfolder:size-3.5" />
           <Input
             value={query}
             spellCheck={false}
             placeholder="筛选单元…"
-            className="unitfolder:h-8 unitfolder:w-44 unitfolder:pl-8"
+            className="unitfolder:h-8 unitfolder:w-full unitfolder:pl-8"
             autoComplete="off"
             onChange={(e) => onQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -995,43 +1079,14 @@ function PaneHeader({
             }}
           />
         </div>
-        <IconButton label="一键折叠" icon={<ChevronsDownUpIcon className="unitfolder:size-4" />} onClick={onCollapse} />
-        <DirMenu
-          label="从 VSCode 新窗口打开"
-          icon={<CodeXmlIcon className="unitfolder:size-4" />}
-          activeUnitPath={activeUnitPath}
-          activeDirs={activeDirs}
-          onEnsureDirs={onEnsureDirs}
-          onPick={onOpenInCode}
+        <FilterMenu
+          statuses={statuses}
+          onToggleStatus={onToggleStatus}
+          kindOptions={kindOptions}
+          kinds={kinds}
+          onToggleKind={onToggleKind}
+          onReset={onResetFilter}
         />
-        <DirMenu
-          label={copied ? '已复制' : '复制文件夹路径'}
-          icon={copied ? <CheckIcon className="unitfolder:size-4" /> : <CopyIcon className="unitfolder:size-4" />}
-          activeUnitPath={activeUnitPath}
-          activeDirs={activeDirs}
-          onEnsureDirs={onEnsureDirs}
-          onPick={copyPath}
-        />
-        <IconButton
-          label="在资源管理器打开容器根"
-          icon={<ArrowUpRightIcon className="unitfolder:size-4" />}
-          disabled={containerRoot === ''}
-          onClick={() => onOpenRoot(containerRoot)}
-        />
-        <IconButton label="现扫一次" icon={<RefreshCwIcon className="unitfolder:size-4" />} disabled={loading} onClick={onRefresh} />
-        {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
-            亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
-        <ToolbarButtons host={host} unitPath={activeUnitPath} />
-      </div>
-      {/* 过滤标签：状态三档 + 种类若干，都是多选。种类一个不选 = 不按种类筛 */}
-      <div className="unitfolder:flex unitfolder:flex-wrap unitfolder:items-center unitfolder:gap-1">
-        {UNIT_STATUSES.map((s) => (
-          <FilterChip key={s} label={STATUS_LABEL[s]} on={statuses.has(s)} onToggle={() => onToggleStatus(s)} />
-        ))}
-        {kindOptions.length > 0 && <span className="unitfolder:bg-border unitfolder:mx-1 unitfolder:h-4 unitfolder:w-px" />}
-        {kindOptions.map((k) => (
-          <FilterChip key={k.key} label={k.label} on={kinds.has(k.key)} onToggle={() => onToggleKind(k.key)} />
-        ))}
       </div>
       {error !== null &&
         (error.unconfigured ? (

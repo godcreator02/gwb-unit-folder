@@ -1,10 +1,10 @@
 {
   "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": {
     "name": "godcreator"
   },
-  "description": "单元文件夹：现扫单元容器根读出生证，树里展开单元看文件、点文件在第二格看原文。gwb-kernel 正线的第一个仓外件，自 26090620ufd 旧线件按新线契约重做。0.2 起容器根走 gwbSettings（条目上没有 config 面）。0.3 起提供服务 ctx.gwbUnitFolder（current / pinned）与事件 unit-folder/selection 往外报「人现在看的是哪个单元」；置顶改成树上点出来、落 gwbData（设置项 pinned-unit 删了）；命令加 select / current / pin / unpin。0.4.0 起服务面添 registerToolbarButton：别的件往单元树格工具条登记动作按钮（身份由服务层填，皮在浏览器半，点击与亮不亮都走命令总线——state 命令拉式问询、跟选中单元走），按钮表经新命令 unit-folder.toolbarButtons 过桥，登记表一变经内核事件口推一声。0.5：命令登记随 commands 0.4 拆 description（一句话）与 usage（参数形状），plugin 改口包名。0.6：样式围栏改类名前缀 unitfolder，不再依赖窗格容器上的 data-gwb-plugin。0.7：出生证六项必给（kind/title/purpose/status/icon/createdAt，不认旧写法），新命令 unit-folder.create 建单元；置顶改多个（pinned(): string[]，unpin 要 path）；树格改 lucide 线稿图标、两行 purpose、状态与种类过滤标签、复制文件夹路径下拉",
+  "description": "单元文件夹：现扫单元容器根读出生证，树里展开单元看文件、点文件在第二格看原文。gwb-kernel 正线的第一个仓外件，自 26090620ufd 旧线件按新线契约重做。0.2 起容器根走 gwbSettings（条目上没有 config 面）。0.3 起提供服务 ctx.gwbUnitFolder（current / pinned）与事件 unit-folder/selection 往外报「人现在看的是哪个单元」；置顶改成树上点出来、落 gwbData（设置项 pinned-unit 删了）；命令加 select / current / pin / unpin。0.4.0 起服务面添 registerToolbarButton：别的件往单元树格工具条登记动作按钮（身份由服务层填，皮在浏览器半，点击与亮不亮都走命令总线——state 命令拉式问询、跟选中单元走），按钮表经新命令 unit-folder.toolbarButtons 过桥，登记表一变经内核事件口推一声。0.5：命令登记随 commands 0.4 拆 description（一句话）与 usage（参数形状），plugin 改口包名。0.6：样式围栏改类名前缀 unitfolder，不再依赖窗格容器上的 data-gwb-plugin。0.7：出生证六项必给（kind/title/purpose/status/icon/createdAt，不认旧写法），新命令 unit-folder.create 建单元；置顶改多个（pinned(): string[]，unpin 要 path）；树格改 lucide 线稿图标、两行 purpose、状态与种类过滤、复制文件夹路径下拉。0.7.1：工具条固定两行不折行（标题路径与动作图标一行、搜索框与筛选下拉一行），状态与种类收进筛选下拉",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
