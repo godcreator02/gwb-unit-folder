@@ -6,3 +6,6 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@godcreator/*'
   - '@godcreator/*'
+
+# peer 对不上时 install 当场报错退出，不只 WARN
+strictPeerDependencies: true
