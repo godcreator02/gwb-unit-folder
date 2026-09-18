@@ -1,6 +1,6 @@
 ---
 title: 服务面与命令面
-description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、工具条按钮登记一个）、事件 unit-folder/selection 的载荷、十一条命令的名字与参数、出生证的字段表——导出面就是契约，逐条钉在源码上
+description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、工具条按钮登记一个）、事件 unit-folder/selection 的载荷、十一条命令的名字与参数、出生证的字段表、依赖谁（硬注入两件、局部注入三件）——导出面就是契约，逐条钉在源码上
 ---
 
 # 服务面与命令面
@@ -94,3 +94,27 @@ undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶�
 `paths` 不是数组就当没置顶，数组里的空串与非字符串扔掉、重复的只留第一次：
 
 {/* ref file="../src/current.ts" lines="58-73" */}
+
+## 依赖谁
+
+两件是**硬注入**（`static inject`）——缺哪件这个件根本挂不上，名字写死在类的静态属性上；
+三件是**局部注入**（`ctx.inject([...])`）——缺哪件本件照挂、只少那一面，接不接得上到挂载时才定：
+
+{/* ref file="../src/index.ts" lines="112-114" */}
+
+- **`gwbShell`**（硬注入）：窗格与自我介绍都经它——没它两格没处挂
+- **`gwbCommands`**（硬注入）：十一条命令登记在它身上——没它浏览器半调不到任何东西
+- **`gwbSettings`**（局部注入）：唯一一项设置 `units-root` 由它声明；没装它读不到根，命令一律回 `unconfigured`
+- **`gwbData`**（局部注入）：置顶落它的文档 `pinned`；没装它置顶只活在内存
+- **`gwbSkills`**（局部注入）：本件那份说明书（包根 `skills/`）；没装它只是少这一格
+
+三处局部注入，各自顺带接了那一面的事——声明设置项、把盘上那份读进内存、说明书目录随件回收：
+
+{/* ref file="../src/index.ts" lines="163-176" */}
+
+{/* ref file="../src/index.ts" lines="178-197" */}
+
+{/* ref file="../src/index.ts" lines="201-208" */}
+
+**关系是单向的**：别的件（第一个消费方是文档站件）局部注入 `ctx.gwbUnitFolder` 问「人现在看的是哪个单元」，
+它不认识任何消费方——方向是特殊认识一般，判据见轨迹卡[「选中往外报」](/trajectory/2026-09-09-report-selection-not-extension-point)。

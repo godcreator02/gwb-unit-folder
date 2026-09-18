@@ -4,7 +4,7 @@
   "author": {
     "name": "godcreator"
   },
-  "description": "单元文件夹件：出生证（unit.json）字段表的正本——建单元、现扫容器根读出生证、树里看文件；「当前单元」往外报（unit-folder/selection 事件）。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
+  "description": "单元文件夹件：出生证（unit.json）字段表的正本——建单元、现扫单元容器根读出生证，树里按状态与种类过滤、展开看文件、点文件读原文；「人现在看的是哪个单元」经 unit-folder/selection 事件往外报。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,7 +18,6 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "catalog.md",
     "dist",
     "skills",
     "src"
@@ -57,7 +56,7 @@
     "@godcreator/gwb-commands": "0.4.3",
     "@godcreator/gwb-data": "0.1.2",
     "@godcreator/gwb-plugin-api": "0.1.2",
-    "@godcreator/gwb-repo-kit": "0.2.0",
+    "@godcreator/gwb-repo-kit": "0.2.1",
     "@godcreator/gwb-settings": "0.2.1",
     "@godcreator/gwb-shared-react": "0.1.0",
     "@godcreator/gwb-shell": "0.9.1",
