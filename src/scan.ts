@@ -25,7 +25,7 @@ export interface UnitIdentity {
   kind: string
   /** 短名，树里第一行 */
   title: string
-  /** 这个单元是什么、为什么存在、跟谁什么关系——唯一的自述 */
+  /** 这个单元是什么、干什么——唯一的自述；不写历史与沿革 */
   purpose: string
   status: UnitStatus
   /** lucide 图标名，kebab-case（`folder-tree`）；界面认不出就画兜底 */

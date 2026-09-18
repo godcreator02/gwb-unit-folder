@@ -16,7 +16,7 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 {
   "kind": "插件仓",
   "title": "gwb-unit-folder",
-  "purpose": "这个单元是什么、为什么存在、边界在哪、跟谁不是一回事",
+  "purpose": "这个单元是什么、干什么；容易跟谁混就点一句",
   "status": "active",
   "icon": "folder-tree",
   "createdAt": "2026-09-08T11:47:30+08:00"
@@ -27,7 +27,7 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | --- | --- |
 | `kind` | 中文种类短词，树里按它分组。先 `unit-folder.list` 看已有的种类，能归进去就别造新词 |
 | `title` | 短名，树里第一行 |
-| `purpose` | 唯一的自述，**写厚一点**——往后所有人（包括 agent）靠它认路。树里显示两行，全文在悬停说明里 |
+| `purpose` | 唯一的自述，**一句话说清「是什么、干什么」**——容易跟谁混就点一句；不写历史、版本沿革、已完成的任务清单。树里显示两行，全文在悬停说明里 |
 | `status` | `active`（在做）/ `paused`（搁着）/ `retired`（退役）。退役的树里默认藏起来，站件也不扫它里面的站 |
 | `icon` | [lucide](https://lucide.dev/icons) 图标名，kebab-case（`puzzle`、`book-open`、`server`）。认不出的名字画兜底文件夹 |
 | `createdAt` | ISO 8601 带时区。建单元时本件自动填 |

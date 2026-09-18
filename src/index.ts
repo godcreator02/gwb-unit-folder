@@ -350,7 +350,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
         name: 'unit-folder.create',
         description: '在容器根下建一个新单元：算目录名、建目录、写出生证 unit.json',
         usage:
-          '参数 { kind, title, purpose, icon, status? }，全是非空字符串。kind 是中文种类短词（先 unit-folder.list 看已有的种类，能归进去就别造新词）；title 是树里显示的短名；purpose 写厚一点——这个单元是什么、为什么存在、边界在哪、跟谁不是一回事；icon 是 lucide 图标名，kebab-case（https://lucide.dev/icons ，如 puzzle / book-open / server）；status 是 active / paused / retired，省了是 active。目录名 yyMMddHH + 三个小写字母，撞名重摇；createdAt 由本件填。到 unit.json 为止，仓与文档站交给目标线自己的工具。回 { name, path, identity }',
+          '参数 { kind, title, purpose, icon, status? }，全是非空字符串。kind 是中文种类短词（先 unit-folder.list 看已有的种类，能归进去就别造新词）；title 是树里显示的短名；purpose 是它唯一的自述，一句话说清这个单元是什么、干什么，容易跟谁混就点一句（不写历史、版本沿革、已完成的任务清单）；icon 是 lucide 图标名，kebab-case（https://lucide.dev/icons ，如 puzzle / book-open / server）；status 是 active / paused / retired，省了是 active。目录名 yyMMddHH + 三个小写字母，撞名重摇；createdAt 由本件填。到 unit.json 为止，仓与文档站交给目标线自己的工具。回 { name, path, identity }',
       },
       (args) => {
         const root = this.resolveUnitsRoot()

@@ -1,14 +1,13 @@
 {
   "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "author": {
     "name": "godcreator"
   },
-  "description": "单元文件夹：现扫单元容器根读出生证，树里展开单元看文件、点文件在第二格看原文。gwb-kernel 正线的第一个仓外件，自 26090620ufd 旧线件按新线契约重做。0.2 起容器根走 gwbSettings（条目上没有 config 面）。0.3 起提供服务 ctx.gwbUnitFolder（current / pinned）与事件 unit-folder/selection 往外报「人现在看的是哪个单元」；置顶改成树上点出来、落 gwbData（设置项 pinned-unit 删了）；命令加 select / current / pin / unpin。0.4.0 起服务面添 registerToolbarButton：别的件往单元树格工具条登记动作按钮（身份由服务层填，皮在浏览器半，点击与亮不亮都走命令总线——state 命令拉式问询、跟选中单元走），按钮表经新命令 unit-folder.toolbarButtons 过桥，登记表一变经内核事件口推一声。0.5：命令登记随 commands 0.4 拆 description（一句话）与 usage（参数形状），plugin 改口包名。0.6：样式围栏改类名前缀 unitfolder，不再依赖窗格容器上的 data-gwb-plugin。0.7：出生证六项必给（kind/title/purpose/status/icon/createdAt，不认旧写法），新命令 unit-folder.create 建单元；置顶改多个（pinned(): string[]，unpin 要 path）；树格改 lucide 线稿图标、两行 purpose、状态与种类过滤、复制文件夹路径下拉。0.7.1：工具条固定两行不折行（标题路径与动作图标一行、搜索框与筛选下拉一行），状态与种类收进筛选下拉。0.7.2：说明书装机命令改 plugin-manager.install（旧名 plugins.install 已不存在）、第一个消费方改口 gwb-docs-site；依赖跟到 commands 0.4.2。0.7.3：peer 迁 ^（含 shell 0.9.1——0.9 对插件无破坏）、dev 钉跟到 latest",
+  "description": "单元文件夹件：出生证（unit.json）字段表的正本——建单元、现扫容器根读出生证、树里看文件；「当前单元」往外报（unit-folder/selection 事件）。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "//exports": "**内核不再读 exports 表**：浏览器半与样式表的地址由 node 半从 import.meta.url 算成 file://，注册窗格时报给外壳。./client 与 ./style.css 留着只是给人手动引用方便，没有谁在解析它们",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,7 +17,6 @@
     "./style.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
-  "//files": "skills 必须在这儿：漏了包照发、照装得上，直到那个件挂载去扫目录时才报「读不动」",
   "files": [
     "catalog.md",
     "dist",
@@ -27,7 +25,6 @@
   ],
   "//gwb": "整段没有：窗格件的名字归运行时——node 半调 ctx.gwbShell.describeSelf，格是 apply 里 registerPane 的",
   "scripts": {
-    "//build": "三步：tsc 出 node 半、esbuild 打浏览器半、tailwindcss 编本件那张表（前缀 unitfolder，扫描面由 src/client/styles.css 的 @source 说了算）",
     "build": "tsc -p tsconfig.build.json && node build.ts && tailwindcss -i src/client/styles.css -o dist/style.css",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json",
     "lint": "oxlint . --deny-warnings",
@@ -41,8 +38,6 @@
   "engines": {
     "node": ">=24"
   },
-  "//deps": "peer 各是三档判据里的一档：cordis 是**运行时真 import**（0.3 起本件是个 Service，基类要 extends，而且必须是宿主那一份——两份 cordis 的 instanceof 对不上），跟 shell / data 件同一条写法：peer 写范围、dev 钉版本，绝不进 dependencies；契约包只 import type 但构造函数的参数类型进了 dist/index.d.ts（出现在导出的类型面上）；shell 与 commands 是运行期硬依赖——home 里没有它们这个件永远挂不上，peer 的语义正是「宿主环境得提供这个」。shared-react 与 tokens 是浏览器半跑起来的前提（react 系经内核注的页面 importmap、令牌表由外壳注）。skills / settings / data 都只在实现内部用类型、不出现在导出面（三个都是局部注入），按三档判据算 dev——那几个 import type {} 只为激活各自的 declare module 'cordis'；skills 另外挂了条可选 peer，settings 与 data 连 peer 都不写：没装它们这个件照挂，只是设置读不到、置顶只活在内存。两格间那根接力棒只住浏览器半的内存里，**不走数据格**——原文格不跟随状态；走数据格的只有置顶那一份文档",
-  "//peerRange": "正本在 devkit 的 release skill「gwb-release」（随 @godcreator/gwb-devkit 包发，见该包 skills/gwb-release/SKILL.md）",
   "//components": "radix / cva / cn 是 shadcn 组件的运行时依赖，但**打进本束**——它们不在 importmap 里，外置成裸名就是运行期炸，所以按判据算 dev。tailwindcss / @tailwindcss/cli 是构建输入；@tailwindcss/node 给 tests/prefix.test.ts 在不带前缀的输入下试编；tw-animate-css 给 animate-in 一族",
   "peerDependencies": {
     "@godcreator/gwb-commands": "^0.4.3",
