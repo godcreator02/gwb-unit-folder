@@ -2,10 +2,5 @@ allowBuilds:
   '@parcel/watcher': false
   esbuild: true
 
-# 供应链门豁免：私有源包龄不设限（带本 yaml 的仓整份盖掉用户级配置，须自带）
-minimumReleaseAgeExclude:
-  - '@godcreator/*'
-  - '@godcreator/*'
-
 # peer 对不上时 install 当场报错退出，不只 WARN
 strictPeerDependencies: true
