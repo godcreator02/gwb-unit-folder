@@ -40,7 +40,7 @@ description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、工�
 按钮表经 `unit-folder.toolbarButtons` 过桥。这个口子翻的是「选中往外报」否掉的候选 A，判据的前提到货了，
 经过见轨迹卡「工具条按钮登记口」：
 
-{/* ref file="../src/toolbar.ts" lines="1-60" */}
+{/* ref file="../src/toolbar.ts" lines="1-63" */}
 
 点击时递给那条命令的参数由 `clickArgsOf` 拼：选中的单元、菜单里挑的那项，外加 `from`——树格自己的实例 id
 （`pane.instance`）。登记方要开窗格就把它原样递给 `shell.openPane`，新窗格落在单元树旁边、不盖住它
@@ -53,12 +53,12 @@ description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、工�
 `current()` 变了就在提供方的 ctx 上 emit 一次，载荷就是新的 `current()`。**点击与置顶两条路都经同一处判「变没变」**，
 所以没点过时置顶 / 取消置顶也会广播——消费方看到的「当前」确实变了：
 
-{/* ref file="../src/index.ts" lines="278-287" */}
+{/* ref file="../src/index.ts" lines="280-289" */}
 
 类型面：消费方只要 `import type {} from '@godcreator/gwb-unit-folder'`，Context 上的 `gwbUnitFolder` 与
 Events 上的 `'unit-folder/selection'` 就都有了。两条声明合在文件末尾：
 
-{/* ref file="../src/index.ts" lines="493-500" */}
+{/* ref file="../src/index.ts" lines="495-502" */}
 
 **它不做的事**：不跨会话（`current()` 只住内存，重启之后是第一个置顶或空）；不给「清空」的口（眼下没有清空的动作，
 undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶）。
@@ -71,28 +71,28 @@ undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶�
 **建单元**（0.7 起）：`create` 不带路径参数，解出容器根之后把 `kind / title / purpose / icon / status?` 交给
 `src/create.ts` 算目录名、建目录、写出生证；字段不成立一个目录都不建：
 
-{/* ref file="../src/index.ts" lines="348-364" */}
+{/* ref file="../src/index.ts" lines="350-366" */}
 
 **选中与置顶四条**是服务面的命令入口。`select` 是浏览器半点树时调的那条，agent 想替人「切到某个单元」
 也调它；它算出所属单元、记下、变了就广播：
 
-{/* ref file="../src/index.ts" lines="435-451" */}
+{/* ref file="../src/index.ts" lines="437-453" */}
 
 `current` 无参数，回 `{ ok: true, data: current() ?? null }`——信封形状跟本件其余命令一致，没有「当前」时 data 是 null
 而不是缺字段：
 
-{/* ref file="../src/index.ts" lines="453-460" */}
+{/* ref file="../src/index.ts" lines="455-462" */}
 
 `pin` 只认容器根下一层的单元目录，追加到置顶表末尾（已经在的不挪位置），落 data 文档 `pinned`（`{ paths }`），
 **不改最近一次点击**；`unpin` 要给 `path`，摘掉那一个。两条的回执都等落盘完成——写没写成进回执，不静默：
 
-{/* ref file="../src/index.ts" lines="462-489" */}
+{/* ref file="../src/index.ts" lines="464-491" */}
 
 **浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）形状没动；变的只有 `list` 回包里的 `pinned`——
 0.7 起是置顶单元条目的数组，按置顶先后。置顶了但清单里找不到的（目录删了、换了容器根）这一趟顺手摘掉并落盘，
 不然一个删掉的单元会一直占着「当前」的回落位：
 
-{/* ref file="../src/index.ts" lines="318-346" */}
+{/* ref file="../src/index.ts" lines="320-348" */}
 
 ## 置顶文档
 
@@ -116,11 +116,11 @@ undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶�
 
 三处局部注入，各自顺带接了那一面的事——声明设置项、把盘上那份读进内存、说明书目录随件回收：
 
-{/* ref file="../src/index.ts" lines="163-176" */}
+{/* ref file="../src/index.ts" lines="165-178" */}
 
-{/* ref file="../src/index.ts" lines="178-197" */}
+{/* ref file="../src/index.ts" lines="180-199" */}
 
-{/* ref file="../src/index.ts" lines="201-208" */}
+{/* ref file="../src/index.ts" lines="203-210" */}
 
 **关系是单向的**：别的件（第一个消费方是文档站件）局部注入 `ctx.gwbUnitFolder` 问「人现在看的是哪个单元」，
 它不认识任何消费方——方向是特殊认识一般，判据见轨迹卡[「选中往外报」](/trajectory/2026-09-09-report-selection-not-extension-point)。

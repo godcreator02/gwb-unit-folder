@@ -69,12 +69,12 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 设置、数据、说明书三件都是**局部注入**：缺哪个本件照挂、只少那一面。data 件那一格顺带定了置顶怎么落盘、
 以及「人先点了置顶、data 件后挂上」那种顺序谁赢：
 
-{/* ref file="../src/index.ts" lines="178-197" */}
+{/* ref file="../src/index.ts" lines="180-199" */}
 
 **浏览器半不知道宿主半的实现。** 它只经命令总线说话（`host.call`），按形状收回包；报选中那一下
 是 fire-and-forget、失败只在控制台说一声：
 
-{/* ref file="../src/client/index.tsx" lines="504-528" */}
+{/* ref file="../src/client/index.tsx" lines="512-536" */}
 
 ## 两条判据
 
@@ -86,7 +86,7 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 **带路径参数的命令共用一堵墙。** 命令总线对外暴露（agent 经 MCP 也在调），参数不能默认是界面自己递来的
 那份清单上的：每条都先解 `units-root`、再把路径验成根内的绝对路径，越出根的一律回「路径不在容器根内」：
 
-{/* ref file="../src/index.ts" lines="264-276" */}
+{/* ref file="../src/index.ts" lines="266-278" */}
 
 ## 怎么用
 
