@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TOOLBAR_EVENT, createToolbarButtonRegistry, isToolbarNudge, parseButtonState } from '../src/toolbar.js'
+import { TOOLBAR_EVENT, clickArgsOf, createToolbarButtonRegistry, isToolbarNudge, parseButtonState } from '../src/toolbar.js'
 
 /**
  * 工具条按钮的纯机：登记表的三条规矩（跟窗格注册表同一套）、state 回包的宽松收、
@@ -98,5 +98,27 @@ describe('isToolbarNudge', () => {
     expect(isToolbarNudge({ t: 'gwb-docs-site', kind: 'view' })).toBe(false)
     expect(isToolbarNudge(null)).toBe(false)
     expect(isToolbarNudge('nudge')).toBe(false)
+  })
+})
+
+describe('clickArgsOf：点一颗按钮递给命令的参数', () => {
+  it('选中单元、菜单项、树格实例都在；from 就是树格的 pane.instance', () => {
+    expect(clickArgsOf({}, { unitPath: 'D:\\u\\a', item: 'D:\\u\\a\\site', from: 'plugin:home:unit-folder:main' })).toEqual({
+      unitPath: 'D:\\u\\a',
+      item: 'D:\\u\\a\\site',
+      from: 'plugin:home:unit-folder:main',
+    })
+  })
+
+  it('没选中不带 unitPath、没挑菜单不带 item，from 照带', () => {
+    expect(clickArgsOf({}, { unitPath: null, from: 'i' })).toEqual({ from: 'i' })
+  })
+
+  it('登记方的 args 最后铺，同名盖过前面几样', () => {
+    expect(clickArgsOf({ args: { mode: 'x', from: 'mine' } }, { unitPath: 'D:\\u\\a', from: 'i' })).toEqual({
+      unitPath: 'D:\\u\\a',
+      from: 'mine',
+      mode: 'x',
+    })
   })
 })

@@ -42,6 +42,12 @@ description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、工�
 
 {/* ref file="../src/toolbar.ts" lines="1-60" */}
 
+点击时递给那条命令的参数由 `clickArgsOf` 拼：选中的单元、菜单里挑的那项，外加 `from`——树格自己的实例 id
+（`pane.instance`）。登记方要开窗格就把它原样递给 `shell.openPane`，新窗格落在单元树旁边、不盖住它
+（文档站件的「启动站点」就是这么开预览格的）。登记方的 `args` 最后铺，同名的盖过前面几样：
+
+{/* ref file="../src/toolbar.ts" lines="75-89" */}
+
 ## 事件 `unit-folder/selection`
 
 `current()` 变了就在提供方的 ctx 上 emit 一次，载荷就是新的 `current()`。**点击与置顶两条路都经同一处判「变没变」**，

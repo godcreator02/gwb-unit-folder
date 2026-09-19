@@ -143,7 +143,8 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
 
     // 注册在 init 里，同步的，不用自己包 effect（服务内部挂在调用方的 effect 上了）。
     // 身份不用报——服务从 fiber 上认。两格各自报自己的浏览器半与样式表地址。
-    // duplicable（并排开第二份）随 shell 0.7 的 PaneSpec 收紧被摘除——特性休眠待作者适配新 API 后恢复
+    // main（单元树）不写 kind，缺省工具窗格、整页一份；viewer（原文）是文档窗格——能多开，
+    // 一份装一个文件（key 是文件绝对路径，见 client/open-file.ts）
     ctx.gwbShell.registerPane({
       id: 'main',
       title: '单元',
@@ -155,6 +156,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       id: 'viewer',
       title: '文件原文',
       icon: 'file-text',
+      kind: 'document',
       client: CLIENT_URL,
       style: STYLE_URL,
     })

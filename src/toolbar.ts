@@ -13,7 +13,10 @@ export interface ToolbarButtonSpec {
   icon: string
   /** 悬停说明；无障碍标签也用它 */
   label: string
-  /** 点击调的命令（总线名）。参数 `{ unitPath?, item?, …args }` */
+  /**
+   * 点击调的命令（总线名）。参数 `{ unitPath?, item?, from?, …args }`——`from` 是树格的实例 id
+   * （格里的 `pane.instance`），命令要开窗格就原样递给 `shell.openPane`，新窗格落在单元树旁边
+   */
   command: string
   /**
    * 问「现在亮不亮」的命令（总线名）：参数 `{ unitPath, …args }`，回的 data 是
@@ -66,6 +69,22 @@ export function createToolbarButtonRegistry(warn: (message: string) => void): To
     list() {
       return [...table.values()]
     },
+  }
+}
+
+/**
+ * 点一颗按钮时递给它那条命令的参数。没选中单元不带 `unitPath`、没挑菜单项不带 `item`；
+ * `from` 总带（树格的实例 id）。登记方的 `args` 最后铺，同名的盖过前面几样
+ */
+export function clickArgsOf(
+  button: Pick<ToolbarButtonSpec, 'args'>,
+  at: { unitPath: string | null; item?: string | undefined; from: string },
+): Record<string, unknown> {
+  return {
+    ...(at.unitPath === null ? {} : { unitPath: at.unitPath }),
+    ...(at.item === undefined ? {} : { item: at.item }),
+    from: at.from,
+    ...(button.args ?? {}),
   }
 }
 

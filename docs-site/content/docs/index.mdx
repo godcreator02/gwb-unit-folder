@@ -28,6 +28,15 @@ description: 这个件解决什么问题、拆成几块、块与块之间怎么�
 追加进内存里那张置顶表、再写 `gwbData` 的文档 `pinned`（`{ paths }`）。置顶可以有多个；`current()` 没点过时回落到
 第一个置顶，所以置顶在那种局面下也会让 `current()` 变、也会广播。
 
+点的是文件就不报选中，而是开一格原文。原文格是外壳眼里的**文档窗格**（能多开，一份装一个文件），单元树是
+**工具窗格**（整页一份）。两格之间不经总线：装哪个文件住在那一份原文格的参数里（key 是文件的绝对路径），
+跟着布局落盘，原文格挂上时读参数、外壳顶掉预览格时经 `retarget` 软换。开法照外壳的手势约定——树格不是原文格，
+所以单击是预览，Ctrl / 中键正式开一个新标签，Ctrl+Alt 开到旁边；开在哪归外壳（来源是树格，落在最近用过的那组
+原文格里，没有就开到单元树旁边）：
+
+{/* ref file="../src/client/open-file.ts" lines="42-47" */}
+{/* ref file="../src/client/open-file.ts" lines="72-77" */}
+
 ## 拆成几块，依赖是单向的
 
 ```
@@ -38,6 +47,7 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
           ↑
    client/index.tsx                   浏览器半：只经命令总线说话，不 import 宿主半一个符号
    client/units.ts                    （过滤与图标名换算的纯逻辑，tests/units.test.ts 测）
+   client/open-file.ts                （点文件开成什么样的原文格：手势 → 开法、文件 → key 与参数，tests/open-file.test.ts 测）
           ↑
    别的件（消费方）                    inject('gwbUnitFolder')、on('unit-folder/selection')
 ```

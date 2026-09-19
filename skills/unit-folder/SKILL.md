@@ -56,10 +56,10 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | `unit-folder.pin` | 把一个单元加进置顶（可以有多个，追加到末尾）：`{path}`，**必须是容器根下一层的单元目录**。落 data 文档 `pinned`。回 `{ paths }` |
 | `unit-folder.unpin` | 把一个单元从置顶里摘掉：`{path}`。回 `{ paths }` |
 
-窗格那边的交互约定：树里**单击**文件，内容进「焦点原文格」（最后一次鼠标点过的那格，
-没有开着就自动开一格）；**Ctrl+单击**再开一份原文格显示，新格接管焦点。接力棒只住
-内存、不跟随状态，重启即空。所以 agent 想看某个文件，直接调 `unit-folder.readFile`，
-不必经过窗格。
+窗格那边的交互约定（外壳的手势约定）：原文格是文档窗格，一份装一个文件。树里**单击**文件是预览
+（下一次单击顶掉它），**Ctrl+单击**或中键正式开一个新标签，**Ctrl+Alt+单击**开到旁边；原文格落在
+单元树旁边或最近用过的那组原文格里，装哪个文件跟着布局落盘。agent 想看某个文件，直接调
+`unit-folder.readFile`，不必经过窗格。
 
 **路径参数一律关在容器根内**——传一个根外的绝对路径会被回一句「路径不在容器根内」，
 这不是 bug 是门。命令总线对外暴露，参数不能默认来自界面。
@@ -92,7 +92,7 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
   id: 'sites',
   icon: 'book-open',
   label: '启动站点',
-  command: 'docs-site.viewUnit',   // 点击调，参数 { unitPath, item? }
+  command: 'docs-site.viewUnit',   // 点击调，参数 { unitPath, item?, from }——from 是树格的实例 id，开窗格时递给 shell.openPane
   state: 'docs-site.unitSites',    // 问亮不亮（可省=常亮），参数 { unitPath }，回 { enabled, items? }
 })
 ```

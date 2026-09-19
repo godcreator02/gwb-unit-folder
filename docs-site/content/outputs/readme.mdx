@@ -68,7 +68,8 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 | `unit-folder.pin` | `{ path }`，必须是单元目录（容器根下一层）；追加进置顶 |
 | `unit-folder.unpin` | `{ path }`，从置顶里摘掉这一个 |
 
-原文格的接力棒**不跟随状态**：树里单击文件进「焦点原文格」，Ctrl+单击再开一份，接力棒只住内存，重启即空。
+原文格是**文档窗格**，一份装一个文件（装哪个住在它自己的参数里，跟着布局落盘）。树里点文件照外壳的手势约定：
+单击预览（下一次单击顶掉它），Ctrl+单击或中键正式开一个新标签，Ctrl+Alt+单击开到旁边。
 
 ## 开发循环
 
@@ -91,7 +92,7 @@ pnpm test:all     # 全量测试（含产物守卫，要先 build）
 - `src/create.ts` —— 建单元：目录名、出生证落盘
 - `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表形状与加摘、`current()` 回落规则
 - `src/index.ts` —— cordis Service：两格窗格注册 + 十一条命令 + 服务面 `gwbUnitFolder` + 事件
-- `src/client/` —— 浏览器半：树格 / 原文格，`mountPane` 契约，过滤纯逻辑在 `units.ts`，shadcn 组件自 vendor
+- `src/client/` —— 浏览器半：树格 / 原文格，`mountPane` 契约，过滤纯逻辑在 `units.ts`、点文件开成什么样的原文格在 `open-file.ts`，shadcn 组件自 vendor
 - `skills/unit-folder/` —— agent 说明书（gwb-skills 挂载）
 - `docs-site/` —— fumadocs 站 + docfirst 六区（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈）
 

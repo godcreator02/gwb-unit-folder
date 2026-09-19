@@ -3,7 +3,7 @@ import { BookOpenIcon, CircleDotIcon, GlobeIcon, RocketIcon, type LucideIcon } f
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { IconButton } from '@/components/ui/icon-button'
-import { isToolbarNudge, parseButtonState, type ButtonState, type RegisteredToolbarButton } from '../toolbar.js'
+import { clickArgsOf, isToolbarNudge, parseButtonState, type ButtonState, type RegisteredToolbarButton } from '../toolbar.js'
 import type { HostBridge } from './types.js'
 
 /**
@@ -13,6 +13,8 @@ import type { HostBridge } from './types.js'
  *
  * 亮不亮是**拉式**的：选中单元一变（或按钮表一变）逐颗重问 state 命令，回什么画什么
  * ——数据永远现算，不存不推，没有陈旧问题；没选中单元一律灰（跟 VSCode 那颗同款）。
+ *
+ * 点击参数带 `from`（树格的实例 id）：登记方要开窗格就递给外壳，新窗格落在单元树旁边。
  */
 
 /** 登记方给的图标裸名 → 图标。白名单，跟外壳标签那张 ICONS 同一个判据：加一枚添一行 */
@@ -32,7 +34,7 @@ function iconFor(name: string): LucideIcon {
 /** 一颗按钮在 states 表上的键：条目 + 按钮 id，同一个包挂两条条目也撞不着 */
 const keyOf = (b: RegisteredToolbarButton): string => `${b.entryId}:${b.id}`
 
-export function ToolbarButtons({ host, unitPath }: { host: HostBridge; unitPath: string | null }) {
+export function ToolbarButtons({ host, unitPath, from }: { host: HostBridge; unitPath: string | null; from: string }) {
   const [buttons, setButtons] = useState<RegisteredToolbarButton[]>([])
   /** 每颗按钮此刻的状态（state 命令问来的）；没问过的不在表上，按灰处理 */
   const [states, setStates] = useState<Map<string, ButtonState>>(() => new Map())
@@ -89,14 +91,9 @@ export function ToolbarButtons({ host, unitPath }: { host: HostBridge; unitPath:
 
   const fire = useCallback(
     (b: RegisteredToolbarButton, item?: string): void => {
-      const params: Record<string, unknown> = {
-        ...(unitPath === null ? {} : { unitPath }),
-        ...(item === undefined ? {} : { item }),
-        ...(b.args ?? {}),
-      }
-      void host.call(b.command, params)
+      void host.call(b.command, clickArgsOf(b, { unitPath, item, from }))
     },
-    [host, unitPath],
+    [host, unitPath, from],
   )
 
   if (buttons.length === 0) return null

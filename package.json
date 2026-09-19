@@ -22,7 +22,15 @@
     "skills",
     "src"
   ],
-  "//gwb": "整段没有：窗格件的名字归运行时——node 半调 ctx.gwbShell.describeSelf，格是 apply 里 registerPane 的",
+  "//gwb": "只有 provides 一格（devkit.services 读它把服务的用法带进回执，repo-kit 自述守卫钉它与源码提供的服务互为充要）。窗格件的名字归运行时——node 半调 ctx.gwbShell.describeSelf，格是 init 里 registerPane 的",
+  "gwb": {
+    "provides": {
+      "gwbUnitFolder": {
+        "summary": "「人现在看的是哪个单元」与置顶单元：单元树里点了谁、钉了谁，往外报；外加往单元树工具条登记动作按钮的口",
+        "usage": "inject: ['gwbUnitFolder']（或 ctx.inject 局部注入，没装本件照挂）。current() 回 { unitPath, unitName, path } 或 undefined（没点过回落到第一个置顶单元）；pinned() 回置顶单元的绝对路径；ctx.on('unit-folder/selection', (sel) => …) 听选中变化，载荷与 current() 同形。registerToolbarButton({ id, icon, label, command, state?, args? }) 往树格工具条放一颗按钮：点击调 command，参数 { unitPath?, item?, from?, …args }（from 是树格的实例 id，开窗格时递给 shell.openPane）；state 命令回 { enabled, items } 定灰亮与菜单。回注销函数，件卸载时自动摘"
+      }
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node build.ts && tailwindcss -i src/client/styles.css -o dist/style.css",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json",
@@ -39,12 +47,12 @@
   },
   "//components": "radix / cva / cn 是 shadcn 组件的运行时依赖，但**打进本束**——它们不在 importmap 里，外置成裸名就是运行期炸，所以按判据算 dev。tailwindcss / @tailwindcss/cli 是构建输入；@tailwindcss/node 给 tests/prefix.test.ts 在不带前缀的输入下试编；tw-animate-css 给 animate-in 一族",
   "peerDependencies": {
-    "@godcreator/gwb-commands": "^0.4.3",
+    "@godcreator/gwb-commands": "^0.4.4",
     "@godcreator/gwb-plugin-api": "^0.1.2",
-    "@godcreator/gwb-shared-react": "^0.1.0",
-    "@godcreator/gwb-shell": "^0.9.1",
-    "@godcreator/gwb-skills": "^0.4.1",
-    "@godcreator/gwb-tokens": "^0.1.3",
+    "@godcreator/gwb-shared-react": "^0.1.1",
+    "@godcreator/gwb-shell": "^0.13.1",
+    "@godcreator/gwb-skills": "^0.4.2",
+    "@godcreator/gwb-tokens": "^0.1.4",
     "cordis": "^4.0.0-rc.9"
   },
   "peerDependenciesMeta": {
@@ -53,15 +61,15 @@
     }
   },
   "devDependencies": {
-    "@godcreator/gwb-commands": "0.4.3",
-    "@godcreator/gwb-data": "0.1.2",
+    "@godcreator/gwb-commands": "0.4.4",
+    "@godcreator/gwb-data": "0.1.4",
     "@godcreator/gwb-plugin-api": "0.1.2",
-    "@godcreator/gwb-repo-kit": "0.2.3",
-    "@godcreator/gwb-settings": "0.2.1",
-    "@godcreator/gwb-shared-react": "0.1.0",
-    "@godcreator/gwb-shell": "0.9.1",
-    "@godcreator/gwb-skills": "0.4.1",
-    "@godcreator/gwb-tokens": "0.1.3",
+    "@godcreator/gwb-repo-kit": "0.3.0",
+    "@godcreator/gwb-settings": "0.2.4",
+    "@godcreator/gwb-shared-react": "0.1.1",
+    "@godcreator/gwb-shell": "0.13.1",
+    "@godcreator/gwb-skills": "0.4.2",
+    "@godcreator/gwb-tokens": "0.1.4",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/node": "^4.3.3",
     "@types/node": "^24.0.0",

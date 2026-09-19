@@ -36,8 +36,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { IconButton } from '@/components/ui/icon-button'
 import { ToolbarButtons } from './toolbar-buttons.js'
-import { FILE_SELECTED, VIEWER_PANE, lastSelection, noteViewerFocus, openDuplicated, pickPayload, releaseViewerFocus, routeToFocused, viewerMounted, type SelectionPayload } from './selection.js'
-import type { HostBridge, PaneArgs, ShellBridge } from './types.js'
+import { VIEWER_PANE, fileOfParams, openModeOf, openViewer, type OpenMode, type ViewerFile } from './open-file.js'
+import type { HostBridge, PaneArgs, PaneHandle, ShellBridge } from './types.js'
 import {
   DEFAULT_STATUSES,
   STATUS_LABEL,
@@ -59,12 +59,13 @@ import {
  *   一键折叠三步；单元展开出文件树
  * * **原文格**（`viewer`）：行号、折行开关、点路径复制
  *
- * 两格靠 `shell.bus` 说话——树里**单击**一个文件，内容进「焦点原文格」（最后一次鼠标
- * 点过的那格）；**Ctrl+单击**再开一份原文格显示，新格接管焦点。这比塞在一格里左右
- * 分栏强的地方是：两格能各自拖到井里任何位置、能各自关掉，而**关掉一格不影响另一格**。
+ * 树格是工具窗格（整页一份），原文格是**文档窗格**（能多开，一份装一个文件）。两格之间不经
+ * 总线：树里点文件就是 `openPane('viewer', …)`，装哪个文件住在那一份的参数里（key 是文件的
+ * 绝对路径），跟着布局落盘、整页重载还在。点法照外壳的手势约定——单击预览（下一次单击顶掉
+ * 它）、Ctrl+单击或中键正式开一个新标签、Ctrl+Alt+单击开到旁边，见 open-file.ts。
  *
- * 原文格**不跟随状态**：接力棒只住内存，重启之后原文格是空的，等第一次单击
- * （见 selection.ts）。
+ * 工具条那排扩展按钮点击时带上树格的 `pane.instance` 当 `from`，登记方开窗格时递给外壳，
+ * 新窗格就落在单元树旁边。
  *
  * 数据命令全在宿主半现扫现读：`unit-folder.list`（容器清单，带 data 里置顶的那几条）、
  * `listDir`（单元内一层）、`readFile`（单文件原文）、`open`（资源管理器）。
@@ -180,8 +181,8 @@ function PageRows({
   expanded: ReadonlySet<string>
   listings: ReadonlyMap<string, ListingState>
   onToggle(path: string): void
-  /** 单击：内容进焦点原文格；Ctrl+单击：再开一份 */
-  onOpenFile(path: string, name: string, newPane: boolean): void
+  /** 点了一个文件：开法按手势定（单击预览、Ctrl / 中键新标签、Ctrl+Alt 开到旁边） */
+  onOpenFile(path: string, name: string, mode: OpenMode): void
   selected: string | null
 }) {
   const listing = listings.get(dir)
@@ -247,7 +248,14 @@ function PageRows({
               isSelected && 'unitfolder:bg-accent/60',
             )}
             style={{ paddingLeft: depth * 16 + 8 + 18 }}
-            onClick={(e) => onOpenFile(abs, entry.name, e.ctrlKey || e.metaKey)}
+            onClick={(e) => onOpenFile(abs, entry.name, openModeOf(e))}
+            // 中键不进 onClick，走 auxclick；按下时拦掉浏览器的中键自动滚动。右键（button 2）不算开
+            onMouseDown={(e) => {
+              if (e.button === 1) e.preventDefault()
+            }}
+            onAuxClick={(e) => {
+              if (e.button === 1) onOpenFile(abs, entry.name, openModeOf(e))
+            }}
           >
             <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
               <FileIcon className="unitfolder:size-4" />
@@ -369,7 +377,7 @@ function UnitsViewer({
     return (
       <div className="unitfolder:flex unitfolder:h-full unitfolder:flex-col">
         <div className="unitfolder:text-muted-foreground unitfolder:flex unitfolder:h-full unitfolder:items-center unitfolder:justify-center unitfolder:px-4 unitfolder:text-center unitfolder:text-sm">
-          在左边树里点一个文件看原文；Ctrl+单击另开一份。
+          在单元树里点一个文件看原文：单击预览，Ctrl+单击另开一格，Ctrl+Alt+单击开到旁边。
         </div>
       </div>
     )
@@ -429,7 +437,7 @@ function UnitsViewer({
 
 // ── 窗格本体 ──────────────────────────────────────────────────────────────────
 
-function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge }) {
+function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: ShellBridge; instance: string }) {
   const [inventory, setInventory] = useState<InventoryState>({ status: 'loading' })
   const [listings, setListings] = useState<Map<string, ListingState>>(() => new Map())
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
@@ -588,15 +596,13 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
   }, [activeUnit, listings, loadListing])
 
   /**
-   * 单击一个文件：选中高亮留在树里，内容由 `routeToFocused` / `openDuplicated` 递给
-   * 原文格（见 selection.ts）。Ctrl/Cmd+单击 = 再开一份。
+   * 点了一个文件：选中高亮留在树里，原文格按开法经外壳开（见 open-file.ts）——来源是树格
+   * 自己，外壳把它摆在最近用过的那组原文格里，没有就开到单元树旁边
    */
   const openFile = useCallback(
-    (path: string, name: string, newPane: boolean) => {
+    (path: string, name: string, mode: OpenMode) => {
       setSelected({ path, name })
-      const payload = { path, name, containerRoot }
-      if (newPane) openDuplicated(shell, payload)
-      else routeToFocused(shell, payload)
+      openViewer(shell, { path, name, containerRoot }, mode)
     },
     [shell, containerRoot],
   )
@@ -740,6 +746,7 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
     <div className="unitfolder:flex unitfolder:h-full unitfolder:flex-col">
       <PaneHeader
         host={host}
+        from={instance}
         total={total}
         containerRoot={containerRoot}
         rootExists={data?.rootExists}
@@ -792,52 +799,37 @@ function UnitFolderPane({ host, shell }: { host: HostBridge; shell: ShellBridge 
 }
 
 /**
- * 原文格：只有一件事——把树格里单击的那个文件的原文摆出来（多份实例各显各的）。
+ * 原文格：只有一件事——把**这一份参数里的那个文件**的原文摆出来（多份各显各的）。
  *
- * **初值与后续，两条渠道各管一种局面**：挂载时从 `lastSelection()` 拿最近一次递来的
- * 文件（树格刚 `openPane` 把它叫出来的那一刻，emit 已经过去了，只能自己去问——接力棒
- * 住在本模块内存里，见 selection.ts）；之后听总线上的 `file-selected`，**detail 带
- * `target`，只有 target 对上自己这份才响应**——多份原文格各显各的，单击改不到别格。
+ * 装哪个文件只有一条渠道：外壳给的参数。挂上时读 `pane.params`；外壳顶掉预览格的内容时走
+ * `retarget`（`onSwap` 接进来），这棵树不拆、折行开关留着。格里没有原地换文件的入口，所以
+ * 不调 `setPaneContent`——key 与参数一直是外壳开它时给的那份。
  *
- * **它一条定时器都不起**：账不会自己变，变了树格会喊。自己再轮询一遍只会把「总线断了」
- * 这件事盖住——症状从「原文不跟着换」降成「换得慢半拍」，而后者跟盘慢分不开。
+ * **它一条定时器都不起**：文件变了点「重读」，自己轮询只会把盘慢与卡死混成一种症状。
  */
 function ViewerPane({
   host,
   shell,
-  instance,
+  initial,
+  onSwap,
 }: {
   host: HostBridge
   shell: ShellBridge
-  instance: string
+  initial: ViewerFile | null
+  onSwap(swap: (params: Record<string, unknown>) => void): void
 }) {
-  const [selection, setSelection] = useState<SelectionPayload | null>(() => lastSelection())
-  const alive = useRef(true)
+  const [selection, setSelection] = useState<ViewerFile | null>(initial)
+
+  // 外壳软换这一格的参数时换文件（参数认不出就回空态）。mountPane 把这支递给 retarget
+  useEffect(() => {
+    onSwap((params) => setSelection(fileOfParams(params)))
+  }, [onSwap])
 
   // 标签直接显示当前文件名（空态回「文件原文」）。setPaneTitle 是 0.0.13 外壳才开的
   // 口——可选调用，旧外壳上优雅降级成静态标题
   useEffect(() => {
-    if (!alive.current) return
     shell.setPaneTitle?.(selection === null ? '文件原文' : selection.name)
   }, [shell, selection])
-
-  useEffect(() => {
-    alive.current = true
-    const off = shell.bus.on(FILE_SELECTED, (detail) => {
-      if (!alive.current) return
-      const d = detail as { target?: unknown; payload?: unknown } | null
-      // detail 带 target = 定向投递，只有目标这份响应（多份各显各的）；
-      // 不带 target = 广播（无焦点时的兜底），开着的都换
-      if (d === null || typeof d !== 'object') return
-      if (d.target !== undefined && d.target !== instance) return
-      const next = pickPayload(d.payload)
-      if (next !== null) setSelection(next)
-    })
-    return () => {
-      alive.current = false
-      off()
-    }
-  }, [shell, instance])
 
   return (
     <UnitsViewer
@@ -963,6 +955,7 @@ function DirMenu({
  */
 function PaneHeader({
   host,
+  from,
   total,
   containerRoot,
   rootExists,
@@ -985,6 +978,8 @@ function PaneHeader({
   onOpenInCode,
 }: {
   host: HostBridge
+  /** 树格自己的实例 id：扩展按钮点击时当 `from` 递给登记方 */
+  from: string
   total: number
   containerRoot: string
   rootExists?: boolean | undefined
@@ -1049,7 +1044,7 @@ function PaneHeader({
           />
           {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
               亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
-          <ToolbarButtons host={host} unitPath={activeUnitPath} />
+          <ToolbarButtons host={host} unitPath={activeUnitPath} from={from} />
           <span className="unitfolder:bg-border unitfolder:mx-1 unitfolder:h-4 unitfolder:w-px" />
           <IconButton
             label="在资源管理器打开容器根"
@@ -1108,35 +1103,33 @@ function PaneHeader({
  * 实例，两格共用它，React 根各自建各自的。契约要求**同步**返回 `{ dispose }`：
  * async/回函数都算违约。
  *
- * 原文格这边多两件事：**挂载即登记焦点**、容器上挂 `mousedown` 记焦点（焦点 =
- * 最后一次鼠标点过的原文格，单击路由的落点，见 selection.ts）；`dispose` 摘监听并
- * 释放焦点。
+ * 原文格多给一支 `retarget`：外壳顶掉预览格的内容时软换（换文件、不拆这棵树）。
  */
-export function mountPane({ host, shell, pane }: PaneArgs, container: HTMLElement): { dispose(): void } {
+export function mountPane({ host, shell, pane }: PaneArgs, container: HTMLElement): PaneHandle {
   const isViewer = pane.id === VIEWER_PANE
-  const onDown = (): void => noteViewerFocus(pane.instance)
-  if (isViewer) {
-    viewerMounted(pane.instance)
-    container.addEventListener('mousedown', onDown)
-  }
+  /** 原文格的软换那支：ViewerPane 挂上之后填进来 */
+  let swap: ((params: Record<string, unknown>) => void) | undefined
   const root = createRoot(container)
   root.render(
     // 新版 shadcn 的 Tooltip.Root 要求外层有 Provider——窗格顶层给一把，IconButton 里各归各
     <TooltipProvider delayDuration={200}>
-      {pane.id === VIEWER_PANE ? (
-        <ViewerPane host={host} shell={shell} instance={pane.instance} />
+      {isViewer ? (
+        <ViewerPane host={host} shell={shell} initial={fileOfParams(pane.params)} onSwap={(fn) => (swap = fn)} />
       ) : (
-        <UnitFolderPane host={host} shell={shell} />
+        <UnitFolderPane host={host} shell={shell} instance={pane.instance} />
       )}
     </TooltipProvider>,
   )
   return {
     dispose() {
       root.unmount()
-      if (isViewer) {
-        container.removeEventListener('mousedown', onDown)
-        releaseViewerFocus(pane.instance)
-      }
     },
+    ...(isViewer
+      ? {
+          retarget(params: Record<string, unknown>) {
+            swap?.(params)
+          },
+        }
+      : {}),
   }
 }
