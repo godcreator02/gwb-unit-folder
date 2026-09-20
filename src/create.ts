@@ -6,17 +6,19 @@ import { IDENTITY_FILE, validateIdentity, type UnitIdentity } from './scan.js'
  * 建单元：算目录名、建目录、写出生证，到 `unit.json` 为止。仓怎么建、要不要文档站，
  * 交给目标线自己的工具。
  *
- * 目录名 = `yyMMddHH` + 三个小写字母，按本机时区算；撞名重摇。字段表与读盘共用
- * `validateIdentity`，写出去的出生证读回来一定认得。
+ * 目录名 = 五位随机小写字母数字 + `-` + 功能名（如 `a1b2c-gwbbase`）；功能名可省，
+ * 省了就只有随机段。撞名重摇。字段表与读盘共用 `validateIdentity`，写出去的出生证
+ * 读回来一定认得。时间不进目录名——`createdAt` 比它准，而目录名要经得住内容变。
  */
 
-/** 建单元时调用方给的那几项。`status` 可省，省了是 `active`；`createdAt` 由本件填 */
+/** 建单元时调用方给的那几项。`status` / `slug` 可省，省了是 `active` / 无功能名；`createdAt` 由本件填 */
 export interface CreateUnitInput {
   kind: unknown
   title: unknown
   purpose: unknown
   icon: unknown
   status?: unknown
+  slug?: unknown
 }
 
 export interface CreatedUnit {
@@ -25,17 +27,26 @@ export interface CreatedUnit {
   identity: UnitIdentity
 }
 
-/** 撞名重摇的上限。一个小时里建五十个单元不是正常用法，到了就停下来报 */
+/** 撞名重摇的上限。五位随机撞一次已是万一，连撞五十次只可能是调用方的 random 坏了 */
 const MAX_ATTEMPTS = 50
 
-const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+/**
+ * 随机段的字符集，只用小写字母与数字。Windows 文件系统大小写不敏感——收了大写等于没写，
+ * 还会把两个不同的名字算成同一个，白摇一趟。
+ */
+const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz'
+
+/** 随机段长度 */
+const ID_LENGTH = 5
+
+/**
+ * 功能名：小写字母数字，段间单个连字符（`gwb-test`）。开头结尾不许是连字符，也不许出现
+ * 路径分隔——这个名字要拼进目录名，放 `..` 或 `/` 进来就能穿出容器根。
+ */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const SLUG_MAX = 32
 
 const pad = (n: number): string => String(n).padStart(2, '0')
-
-/** 目录名的时间码：`yyMMddHH`，本机时区 */
-export function stampOf(now: Date): string {
-  return `${pad(now.getFullYear() % 100)}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}`
-}
 
 /** 出生时刻：ISO 8601，本机时区带偏移（`2026-09-17T15:30:00+08:00`） */
 export function createdAtOf(now: Date): string {
@@ -49,11 +60,22 @@ export function createdAtOf(now: Date): string {
   )
 }
 
-/** 三个小写字母。`random` 回 [0, 1)，测试里换成确定的序列 */
-export function suffixOf(random: () => number): string {
+/** 五位随机段。`random` 回 [0, 1)，测试里换成确定的序列 */
+export function idOf(random: () => number): string {
   let out = ''
-  for (let i = 0; i < 3; i++) out += LETTERS[Math.floor(random() * LETTERS.length)]
+  for (let i = 0; i < ID_LENGTH; i++) out += ALPHABET[Math.floor(random() * ALPHABET.length)]
   return out
+}
+
+/** 功能名验过没有。省了或空串回空串（只有随机段），不合规回一句为什么 */
+function normalizeSlug(raw: unknown): { ok: true; slug: string } | { ok: false; error: string } {
+  if (raw === undefined || raw === '') return { ok: true, slug: '' }
+  if (typeof raw !== 'string') return { ok: false, error: `slug 要是字符串，收到 ${typeof raw}` }
+  if (raw.length > SLUG_MAX) return { ok: false, error: `slug 超过 ${SLUG_MAX} 个字符：${raw}` }
+  if (!SLUG_PATTERN.test(raw)) {
+    return { ok: false, error: `slug 只能是小写字母数字、段间用单个连字符（如 gwb-test）：${raw}` }
+  }
+  return { ok: true, slug: raw }
 }
 
 /**
@@ -79,15 +101,18 @@ export function createUnit(
   })
   if (!checked.ok) return { ok: false, error: `出生证不成立：${checked.reason}` }
 
+  const slug = normalizeSlug(input.slug)
+  if (!slug.ok) return { ok: false, error: `目录名不成立：${slug.error}` }
+
   try {
     if (!fs.statSync(root).isDirectory()) return { ok: false, error: `容器根不是目录：${root}` }
   } catch {
     return { ok: false, error: `容器根不在：${root}` }
   }
 
-  const stamp = stampOf(now)
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const name = `${stamp}${suffixOf(random)}`
+    const id = idOf(random)
+    const name = slug.slug === '' ? id : `${id}-${slug.slug}`
     const dir = path.join(root, name)
     try {
       fs.mkdirSync(dir)
@@ -98,5 +123,5 @@ export function createUnit(
     fs.writeFileSync(path.join(dir, IDENTITY_FILE), `${JSON.stringify(checked.identity, null, 2)}\n`, 'utf8')
     return { ok: true, data: { name, path: dir, identity: checked.identity } }
   }
-  return { ok: false, error: `重摇 ${MAX_ATTEMPTS} 次都撞名——${stamp} 这个时辰的单元太多了` }
+  return { ok: false, error: `重摇 ${MAX_ATTEMPTS} 次都撞名——随机源是不是坏了` }
 }

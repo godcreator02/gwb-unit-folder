@@ -365,13 +365,13 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
         name: 'unit-folder.create',
         description: '在容器根下建一个新单元：算目录名、建目录、写出生证 unit.json',
         usage:
-          '参数 { kind, title, purpose, icon, status? }，全是非空字符串。kind 是中文种类短词（先 unit-folder.list 看已有的种类，能归进去就别造新词）；title 是树里显示的短名；purpose 是它唯一的自述，一句话说清这个单元是什么、干什么，容易跟谁混就点一句（不写历史、版本沿革、已完成的任务清单）；icon 是 lucide 图标名，kebab-case（https://lucide.dev/icons ，如 puzzle / book-open / server）；status 是 active / paused / retired，省了是 active。目录名 yyMMddHH + 三个小写字母，撞名重摇；createdAt 由本件填。到 unit.json 为止，仓与文档站交给目标线自己的工具。回 { name, path, identity }',
+          '参数 { kind, title, purpose, icon, status?, slug? }，前四项非空字符串。kind 是中文种类短词（先 unit-folder.list 看已有的种类，能归进去就别造新词）；title 是树里显示的短名；purpose 是它唯一的自述，一句话说清这个单元是什么、干什么，容易跟谁混就点一句（不写历史、版本沿革、已完成的任务清单）；icon 是 lucide 图标名，kebab-case（https://lucide.dev/icons ，如 puzzle / book-open / server）；status 是 active / paused / retired，省了是 active；slug 是目录名里的功能名——小写字母数字、段间用单个连字符（如 gwb-test），省了目录名就只有随机段。目录名 <五位随机小写字母数字>-<slug>，撞名重摇；createdAt 由本件填——时间不进目录名。到 unit.json 为止，仓与文档站交给目标线自己的工具。回 { name, path, identity }',
       },
       (args) => {
         const root = this.resolveUnitsRoot()
         if (root === undefined) return { ok: false, code: 'unconfigured', error: MISSING_UNITS_ROOT }
         const a = argsOf(args)
-        const outcome = createUnit(root, { kind: a.kind, title: a.title, purpose: a.purpose, icon: a.icon, status: a.status })
+        const outcome = createUnit(root, { kind: a.kind, title: a.title, purpose: a.purpose, icon: a.icon, status: a.status, slug: a.slug })
         if (outcome.ok) this.log.info(`建了单元 ${outcome.data.name}（${outcome.data.identity.kind}：${outcome.data.identity.title}）`)
         else this.log.warn(`建单元没成：${outcome.error}`)
         return outcome

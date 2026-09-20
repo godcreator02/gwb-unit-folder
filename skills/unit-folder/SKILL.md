@@ -32,8 +32,9 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | `icon` | [lucide](https://lucide.dev/icons) 图标名，kebab-case（`puzzle`、`book-open`、`server`）。认不出的名字画兜底文件夹 |
 | `createdAt` | ISO 8601 带时区。建单元时本件自动填 |
 
-**新开单元走 `unit-folder.create`**，别手建目录：它算目录名（`yyMMddHH` + 三个小写字母，撞名重摇）、
-建目录、写出生证，到 `unit.json` 为止。仓怎么建、要不要文档站，交给目标线自己的工具
+**新开单元走 `unit-folder.create`**，别手建目录：它算目录名（五位随机小写字母数字；给了 `slug`
+就拼成 `<随机>-<slug>`，如 `a1b2c-gwbbase`。撞名重摇）、建目录、写出生证，到 `unit.json` 为止。
+仓怎么建、要不要文档站，交给目标线自己的工具
 （插件仓走 `devkit.scaffold`，站走 `docs-site.create`）。改已有单元的状态、标题、图标，直接改那份 `unit.json`。
 
 容器根在哪由**设置**里的 `units-root` 说了算（`gwb-settings` 那份，值落 `<home>\settings.json`；
@@ -44,7 +45,7 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 
 | 命令 | 干什么 |
 | --- | --- |
-| `unit-folder.create` | 建一个新单元：`{kind, title, purpose, icon, status?}`，`status` 省了是 `active`。回 `{ name, path, identity }` |
+| `unit-folder.create` | 建一个新单元：`{kind, title, purpose, icon, status?, slug?}`，`status` 省了是 `active`，`slug` 省了目录名只有随机段。回 `{ name, path, identity }` |
 | `unit-folder.list` | 现扫容器根，回全部单元：认领过的按 `kind` 分组，没出生证或读不出的落 `unidentified`（读不出的带 `reason`）；回包另带 `pinned`（置顶的单元条目数组，按置顶先后；目录已不在的这一趟顺手摘掉）。无参数 |
 | `unit-folder.toolbarButtons` | 此刻有哪些件往树格工具条登记了按钮（浏览器半取表用）。无参数 |
 | `unit-folder.listDir` | 列容器根内一个目录的一层：`{path}` |
@@ -102,9 +103,9 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 
 ## 怎么用它回答问题
 
-**「X 项目住哪儿」**：先 `unit-folder.list`，在回包里按 `title` 与 `purpose` 找——出生证那句话通常
-写着这个单元是干什么的，比目录名好认。目录名是时间码加随机码（如 `26090811jjr`），
-**不表意，别指望从名字猜出内容**。
+**「X 项目住哪儿」**：先 `unit-folder.list`，在回包里按 `title` 与 `purpose` 找——出生证那句话
+通常写着这个单元是干什么的，比目录名准。目录名是随机段加功能名（如 `a1b2c-gwbbase`）：
+**功能名故意只写大类**——内容会变、名字不会，所以它只能当路标，不能当清单。
 
 **「我现在看的是哪个」**：`unit-folder.current`。null 就是人还没在树里点过、也没置顶。
 
