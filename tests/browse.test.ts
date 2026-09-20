@@ -43,6 +43,44 @@ describe('resolveInside：根内的路才放行', () => {
   })
 })
 
+describe('resolveInside：第二道墙（物理）——已存在的重解析点才算数', () => {
+  // junction 是 NTFS 的目录链接，建它不需要管理员权限；symlink 那条要，不碰。
+  // 这组用例钉的是审查 GWB-29 的复现：词法在根内、落脚点在根外，必须拒
+  const win32 = it.skipIf(process.platform !== 'win32')
+
+  win32('根内 junction 指向根外：拒（读根外内容的路就此断掉）', () => {
+    const root = tmpDir()
+    const outside = tmpDir()
+    fs.writeFileSync(path.join(outside, 'marker.txt'), 'AUDIT_MARKER')
+    fs.symlinkSync(outside, path.join(root, 'leak'), 'junction')
+    expect(resolveInside(root, path.join(root, 'leak', 'marker.txt'))).toBeNull()
+    fs.rmSync(root, { recursive: true, force: true })
+    fs.rmSync(outside, { recursive: true, force: true })
+  })
+
+  win32('根内 junction 指向根内目录：放行——正常链接不是敌人', () => {
+    const root = tmpDir()
+    fs.mkdirSync(path.join(root, 'unit-a'))
+    fs.writeFileSync(path.join(root, 'unit-a', 'unit.json'), '{}')
+    fs.symlinkSync(path.join(root, 'unit-a'), path.join(root, 'alias'), 'junction')
+    expect(resolveInside(root, path.join(root, 'alias', 'unit.json'))).toBe(path.join(root, 'alias', 'unit.json'))
+    fs.rmSync(root, { recursive: true, force: true })
+  })
+
+  win32('junction 绕一圈落回根本身：物理上就是根，根自己不算根内', () => {
+    const root = tmpDir()
+    fs.symlinkSync(root, path.join(root, 'self'), 'junction')
+    expect(resolveInside(root, path.join(root, 'self'))).toBeNull()
+    fs.rmSync(root, { recursive: true, force: true })
+  })
+
+  it('目标不存在时这道墙不拦——「不存在」的报错归 listDir / readFile 那头', () => {
+    // 假根从没存在过，词法过关即放行；现有那组假根用例也一直靠这个行为
+    const root = path.resolve('/fake-root')
+    expect(resolveInside(root, path.join(root, 'not-there', 'x.txt'))).toBe(path.resolve(root, 'not-there', 'x.txt'))
+  })
+})
+
 describe('listDir：一层清单', () => {
   it('目录在前、文件在后，文件带 size', () => {
     const dir = tmpDir()

@@ -1,0 +1,22 @@
+{
+  "when": "2026-09-20T02:08:58.258Z",
+  "platform": "win32",
+  "junction": {
+    "lexicalAccepted": false,
+    "resolvedTo": null,
+    "directReadReachesOutside": false
+  },
+  "quote": {
+    "payload": "C:\\Users\\GODAME~1\\AppData\\Local\\Temp\\gwb-unitfolder-probe-TXURON\\x\" & echo AUDIT_MARKER & rem \"",
+    "resolveAcceptedForNonexistent": true,
+    "distHasShellTrue": false,
+    "distHasCodeArgv": true
+  },
+  "vscode": {
+    "codeExe": "C:\\Users\\godamericatb14\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
+    "exists": true,
+    "versionExitOk": true,
+    "versionStdout": "[WARNING] Ignore caches that are heterogeneous",
+    "note": "argv.json 损坏是本机环境问题，非本改动引入；GUI 进程读它的警告在旧 code.cmd 通道同样存在"
+  }
+}

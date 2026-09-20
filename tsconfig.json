@@ -10,5 +10,5 @@
       "@/*": ["./src/client/*"]
     }
   },
-  "include": ["src/index.ts", "src/scan.ts", "src/browse.ts", "src/current.ts", "src/create.ts","src/client/**/*.ts", "tests/**/*.test.ts", "build.ts", "tools/**/*.ts", "scripts/**/*.ts", "vitest.config.ts"]
+  "include": ["src/index.ts", "src/scan.ts", "src/browse.ts", "src/current.ts", "src/create.ts", "src/vscode.ts", "src/client/**/*.ts", "tests/**/*.test.ts", "build.ts", "tools/**/*.ts", "scripts/**/*.ts", "vitest.config.ts"]
 }

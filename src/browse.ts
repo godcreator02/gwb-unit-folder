@@ -9,6 +9,9 @@ import path from 'node:path'
  * 路径都来自上一层的清单——但命令总线对外暴露，不能指望参数是界面自己递来的，
  * 所以每一处都从容器根重新验：`resolveInside` 拒掉一切走出容器根的路径，穿越
  * （`..`、绝对路径、盘符切换）在 `path.relative` 的结果上现形，正反斜杠两种写法都认。
+ * 词法过关之后还有一关**物理**的：NTFS 的 junction / symlink 不改字符串、只改
+ * 落脚点，根内一条链接可以把 `stat` / `open` 带到根外去，所以存在的路径还要用
+ * `realpath` 解到实际位置再比一次边界（见 `resolveInside` 里的第二道墙）。
  */
 
 /** 一次列目录的回包：一层，目录在前、文件在后，各自按名字典序 */
@@ -49,7 +52,21 @@ function describe(error: unknown): string {
 }
 
 /**
- * 把一条外界递来的路径验成「容器根内的绝对路径」，不合格回 null。
+ * `realpath` 解实际路径；不存在或读不动（权限等）都回 undefined——「不存在」的
+ * 报错归下游的 `listDir` / `readFile`（「列不动 / 读不动」），这里不抢话。
+ */
+function tryRealPath(p: string): string | undefined {
+  try {
+    return fs.realpathSync(p)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * 把一条外界递来的路径验成「容器根内的绝对路径」，不合格回 null。两道墙：
+ * 词法（`relative` 上现形的穿越）之外，存在的路径还要过 `realpath` 的物理
+ * 边界（见函数体第二道墙）。
  *
  * 相对路径**按容器根解，不按宿主的工作目录解**：宿主的 CWD 是应用起的时候定的，
  * 拿它当基准只会让同一条参数在不同启动方式下指向不同地方。绝对路径原样生效，
@@ -73,6 +90,20 @@ export function resolveInside(root: string, requested: unknown): string | null {
   }
   if (rel === '') return null
   if (rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) return null
+  // 第二道墙（物理）：词法在根内不等于落脚点在根内——路径上任何一环是 junction /
+  // symlink，`stat` / `open` 都会跟着走到链接的**目标**去。双端都 `realpath` 到
+  // 实际位置再比一次，指到根外的链接就在这儿现形。目标（或根）不存在时这道墙
+  // 不拦：不存在的路径没有落脚点可言，错误由下游报。已知边界：这道墙验的是
+  // **校验时刻**的实际位置，校验后毫秒级把目录换成链接的竞态不防——纯 Node 拿
+  // 不到句柄级的 final-path，要堵死得动内核接口，本机桌面威胁模型下不值当。
+  const realRoot = tryRealPath(rootResolved)
+  if (realRoot !== undefined) {
+    const realTarget = tryRealPath(target)
+    if (realTarget !== undefined) {
+      const realRel = path.relative(realRoot, realTarget)
+      if (realRel === '' || realRel === '..' || realRel.startsWith(`..${path.sep}`) || path.isAbsolute(realRel)) return null
+    }
+  }
   return target
 }
 

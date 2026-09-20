@@ -13,6 +13,7 @@ import { listDir, readFilePreview, resolveInside } from './browse.js'
 import { takeInventory } from './scan.js'
 import { createUnit } from './create.js'
 import { addPinned, findPinned, isUnitDir, parsePinnedDoc, PINNED_DOC, removePinned, resolveCurrent, selectionFor, type UnitSelection } from './current.js'
+import { locateCodeExe } from './vscode.js'
 import { TOOLBAR_EVENT, createToolbarButtonRegistry, type ToolbarButtonRegistry, type ToolbarButtonSpec } from './toolbar.js'
 
 export const name = 'gwb-unit-folder'
@@ -123,6 +124,12 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
   private data: DataDocs | undefined
   /** 「没装 data 件、置顶落不了盘」只说一次 */
   private dataWarned = false
+  /**
+   * VSCode 真身的缓存：undefined 还没找过，null 找过没有，字符串找到了。
+   * 一次解析挂载期内复用——中途装了 VSCode 要重启才认，比每条命令 spawn 一趟
+   * `where` 划算
+   */
+  private codeExe: string | null | undefined
   /** 工具条按钮表：键是 (entryId, 按钮 id)。皮经 unit-folder.toolbarButtons 取表 */
   private readonly toolbarTable: ToolbarButtonRegistry
   /** 内核事件口——登记表一变推一声，页面那侧听见重取按钮表 */
@@ -277,6 +284,12 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     return run(root, target)
   }
 
+  /** VSCode 真身，见 `vscode.ts`；找不到回 null，由调用方明说打不开，不降级 */
+  private resolveCodeExe(): string | null {
+    if (this.codeExe === undefined) this.codeExe = locateCodeExe()
+    return this.codeExe
+  }
+
   /**
    * `current()` 的值变了就喊一声。点击与置顶两条路都经这儿：置顶在没点过时改变的是
    * 回落值，消费方看到的「当前」一样变了，所以也要喊
@@ -401,10 +414,12 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       {
         name: 'unit-folder.open',
         description: '在资源管理器里打开容器根内一个目录',
-        usage: '参数 { path: string }——要打开的目录，容器根内的绝对路径',
+        usage: '参数 { path: string }——要打开的目录，容器根内的绝对路径，必须已存在',
       },
       (args) =>
         this.withTarget(args, (_root, target) => {
+          // explorer 本来就不认「打开一个不存在的目录」，与其让它弹错误框，这里先说明白
+          if (!isDirectory(target)) return { ok: false, error: `不是目录：${target}` }
           // explorer.exe 成功时退出码也可能是 1，不看成败——成败以「进程起没起得来」计
           const child = spawn('explorer.exe', [target], { detached: true, stdio: 'ignore' })
           child.on('error', (err) => this.log.warn(`资源管理器起不来：${err.message}`))
@@ -417,15 +432,22 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       {
         name: 'unit-folder.code',
         description: '用 VSCode 新窗口打开容器根内一个目录（code -n）',
-        usage: '参数 { path: string }——要打开的目录，容器根内的绝对路径',
+        usage:
+          '参数 { path: string }——要打开的目录，容器根内的绝对路径，必须已存在。找不到 VSCode 可执行入口（PATH 上没有 code）时回失败，不降级',
       },
       (args) =>
         this.withTarget(args, (_root, target) => {
-          // code 是 PATH 上的 .cmd，直接 spawn 会被 Node 挡（EINVAL），走 shell 转一道。
-          // **命令拼成单条字符串**再交给 shell——args 数组 + shell:true 会吃 DEP0190 告警。
-          // -n = 新窗口；同 explorer：成败以「进程起没起得来」计，code 不在 PATH 时
-          // cmd 报「不是内部或外部命令」进不了 error 事件——那算环境没装，日志见不了
-          const child = spawn(`code -n "${target}"`, { shell: true, detached: true, stdio: 'ignore' })
+          if (!isDirectory(target)) return { ok: false, error: `不是目录：${target}` }
+          const codeExe = this.resolveCodeExe()
+          if (codeExe === null) {
+            this.log.warn('找不到 VSCode 的可执行入口：PATH 上没有 code，也推不出 Code.exe')
+            return { ok: false, error: '找不到 VSCode 的可执行入口——PATH 上没有 code，装好再来' }
+          }
+          // Code.exe 是真 exe：不开 shell、独立 argv，target 只是路径，不再是命令文本
+          // （旧实现拼 `code -n "…"` 进 cmd，路径里的引号/百分号都是合法文件名字符，
+          // 却是命令解释器的活燃料——CVE 后 spawn .cmd 又必须 shell，两头逼出这个找真身的走法）。
+          // -n = 新窗口；同 explorer：成败以「进程起没起得来」计
+          const child = spawn(codeExe, ['-n', target], { detached: true, stdio: 'ignore' })
           child.on('error', (err) => this.log.warn(`VSCode 起不来：${err.message}`))
           child.unref()
           return { ok: true }
