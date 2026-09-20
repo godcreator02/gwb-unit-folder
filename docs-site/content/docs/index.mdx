@@ -64,12 +64,12 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 本件往 ctx 上挂的名字只有一个，`static inject` 只放两个硬依赖——外壳（没它两格没处挂）与命令总线
 （没它浏览器半调不到任何东西）：
 
-{/* ref file="../src/index.ts" lines="112-114" */}
+{/* ref file="../src/index.ts" lines="113-115" */}
 
 设置、数据、说明书三件都是**局部注入**：缺哪个本件照挂、只少那一面。data 件那一格顺带定了置顶怎么落盘、
 以及「人先点了置顶、data 件后挂上」那种顺序谁赢：
 
-{/* ref file="../src/index.ts" lines="180-199" */}
+{/* ref file="../src/index.ts" lines="187-206" */}
 
 **浏览器半不知道宿主半的实现。** 它只经命令总线说话（`host.call`），按形状收回包；报选中那一下
 是 fire-and-forget、失败只在控制台说一声：
@@ -86,7 +86,15 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 **带路径参数的命令共用一堵墙。** 命令总线对外暴露（agent 经 MCP 也在调），参数不能默认是界面自己递来的
 那份清单上的：每条都先解 `units-root`、再把路径验成根内的绝对路径，越出根的一律回「路径不在容器根内」：
 
-{/* ref file="../src/index.ts" lines="266-278" */}
+{/* ref file="../src/index.ts" lines="273-285" */}
+
+墙其实有两道。词法那道管字符串：`..`、根外绝对路径、换盘符在 `path.relative` 的结果上现形。物理那道管
+落脚点（2026-09-20 起）：NTFS 的 junction / symlink 不改字符串、只改落脚点，根内一条链接能把 `stat` /
+`open` 带到根外去——已存在的路径要 `realpath` 解到实际位置再比一次边界，指到根外的一律拒；路径不存在时
+物理那道不拦，「不存在」的错归下游报。校验后毫秒级把目录换成链接的竞态不防（纯 Node 拿不到句柄级
+final-path），本机桌面威胁模型下不做：
+
+{/* ref file="../src/browse.ts" lines="93-106" */}
 
 ## 怎么用
 

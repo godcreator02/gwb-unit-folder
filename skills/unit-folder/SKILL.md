@@ -49,8 +49,8 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | `unit-folder.toolbarButtons` | 此刻有哪些件往树格工具条登记了按钮（浏览器半取表用）。无参数 |
 | `unit-folder.listDir` | 列容器根内一个目录的一层：`{path}` |
 | `unit-folder.readFile` | 读容器根内一个文件的原文（截断预览）：`{path}` |
-| `unit-folder.open` | 在资源管理器里打开一个目录：`{path}` |
-| `unit-folder.code` | 用 VSCode 新窗口打开一个目录（`code -n`）：`{path}` |
+| `unit-folder.open` | 在资源管理器里打开一个目录：`{path}`，目录必须已存在 |
+| `unit-folder.code` | 用 VSCode 新窗口打开一个目录（`code -n`）：`{path}`，目录必须已存在；找不到 VSCode（PATH 上没有 `code`）回失败，不降级 |
 | `unit-folder.select` | 报一次选中：`{path}`（单元目录或单元内目录）。回 `{ unitPath, unitName, path }`。树里点一下就是这条，agent 想替人「切到某个单元」也调它 |
 | `unit-folder.current` | 此刻的「当前单元」：最近一次点击，没点过回落到第一个置顶，都没有是 null。无参数 |
 | `unit-folder.pin` | 把一个单元加进置顶（可以有多个，追加到末尾）：`{path}`，**必须是容器根下一层的单元目录**。落 data 文档 `pinned`。回 `{ paths }` |
@@ -62,7 +62,10 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 `unit-folder.readFile`，不必经过窗格。
 
 **路径参数一律关在容器根内**——传一个根外的绝对路径会被回一句「路径不在容器根内」，
-这不是 bug 是门。命令总线对外暴露，参数不能默认来自界面。
+这不是 bug 是门。命令总线对外暴露，参数不能默认来自界面。墙有两道：词法（`..`、根外
+绝对路径、换盘符）之外，**已存在的**路径还要过重解析点这道——根内 junction / 链接指到
+根外的，落脚点算根外，一样拒；路径不存在时不拦（报错归下游的「列不动 / 读不动 / 不是
+目录」）。
 
 ## 「当前单元」：给别的件的服务面
 
