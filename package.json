@@ -1,6 +1,6 @@
 {
   "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.9",
+  "version": "0.7.10",
   "author": {
     "name": "godcreator"
   },
@@ -49,10 +49,8 @@
   "peerDependencies": {
     "@godcreator/gwb-commands": "^0.4.5",
     "@godcreator/gwb-plugin-api": "^0.1.2",
-    "@godcreator/gwb-shared-react": "^0.1.1",
     "@godcreator/gwb-shell": "^0.13.2",
     "@godcreator/gwb-skills": "^0.4.3",
-    "@godcreator/gwb-tokens": "^0.1.4",
     "cordis": "^4.0.0-rc.9"
   },
   "peerDependenciesMeta": {
@@ -66,10 +64,8 @@
     "@godcreator/gwb-plugin-api": "0.1.2",
     "@godcreator/gwb-repo-kit": "0.3.0",
     "@godcreator/gwb-settings": "0.3.1",
-    "@godcreator/gwb-shared-react": "0.1.1",
     "@godcreator/gwb-shell": "0.13.2",
     "@godcreator/gwb-skills": "0.4.3",
-    "@godcreator/gwb-tokens": "0.1.4",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/node": "^4.3.3",
     "@types/node": "^24.0.0",
@@ -94,5 +90,8 @@
     "type": "git",
     "url": "https://git.tianshen02.online:28377/godcreator/gwb-unit-folder.git"
   },
-  "keywords": ["gwb", "gwb-plugin"]
+  "keywords": [
+    "gwb",
+    "gwb-plugin"
+  ]
 }
