@@ -64,7 +64,7 @@
     "@godcreator/gwb-plugin-api": "0.1.2",
     "@godcreator/gwb-repo-kit": "0.3.0",
     "@godcreator/gwb-settings": "0.3.1",
-    "@godcreator/gwb-shell": "0.13.2",
+    "@godcreator/gwb-shell": "^0.13.5",
     "@godcreator/gwb-skills": "0.4.3",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/node": "^4.3.3",
