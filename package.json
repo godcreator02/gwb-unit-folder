@@ -49,7 +49,7 @@
   "peerDependencies": {
     "@godcreator/gwb-commands": "^0.4.5",
     "@godcreator/gwb-plugin-api": "^0.2.7",
-    "@godcreator/gwb-shell": "^0.13.2",
+    "@godcreator/gwb-shell": "^0.13.5",
     "@godcreator/gwb-skills": "^0.4.3",
     "cordis": "^4.0.0-rc.9"
   },
