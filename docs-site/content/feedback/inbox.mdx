@@ -17,3 +17,39 @@ docfirst: none
 已删，选中记录没跟上目录消失，「当前单元」指着一个不存在的路径）
 
 建议：报选中之前先确认那个目录还在，不在就当没选中。
+
+## 2026-09-24 迁到「内核装进 home」：peer 写内核包，其余包挪到 dev
+
+来源：总控台（单元 00000-console），「内核装进 home」那次 claude 会话；内核仓交接页 `gwb-kernel/docs-site/content/spec/kernel-in-home.mdx`。
+
+内核改成 npm 包装在每个 home 里（内核包 `@godcreator/gwb-kernel-desktop` 0.4.1，词汇表包 `@godcreator/gwb-plugin-api` 同号），页面用的 react
+改由内核包提供；devkit 0.18.11 起发版前检查插件 peer 里的内核包范围与 `gwb.provides`，命令总线 0.5.0 起登记命令时检查字段。本仓还没迁的插件：gwb-unit-folder。
+
+要做的（规矩正本是 devkit 的说明书 `gwb-release` 与 `gwb-devkit`，`skill.read` 读）：
+
+- peer 只写内核包 `"@godcreator/gwb-kernel-desktop": "^0.4.1"`；node 侧按值 import 了 `cordis` 的再写 `cordis`。词汇表包、命令总线、外壳等其他
+  `@godcreator` 包一律挪到 dev、写 `^` 范围，词汇表包 `^0.4.0` 起
+- 带界面的插件：dev 里的外壳抬到 `^0.13.7` 时，peer 必须同时写内核包——外壳 0.13.7 起不再声明 react，构建与发版检查改从装着的内核包清单
+  读 react 的四个包名。浏览器侧构建脚本里「这四个名字由 gwb-shared-react 提供」那句注释改成由内核包提供；想不手抄名单的，照 devkit 模板从内核包清单的 `gwb.shared` 读
+- 命令总线 0.5.0 起，登记命令时 `name`、`description`、`usage` 必须是非空字符串，`plugin` 可以不写、写了必须等于完整包名，不合格整个插件加载失败——发版前核对每条命令
+- 发版前用 `devkit.dev` 在隔离 home 里验过，再 `devkit.release`
+
+## 2026-09-24 要适配内核 0.5：词汇表包并进内核包，页面 importmap 里只剩内核包提供的包名
+
+来源：gwb-kernel（内核仓），2026-09-24。
+
+内核 0.5.0 起词汇表包 `@godcreator/gwb-plugin-api` 不再发布，它的类型（`GwbContext`、`GwbKernelApi`、`GwbResult`、`GwbWindowApi`、`ShellBoot`、`window.gwb` 的全局声明）
+改由内核包 `@godcreator/gwb-kernel-desktop` 的包根导出。gwb-unit-folder 要改：
+
+- `import type { … } from '@godcreator/gwb-plugin-api'` 改成 `from '@godcreator/gwb-kernel-desktop'`（`import type {} from '@godcreator/gwb-plugin-api'` 也一样改），本仓有 4 个文件；`tests/artifact.test.ts` 里允许出现的 `@godcreator/gwb-plugin-api` 一并换掉
+- peer 与 dev 里的词汇表包都删掉，peer 写内核包 `^0.5.0`（上一条「内核装进 home」里的 `^0.4.1` 直接写成 `^0.5.0`）：pnpm 会把内核包装进包的 node_modules，类型检查从那里取。在跑内核 0.5.0 的隔离 home 里验过再发布；devkit 的发版检查要求这个范围包含正在运行的内核
+- 页面 importmap 只剩内核包 `gwb.shared` 里的名字（react 的四个），内核不再收集别的包的 `gwb.shared`。本仓没有写 `gwb.shared`，但 `build.ts` 与 `tests/artifact.test.ts` 里 `SHARED` 是手写的四个名字，改成从内核包清单读（devkit 模板的做法）
+
+内核 0.5.0 发布之后再改；改的时候照说明书 `gwb-release` 升自己的版本号。
+
+## 2026-09-25 gwb.provides 不用写了：清单字段可以删
+
+来源：总控台会话（devkit 仓删掉过度设计的机制，devkit 0.19.0、插件管理 0.10.0 同批发）。
+
+devkit 0.19.0 删了 `devkit.capabilities`、`devkit.audit-structure`、`devkit.audit-deps`，以及 `package.json` 里 `gwb.provides` 这一整套（发版不再核对它，也没有命令再读它）。`devkit.services` 改成从 home 里各包的 `.d.ts` 现读：给 cordis `Context` 补了服务、类型定义在自己声明里的包就是提供方，回执带类型定义原文。插件作者不用再写 `gwb.provides`；想让别人看懂服务，就在类型上写文档注释。发版检查还改了一条：node 侧产物的包名 import 只放行 node 内置模块、electron 与本包 peer 里写了的包。
+仓根 `package.json` 的 `gwb.provides` 下次改到时删掉；inbox 里别的条目提到 `gwb.provides` 的也按现状处理。
