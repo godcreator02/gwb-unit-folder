@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
  *   页面 importmap 解析到内核包提供的 react。多留一个就是运行时一句
  *   `Failed to resolve module specifier`，而那要打开窗格才看得见
  *
- * 缺产物时整组跳过——门禁不依赖 build。
+ * 缺产物时整组跳过：pnpm check 不要求先 build。
  */
 
 const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist')
