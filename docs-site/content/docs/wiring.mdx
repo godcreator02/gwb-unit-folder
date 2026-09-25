@@ -1,9 +1,7 @@
 ---
 title: 插件之间怎么连
-description: 单元文件夹提供的服务、命令、事件与窗格，注入的五个服务与 peer 写法，以及跟文档站插件之间「启动站点」按钮的交接
+description: 单元文件夹提供的服务、命令、事件、窗格与设置，注入的五个服务与 peer 写法，按名字调用的命令与约定通道
 ---
-
-# 插件之间怎么连
 
 **本页回答**：本仓插件提供哪些服务、命令与事件；注入了哪些服务、是必需还是局部注入、peer 怎么写；按名字调用了别家哪些命令、用了哪些约定通道。
 
@@ -13,12 +11,12 @@ description: 单元文件夹提供的服务、命令、事件与窗格，注入�
 
 | 类别 | 名字 | 说明 |
 | --- | --- | --- |
-| 服务 | `gwbUnitFolder`：`current()` / `pinned()` / `registerToolbarButton(spec)` | 「人现在看的是哪个单元」与置顶单元；往单元树窗格的工具条登记按钮，回注销函数，登记方卸载时自动注销。形状见[服务与命令](/docs/service-and-commands#服务-ctxgwbunitfolder) |
+| 服务 | `gwbUnitFolder`：`current()` / `pinned()` / `registerToolbarButton(spec)` | 「人现在看的是哪个单元」与置顶单元；往单元树窗格的工具条登记按钮，回注销函数，登记方卸载时自动注销。形状见[服务与命令](/docs/service-and-commands#服务-ctxgwbunitfolder)。此刻没有插件注入它 |
 | cordis 事件 | `unit-folder/selection` | `current()` 变了就广播一次，载荷与 `current()` 同形（`UnitSelection`，变成没有时是 undefined） |
 | 内核事件 | `{ t: 'gwb-unit-folder-toolbar' }` | 工具条按钮登记表一变就推一次，只给本插件自己的浏览器侧看，收到后重取 `unit-folder.toolbarButtons` |
 | 命令 | `unit-folder.list` / `create` / `toolbarButtons` / `listDir` / `readFile` / `open` / `code` / `select` / `current` / `pin` / `unpin` | 十一条，参数与回执见[服务与命令](/docs/service-and-commands#命令) |
 | 窗格 | `main`「单元」（工具窗格）、`viewer`「文件原文」（文档窗格） | 经 `gwbShell.registerPane` 注册 |
-| 工具条按钮 | 登记表：别的插件经 `registerToolbarButton` 放进来的按钮 | 排在本插件自己那几个按钮后面；点击与「可不可用」都按登记里给的命令名调回登记方 |
+| 工具条按钮 | 登记表：别的插件经 `registerToolbarButton` 放进来的按钮 | 排在本插件自己的按钮后面；点击与「可不可用」都按登记里给的命令名调回登记方。此刻没有登记方 |
 | 设置项 | `units-root` | 经 `gwbSettings.define` 声明，容器根的绝对路径 |
 | data 文档 | `pinned` | 经 `gwbData` 存置顶表 `{ paths }` |
 | 说明书 | `unit-folder` | 包根 `skills/unit-folder/`，经 `gwbSkills.register` 登记 |
@@ -80,11 +78,11 @@ peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Ser
 
 | 通道 | 对方 | 名字 | 用来做什么 |
 | --- | --- | --- | --- |
-| 命令总线（按名字调） | 登记工具条按钮的插件；眼下是 gwb-docs-site | 登记里给的 `command` 与 `state`（gwb-docs-site 登记的是 `docs-site.viewUnit` 与 `docs-site.unitSites`） | 浏览器侧点按钮时调 `command`，参数 `{ unitPath, item?, from, …args }`；画按钮前调 `state` 问可不可用与菜单项 |
+| 命令总线（按名字调） | 登记工具条按钮的插件；此刻没有 | 登记里给的 `command` 与 `state` | 浏览器侧点按钮时调 `command`，参数 `{ unitPath?, item?, from, …args }`；画按钮前调 `state` 问可不可用与菜单项 |
 | 内核事件（`gwbKernel.emit` → `window.gwb.on`） | 本插件自己的浏览器侧 | `gwb-unit-folder-toolbar` | 登记表变了，浏览器侧重取按钮表 |
-| cordis 事件 | 注入 `gwbUnitFolder` 的消费方 | `unit-folder/selection` | 通知「当前单元」变了；眼下容器里没有插件订阅它 |
-| 磁盘文件 | 人、agent、gwb-docs-site | 每个单元目录下的 `unit.json` | 出生证：本插件建单元时写、扫描时读；gwb-docs-site 读 `status` 跳过退役单元、读 `purpose` 放进 `docs-site.list` 回执的 `unitPurpose` |
-| 共享 id | gwb-docs-site | 条目 id `unit-folder`（也就是设置的分区名） | gwb-docs-site 自己的 `units-root` 空着时，经 `settings.get { section: 'unit-folder', key: 'units-root' }` 借本插件的容器根 |
+| cordis 事件 | 注入 `gwbUnitFolder` 的消费方 | `unit-folder/selection` | 通知「当前单元」变了；此刻容器里没有插件订阅它 |
+| 磁盘文件 | 人、agent | 每个单元目录下的 `unit.json` | 出生证：本插件建单元时写、扫描时读；人与 agent 手写或改写 |
+| 共享 id | `@godcreator/gwb-docs-site` | 条目 id `unit-folder`（也就是设置的分区名）与设置键 `units-root` | 站点插件自己的 `units-root` 空着时，经 `settings.get { section: 'unit-folder', key: 'units-root' }` 借本插件的容器根，给 `docs-site.create` 查端口 |
 
 {/* has file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" text="host.call(button.command, clickArgsOf(button, { unitPath, item, from }))" */}
 
@@ -92,15 +90,5 @@ peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Ser
 
 {/* has file="../plugins/unit-folder/src/scan.ts" text="export const IDENTITY_FILE = 'unit.json'" */}
 
-## 「启动站点」按钮：本插件这一侧
-
-对方是 `@godcreator/gwb-docs-site`。按钮由**对方登记**：它局部注入 `gwbUnitFolder`，调 `registerToolbarButton`
-交来 `{ id: 'sites', icon, label: '启动站点', command: 'docs-site.viewUnit', state: 'docs-site.unitSites' }`；本插件从调用方的
-fiber 上认出登记方的条目 id 与包名，放进登记表，推一次 `gwb-unit-folder-toolbar`。本插件不认识 gwb-docs-site，名字全由登记交过来。
-
-浏览器侧画按钮时按名字调 `state` 命令（参数 `{ unitPath }`，单元树里选中的单元），按回执 `{ enabled, items }` 决定按钮可不可用与菜单；
-点击时按名字调 `command`，参数由 `clickArgsOf` 拼：`unitPath`、菜单里挑的 `item`、`from`（单元树窗格自己的 `pane.instance`，
-对方开预览窗格时原样交给 `shell.openPane`，预览窗格就开在单元树旁边）。
-
-**一方不在时**：gwb-docs-site 没装或卸载了，登记表里没有这个按钮（卸载时注销登记在它自己的 effect 上，按钮自动拿掉）；
-本插件没装时，对方的局部注入不触发、不登记，别的功能不受影响。对方这一侧见 gwb-docs-site 文档站的同名页。
+工具条登记接口原本只为站点插件的「启动站点」按钮而设，站点插件 0.6 删掉了那个按钮；接口留着还是删掉等人决定，
+见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)。

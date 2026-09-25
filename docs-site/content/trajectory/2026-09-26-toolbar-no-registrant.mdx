@@ -1,0 +1,29 @@
+---
+born-at: 2026-09-26T03:10
+type: choice
+parent: [2026-09-08-gwb-unit-folder]
+label: 登记口没有登记方
+domain: 服务面
+---
+
+## 背景
+
+工具条登记接口 `registerToolbarButton` 是为站点插件的「启动站点」按钮开的：那是一个真实存在的登记方，判据的前提到了才开。
+站点插件 0.6.0 删掉了启动与停止站点那一整块，连同登记到单元树工具条上的按钮，也不再注入 `gwbUnitFolder`、不再读出生证
+（站点插件仓的收件，2026-09-25）。
+
+pivots-from:: [工具条按钮登记口](2026-09-13-toolbar-buttons.md)
+
+## 结论与边界
+
+在容器里按源码搜过（`D:\unitfolders` 下的 `.ts`）：除本仓以外，没有一处用 `gwbUnitFolder`、`unit-folder/selection` 或 `registerToolbarButton`，
+也没有插件按名字调 `unit-folder.*` 命令；命令的使用方只剩浏览器侧与经 MCP 入口调用的 agent。站点插件仍在经
+`settings.get { section: 'unit-folder', key: 'units-root' }` 借本插件的容器根设置。
+
+这次先不删：删掉登记接口（服务方法、`unit-folder.toolbarButtons`、内核事件、浏览器侧的按钮渲染）或整个服务都是破坏性版本，要人决定。
+在人决定之前，现状页、说明书与 README 写明「此刻没有使用者」，不再拿「启动站点」当例子。
+
+## 代价与遗留
+
+留着的代价是一套没有调用方的契约：服务类型、登记表、`unit-folder.toolbarButtons` 与浏览器侧的按钮渲染照旧要维护、要测试。
+要删就一次删干净，照说明书 `gwb-release` 升破坏性版本；要留就等第一个新登记方出现再核对形状是否还合用。

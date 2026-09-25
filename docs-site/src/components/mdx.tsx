@@ -1,8 +1,8 @@
 /**
- * 名册的人看那一半：格式包给机制，项目在 docfirst.config.mjs 里声明压平表，这里给 React 表。
- * 表的类型由 registry.ts 的名单钉死：少一个编译不过，多一个也编译不过。
+ * 名册里给人看的那一半：格式包给机制，项目在 docfirst.config.mjs 里声明压平表，这里给 React 表。
+ * 表的类型由 registry.ts 的名单限定：少一个编译不过，多一个也编译不过。
  * 跟压平表齐不齐，由 scripts/verify-roster.mjs 两头对。
- * 底下铺 fumadocs 的默认表，再把 pre 换成格式包那个会画状态点的。
+ * 底下是 fumadocs 的默认表，再把 pre 换成格式包那个会画状态点的。
  */
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { File, Files, Folder } from 'fumadocs-ui/components/files'
@@ -10,6 +10,7 @@ import type { MDXComponents } from 'mdx/types'
 import type { ReactNode } from 'react'
 import { DocfirstPre } from '@godcreator/docfirst-workflow/fumadocs/pre'
 import type { ComponentName } from './registry'
+import { UnitFolderSeams } from './unit-folder-seams'
 
 type Loose = MDXComponents[string]
 
@@ -22,6 +23,7 @@ const table: Record<ComponentName, Loose> = {
   Files: Files as Loose,
   Folder: Folder as Loose,
   File: File as Loose,
+  UnitFolderSeams: UnitFolderSeams as Loose,
 }
 
 export function getMDXComponents(components: MDXComponents = {}): MDXComponents {

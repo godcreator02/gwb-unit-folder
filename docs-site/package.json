@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "单元文件夹 的文档站：论断钉在这个仓的真实源码上，README 与机读版由 render 摆出",
+  "description": "单元文件夹的文档站：现状页的说法钉在这个仓的真实源码上，README、AGENTS 与随包说明书由 render 生成",
   "scripts": {
     "dev": "next dev -p 4319",
     "build": "next build",

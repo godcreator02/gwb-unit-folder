@@ -1,6 +1,6 @@
 ---
 name: unit-folder
-description: 用户提到「单元」「容器根」「unitfolders」「当前单元」「出生证 unit.json」，或者要你新开一个单元（新项目还没有落点）、找某个项目在哪个目录、这台机器上有哪些单元、某个单元里有什么文件、人现在在工作台里看的是哪个单元、想置顶或用 VSCode 打开某个目录时用。这个插件每次重新扫描单元容器根、读出生证，十一条命令能建单元、列清单（带置顶的几条）、列目录、读文件原文、报/查当前选中、置顶/取消、在资源管理器或 VSCode 里打开；另给别的插件一个服务 ctx.gwbUnitFolder（除了读选中与置顶，还能往单元树窗格的工具条登记动作按钮）。
+description: 用户提到「单元」「容器根」「unitfolders」「当前单元」「出生证 unit.json」，或者要你新开一个单元（新项目还没有落点）、找某个项目在哪个目录、这台机器上有哪些单元、某个单元里有什么文件、人现在在工作台里看的是哪个单元、想置顶或用 VSCode 打开某个目录时用。这个插件每次重新扫描单元容器根、读出生证，十一条命令能建单元、列清单（带置顶的几条）、列目录、读文件原文、报/查当前选中、置顶/取消、在资源管理器或 VSCode 里打开；另给别的插件一个服务 ctx.gwbUnitFolder（读选中与置顶，往单元树窗格的工具条登记动作按钮）。
 ---
 
 # 单元文件夹：这台机器的组织结构
@@ -28,16 +28,16 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | `kind` | 中文种类短词，树里按它分组。先 `unit-folder.list` 看已有的种类，能归进去就别造新词 |
 | `title` | 短名，树里第一行 |
 | `purpose` | 唯一的自述，**一句话说清「是什么、干什么」**——容易跟谁混就点一句；不写历史、版本沿革、已完成的任务清单。树里显示两行，全文在悬停说明里 |
-| `status` | `active`（在做）/ `paused`（搁着）/ `retired`（退役）。退役的树里默认藏起来，文档站插件也不扫描它里面的站 |
+| `status` | `active`（在做）/ `paused`（搁着）/ `retired`（退役）。退役的树里默认藏起来 |
 | `icon` | [lucide](https://lucide.dev/icons) 图标名，kebab-case（`puzzle`、`book-open`、`server`）。认不出的名字显示默认的文件夹图标 |
 | `createdAt` | ISO 8601 带时区。建单元时本插件自动填 |
 
 **新开单元走 `unit-folder.create`**，别手建目录：它算目录名（五位随机小写字母数字；给了 `slug`
 就拼成 `<随机>-<slug>`，如 `igldu-gwbkernel`。重名就重新生成随机段）、建目录、写出生证，到 `unit.json` 为止。
-仓怎么建、要不要文档站，交给各自的工具
-（插件仓用 `devkit.scaffold`，站用 `docs-site.create`）。改已有单元的状态、标题、图标，直接改那份 `unit.json`。
+仓怎么建、要不要文档站，交给各自的工具（插件仓用 `devkit.scaffold`，站用 `docs-site.create`）。
+改已有单元的状态、标题、图标，直接改那份 `unit.json`。
 
-容器根在哪由**设置**里的 `units-root` 说了算（`gwb-settings` 那份，值存在 `<home>\settings.json`；
+容器根在哪由**设置**里的 `units-root` 决定（`gwb-settings` 那份，值存在 `<home>\settings.json`；
 `cordis.yml` 条目里没有 `config`，也没有环境变量、没有应用级配置）。没配时命令回 `code: 'unconfigured'`，
 那不是出错，是还没配——让用户到「设置」里给单元文件夹填 `units-root`。**这是它唯一的设置项。**
 
@@ -46,32 +46,31 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | 命令 | 干什么 |
 | --- | --- |
 | `unit-folder.create` | 建一个新单元：`{kind, title, purpose, icon, status?, slug?}`，`status` 省了是 `active`，`slug` 省了目录名只有随机段。回 `{ name, path, identity }` |
-| `unit-folder.list` | 重新扫描容器根，回全部单元：认领过的按 `kind` 分组，没出生证或读不出的归进 `unidentified`（读不出的带 `reason`）；回包另带 `pinned`（置顶的单元条目数组，按置顶先后；目录已不在的，这次扫描时一并从置顶里移除）。最近一次点击的单元已不在的，这次扫描时清掉那次点击并广播 `unit-folder/selection`。无参数 |
+| `unit-folder.list` | 重新扫描容器根，回全部单元：认领过的按 `kind` 分组，没出生证或读不出的归进 `unidentified`（读不出的带 `reason`）；回执另带 `pinned`（置顶的单元条目数组，按置顶先后；目录已不在的，这次扫描时一并从置顶里移除）。最近一次点击的单元已不在的，这次扫描时清掉那次点击并广播 `unit-folder/selection`。无参数 |
 | `unit-folder.toolbarButtons` | 此刻有哪些插件往单元树窗格的工具条登记了按钮（浏览器侧取按钮列表用）。无参数 |
 | `unit-folder.listDir` | 列容器根内一个目录的一层：`{path}` |
 | `unit-folder.readFile` | 读容器根内一个文件的原文（截断预览）：`{path}` |
 | `unit-folder.open` | 在资源管理器里打开一个目录：`{path}`，目录必须已存在 |
-| `unit-folder.code` | 用 VSCode 新窗口打开一个目录（`code -n`）：`{path}`，目录必须已存在；找不到 VSCode（PATH 上没有 `code`）回失败，不降级 |
+| `unit-folder.code` | 用 VSCode 新窗口打开一个目录（`code -n`）：`{path}`，目录必须已存在；找不到 VSCode（PATH 上没有 `code`）回失败，不改用别的办法 |
 | `unit-folder.select` | 报一次选中：`{path}`（单元目录或单元内目录，必须已存在，不存在直接回失败）。回 `{ unitPath, unitName, path }`。树里点一下就是这条，agent 想替人「切到某个单元」也调它 |
 | `unit-folder.current` | 此刻的「当前单元」：最近一次点击，没点过回落到第一个置顶，都没有是 null。无参数 |
 | `unit-folder.pin` | 把一个单元加进置顶（可以有多个，追加到末尾）：`{path}`，**必须是容器根下一层的单元目录**。存进 data 文档 `pinned`。回 `{ paths }` |
 | `unit-folder.unpin` | 把一个单元从置顶里移除：`{path}`。回 `{ paths }` |
 
-窗格那边的交互约定（外壳的手势约定）：原文窗格是文档窗格，一个窗格显示一个文件。树里**单击**文件是预览
-（下一次单击替换掉它），**Ctrl+单击**或中键正式开一个新标签，**Ctrl+Alt+单击**开到旁边；原文窗格打开在
+窗格那边的交互（外壳的手势约定）：原文窗格是文档窗格，一个窗格显示一个文件。树里**单击**文件是预览
+（下一次单击替换掉它），**Ctrl+单击**或中键正式开一个新标签，**Ctrl+Alt+单击**开到旁边；原文窗格开在
 单元树旁边或最近用过的那组原文窗格里，显示哪个文件随布局一起存盘。agent 想看某个文件，直接调
 `unit-folder.readFile`，不必经过窗格。
 
-**路径参数一律限制在容器根内**——传一个根外的绝对路径会被回一句「路径不在容器根内」，
-这是有意的限制，不是 bug。命令总线对外暴露，参数不能默认来自界面。检查有两道：词法（`..`、根外
-绝对路径、换盘符）之外，**已存在的**路径还要检查重解析点——根内 junction / 链接指到
-根外的，实际位置算根外，一样拒；路径不存在时不拦（报错交给下游的「列不动 / 读不动 / 不是
-目录」）。
+**路径参数一律限制在容器根内**——传一个根外的绝对路径会回一句「路径不在容器根内」，
+这是有意的限制，不是 bug：命令总线对外开放，参数不能默认来自界面。检查有两道：词法（`..`、根外
+绝对路径、换盘符）之外，**已存在的**路径还要按实际位置再比一次——根内的 junction / 链接指到
+根外的，实际位置算根外，一样拒；路径不存在时不拦（报错交给后面的「列不动 / 读不动 / 不是目录」）。
 
 ## 「当前单元」：给别的插件的服务
 
-坐在工作台里看某个单元时，别的插件可能要知道人现在看的是哪个。
-本插件把这件事**往外报**，不认识任何消费方——依赖方向是具体的消费方认识通用的本插件：
+坐在工作台里看某个单元时，别的插件可能要知道人现在看的是哪个。本插件把这件事往外报，
+不认识任何消费方——依赖方向是消费方认识本插件：
 
 ```ts
 import type {} from '@godcreator/gwb-unit-folder'   // 拿 Context / Events 上的名字
@@ -84,26 +83,16 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 
 `unitPath` 是容器根下那一层的单元目录，`unitName` 是目录名，`path` 是人点的那个目录（点单元行时等于
 `unitPath`，点单元内目录时是那个目录）。**开了多个单元树窗格时以最后一次点击为准**；本会话没点过时回落到第一个置顶单元；
-置顶 / 取消置顶在没点过时也会让 `current()` 变、所以也广播。`pinned()` 另给全部置顶单元的绝对路径（`string[]`，按置顶先后）。
+置顶、取消置顶在没点过时也会让 `current()` 变，所以也广播。`pinned()` 另给全部置顶单元的绝对路径（`string[]`，按置顶先后）。
 
-这个服务被别的插件 inject：**改它的方法签名、事件形状、命令名与参数形状之前先问人。**
-判据与否掉的两条路见文档站的轨迹卡「选中往外报」；其中「注册按钮」那条从 0.4 起推翻——
-文档站插件要在单元树上放「启动站点」按钮，判据的前提变了，见轨迹卡「工具条按钮登记口」。登记的形状
-（`ToolbarButtonSpec`：id / icon / label / command / state? / args?）也在契约里：
+服务上还有 `registerToolbarButton(spec)`：往单元树窗格的工具条登记一个动作按钮（`id` / `icon` / `label` / `command` / `state?` / `args?`），
+点击与「可不可用」都按登记里给的命令名调回登记方。此刻没有插件用它，形状见文档站「服务与命令」页。
 
-```ts
-const off = ctx.gwbUnitFolder.registerToolbarButton({
-  id: 'sites',
-  icon: 'book-open',
-  label: '启动站点',
-  command: 'docs-site.viewUnit',   // 点击调，参数 { unitPath, item?, from }——from 是单元树窗格的实例 id，开窗格时递给 shell.openPane
-  state: 'docs-site.unitSites',    // 问可不可用（可省=一直可用），参数 { unitPath }，回 { enabled, items? }
-})
-```
+这个服务、事件与命令的名字和参数形状是契约：**改之前先问人。**
 
 ## 怎么用它回答问题
 
-**「X 项目在哪儿」**：先 `unit-folder.list`，在回包里按 `title` 与 `purpose` 找——出生证那句话
+**「X 项目在哪儿」**：先 `unit-folder.list`，在回执里按 `title` 与 `purpose` 找——出生证那句话
 通常写着这个单元是干什么的，比目录名准。目录名是随机段加功能名（如 `igldu-gwbkernel`）：
 **功能名故意只写大类**——内容会变、名字不会，所以它只能当路标，不能当清单。
 
@@ -129,21 +118,7 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 
 ## 怎么装
 
-正路是 `plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动装：
-
-```powershell
-cd $env:APPDATA\gwb-kernel\homes\<home 名>
-pnpm add @godcreator/gwb-unit-folder@<版本>
-```
-
-再往 `<home>\cordis.yml` 加一条（id 手写，**没有 config**）：
-
-```yaml
-- id: unit-folder
-  name: "@godcreator/gwb-unit-folder"
-```
-
-容器根装完到界面的「设置」里填 `units-root`（如 `D:\unitfolders`）。必需的外壳 `gwb-shell`、命令总线 `gwb-commands`
-写在 peer 里，home 里要先装着（home 不自动补装 peer，缺了 `plugin-manager.list` 的 `unmetPeers` 会报出来）；
-`gwb-skills`（说明书）、`gwb-settings`（设置界面）、`gwb-data`（置顶存盘）是可选 peer、局部注入，
-缺哪个本插件照样加载，只少对应的那部分功能。插件之间怎么连（提供、注入、按名字调用的命令）见文档站「插件之间怎么连」页。
+`plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`，装完到界面的「设置」里填 `units-root`（如 `D:\unitfolders`）。
+必需的外壳 `gwb-shell`、命令总线 `gwb-commands` 写在 peer 里，home 里要先装着（home 不自动补装 peer，缺了 `plugin-manager.list`
+的 `unmetPeers` 会报出来）；`gwb-skills`（说明书）、`gwb-settings`（设置界面）、`gwb-data`（置顶存盘）是可选 peer，
+缺哪个本插件照样加载，只少对应的那部分功能。插件之间怎么连见文档站「插件之间怎么连」页。

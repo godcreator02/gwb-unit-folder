@@ -1,108 +1,205 @@
 ---
 title: 单元文件夹
-description: 这个插件解决什么问题、拆成几个模块、模块之间怎么通信、为什么这样拆——论断钉在仓里的真实源码上
+description: 把「容器根下一层一个目录、目录里一张 unit.json」这个约定变成工作台里的一棵树：建单元、看文件原文、报出人正在看哪个单元。本页按接缝讲它和工作台、磁盘、别的插件怎么连
 ---
 
-# 单元文件夹
+**本页回答**：这个插件做什么、对外有哪些接口、依赖谁、不做什么；它和外面的十二条接缝各传什么、由谁负责、怎么测。
 
-**本页回答**：这个插件管什么、一次点击从头到尾怎么走、拆成几个模块、依赖为什么是单向的、怎么装。
+「单元」是一个纯目录约定：容器根（设置 `units-root`，如 `D:\unitfolders`）下一层一个目录，目录里一张 `unit.json` 出生证，
+写着种类、短名、一句话自述、状态、图标、出生时刻六项。没有服务、没有索引、没有注册表，整件事只靠读写磁盘就能做完。
+`@godcreator/gwb-unit-folder` 在这个约定上做四件事：
 
-`gwb-unit-folder` 是 gwb 内核线的一个插件。它管的是**「单元」这个纯目录约定在工作台里怎么呈现**：
-容器根下一层一个目录、目录里一张 `unit.json` 出生证——这个插件建单元、把它们显示成一棵树（现扫、读出生证、按状态与种类过滤、
-展开、看原文），并且**把「人现在看的是哪个单元」这个事实往外报**给别的插件。出生证的字段表以本插件为正本
-（读盘与 `unit-folder.create` 共用一处校验），见 [服务与命令](/docs/service-and-commands#出生证-unitjson)。
+- **现扫**：每次调用都重新列一遍容器根、读每个单元的出生证，按种类分组；不缓存，刚建的单元立刻看得见
+- **建单元**：算目录名（五位随机小写字母数字，可带功能名，如 `igldu-gwbkernel`）、建目录、写出生证，到 `unit.json` 为止
+- **浏览**：单元树里展开单元看文件，点文件在原文窗格里看原文；也能在资源管理器或 VSCode 里打开目录
+- **报选中与置顶**：人在树上点了哪个单元、钉了哪几个单元，经服务 `ctx.gwbUnitFolder` 与事件 `unit-folder/selection` 往外报
 
-这一页讲原理与模块划分；服务、事件与命令在 [服务与命令](/docs/service-and-commands)；
-为什么是「往外报」而不是扩展点、置顶为什么从设置改成数据，在轨迹卡[「选中往外报」](/trajectory/2026-09-09-report-selection-not-extension-point)。
+对外的接口是十一条命令、一个服务、一个事件、两个窗格、一项设置、一份 data 文档和一份说明书，逐项的形状在
+[服务与命令](/docs/service-and-commands)，每个依赖的 peer 写法在[插件之间怎么连](/docs/wiring)。
 
-## 一次点击从头到尾怎么走
+## 接缝图
 
-人在单元树窗格里点一个单元行。浏览器侧做两件事：本地展开那一行（目录清单经 `unit-folder.listDir` 现拉）、
-发一条 `unit-folder.select { path }` 给 node 侧、不等回执。第二件事不等第一件，也不让第一件等它——
-「当前单元」是给别的插件看的，报不上去不该让树本身卡住。
+插件分三个模块：浏览器侧（两个窗格）、node 侧（cordis 服务，负责接线与会话状态）、判断与读盘（不依赖 cordis 的函数与磁盘读写）。
+模块之外是人、agent、工作台的几个插件、内核、磁盘和两个外部程序。
 
-node 侧收到 `select`：先过路径检查——解设置里的 `units-root`、把参数路径验成容器根内的绝对路径——
-再确认这个目录还在（不在直接回失败，不记下一个不存在的选中），然后按路径形状推出所属单元（relative 的第一段就是单元名），
-记成「最近一次点击」；如果 `current()` 因此变了，就在自己的 ctx 上 `emit('unit-folder/selection', …)`。
-消费方局部注入本插件、`on` 这条事件，就能跟着选中走。
+<UnitFolderSeams />
 
-记住的点击也会过期：单元目录被删了、容器根换了。`unit-folder.list` 每次现扫时顺带核对——最近一次点击的单元不在清单里，
-就清掉这次点击，`current()` 随之回落，并广播一次 `unit-folder/selection`。
+## 接缝逐条
 
-置顶走的是同一道路径检查，但结果存在别处：`unit-folder.pin { path }` 要求 path 是容器根下一层的单元目录，
-追加进内存里那张置顶表、再写 `gwbData` 的文档 `pinned`（`{ paths }`）。置顶可以有多个；`current()` 没点过时回落到
-第一个置顶，所以置顶在那种情况下也会让 `current()` 变、也会广播。
+### 1 浏览器侧 → 命令总线 → node 侧
 
-点的是文件就不报选中，而是开一个原文窗格。原文窗格是外壳眼里的**文档窗格**（能多开，一份装一个文件），单元树是
-**工具窗格**（整页一份）。两个窗格之间不经命令总线：装哪个文件存在那一份原文窗格的参数里（key 是文件的绝对路径），
-随布局保存，原文窗格挂载时读参数、外壳替换预览窗格的内容时经 `retarget` 原地换。开法照外壳的手势约定——单元树不是原文窗格，
-所以单击是预览，Ctrl / 中键正式开一个新标签，Ctrl+Alt 开到旁边；开在哪归外壳（来源是单元树，开在最近用过的那组
-原文窗格里，没有就开到单元树旁边）：
+两个窗格不 import node 侧的任何符号，只经 `host.call('unit-folder.<名>', args)` 说话，回执统一是 `{ ok, data?, error?, code? }`。
+node 侧负责校验参数与回执形状；浏览器侧按形状收，缺配置这种要区别对待的失败只认 `code: 'unconfigured'`，不认错误文字。
+报选中是其中特别的一次调用：展开单元不等它的回执，失败只在控制台 warn——「当前单元」是给别的插件看的，报不上去不该让树卡住：
 
-{/* ref file="../plugins/unit-folder/src/client/open-file.ts" lines="36-42" hash="be82edb01cb8" blob="919790a4cde6" */}
-{/* ref file="../plugins/unit-folder/src/client/open-file.ts" lines="68-73" hash="5d4500a1a02b" blob="919790a4cde6" */}
+{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="491-506" hash="65ff3fe3ee63" blob="5c36a0ffc918" */}
 
-## 拆成几块，依赖是单向的
+测试：浏览器侧没有自动测试，产物测试只确认十一条命令名都在 `dist/index.js` 里；界面效果用 `devkit.dev` 装进隔离 home 后看。
 
-```
-scan.ts / browse.ts / current.ts     纯逻辑：只认 node:fs 与路径形状，不知道 cordis 存在
-create.ts                            （create.ts 建单元，复用 scan.ts 的出生证校验）
-          ↑
-      index.ts                        cordis Service：把上面几块接到窗格、命令、服务、事件上
-          ↑
-   client/index.tsx                   浏览器侧：只经命令总线通信，不 import node 侧一个符号
-   client/units.ts                    （过滤与图标名换算的纯逻辑，tests/units.test.ts 测）
-   client/open-file.ts                （点文件开成什么样的原文窗格：手势 → 开法、文件 → key 与参数，tests/open-file.test.ts 测）
-          ↑
-   别的插件（消费方）                  inject('gwbUnitFolder')、on('unit-folder/selection')
-```
+### 2 agent → 命令总线 → node 侧
 
-三条边界各自「不知道什么」：
+agent 经 MCP 入口 `run {"command":"unit-folder.list"}` 调的是同一组命令、拿同一套回执。命令总线对外开放，所以 node 侧不假定参数来自界面：
+带路径的七条命令都先过第 3 条里的路径检查。agent 怎么用这些命令写在随包说明书 `unit-folder` 里。
 
-**纯逻辑那层不知道 cordis 存在。** `current.ts` 里的函数——从路径推所属单元、选中前确认目录还在（判存在由调用方传入）、
-置顶文档验形状、置顶表的加与摘、`current()` 的回落规则、清单里找置顶与最近一次点击——全是「传入输入、比对输出」，
-所以全在 `tests/current.test.ts` 里测，`index.ts` 只负责接线。回落规则是整个服务的语义核心，它长这样：
+### 3 node 侧 → 判断与读盘
 
-{/* ref file="../plugins/unit-folder/src/current.ts" lines="88-96" hash="060ecbdc4909" blob="31efe67af1c4" */}
+判断全在右边的模块里，node 侧只负责解出容器根、记会话状态（最近一次点击、置顶表）、广播变化。右边的函数进出都是普通值，测试直接调：
+`tests/scan|browse|current|create|vscode|toolbar.test.ts`。
 
-**node 侧不知道任何消费方。** 方向是**特殊认识一般**：用它的插件认识单元文件夹，单元文件夹不认识它们。
-本插件往 ctx 上提供的服务名只有一个，`static inject` 只放两个必需依赖——外壳（没它两个窗格没处注册）与命令总线
-（没它浏览器侧调不到任何东西）；每个依赖是必需还是局部注入、peer 怎么写、缺了会怎样，见[插件之间怎么连](/docs/wiring)：
+带路径参数的命令共用同一道检查：先现读设置 `units-root`，没配就回 `unconfigured`；再把参数验成容器根**里面**的绝对路径，根自己不算，越出根的一律回「路径不在容器根内」：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="83-85" hash="158104120359" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="241-251" hash="3d4afaaca5e1" blob="55206a0602ef" */}
 
-设置、数据、说明书三个插件都是**局部注入**：缺哪个本插件照常加载、只少那一部分功能。数据插件那段顺带定了置顶怎么存盘、
-以及「人先点了置顶、数据插件后加载」那种顺序谁优先：
+验证分两道。词法那道看字符串：相对路径按容器根解（不按宿主的工作目录解，那个目录由应用怎么启动决定），`..`、根外绝对路径、换盘符在
+`path.relative` 的结果上都看得出来。物理那道看实际位置：NTFS 的 junction / symlink 不改字符串、只改实际指向，根内一条链接能把 `stat` / `open`
+带到根外去，所以两端都存在时各自 `realpath` 再比一次；任一端不存在就不拦，「不存在」的错由后面列目录、读文件报。校验之后毫秒级把目录换成链接的竞态不防：
+纯 Node 拿不到句柄级的最终路径，本机桌面的使用场景下不值得为它动系统接口：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="136-153" hash="272842dc8690" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/browse.ts" lines="60-71" hash="c58aa62a8003" blob="a96f2b7a8f58" */}
 
-**浏览器侧不知道 node 侧的实现。** 它只经命令总线通信（`host.call`），按形状收回执；报选中那一下
-不等回执、失败只在控制台说一声：
+「当前单元」怎么回落也在右边：本会话点过就是最近那一次，没点过回落到第一个置顶单元，都没有就是 undefined。置顶只在没点过时起作用：
 
-{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="470-485" hash="72a65034ba1c" blob="5c36a0ffc918" */}
+{/* ref file="../plugins/unit-folder/src/current.ts" lines="94-103" hash="17fa2e6ee5e1" blob="31efe67af1c4" */}
 
-## 两条判据
+### 4 判断与读盘 ⇢ 容器根
 
-**配置与数据分开。** `units-root` 是人在设置界面里手填的，所以是设置（`gwbSettings.define`）；置顶是人在树上
-点图钉、插件因这个动作自己写下的，所以是数据（`gwbData` 文档 `pinned`）。判据跟外壳把布局存进 data 是同一条。
-设置项 `pinned-unit` 因此不存在，产物测试检查它不会再出现。单元树的过滤（筛选下拉里的状态与种类）两样都不是：它只存在窗格内存里，
-重开窗格回到默认（藏起退役的、种类不限）。
+这是唯一一条碰单元目录的接缝。扫描只列容器根下的子目录，散落的文件不是单元，列出来只会让人以为漏了什么；直接子目录里叫 `out` 的也跳过，
+那是临时产物区的约定名。**根不存在与扫不动是两回事**：前者（ENOENT）是正常状态——配置可以先于目录写下，换机器、待挂载的盘都会这样——回空表加
+`rootExists: false`；根指到文件、没权限、盘掉了才报错，拿空表冒充「这里没有单元」会把人往错的方向引。
 
-**带路径参数的命令共用同一道路径检查。** 命令总线对外开放（agent 经 MCP 也在调），不能假定参数一定是界面从自己的
-清单里传来的：每条都先解 `units-root`、再把路径验成根内的绝对路径，越出根的一律回「路径不在容器根内」：
+不缓存是有意的：一次现扫只是列一个目录、每个子目录读一个小文件，规模几十个；缓存却要回答「谁负责失效、手建的目录什么时候进表」，代价更大。
+每次现读，盘上的就是真相：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="198-207" hash="c0deacf4070c" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/scan.ts" lines="141-162" hash="f8668c45a5e7" blob="741a4d4102eb" */}
 
-检查其实有两道。词法那道看字符串：`..`、根外绝对路径、换盘符在 `path.relative` 的结果上都看得出来。物理那道看
-实际位置：NTFS 的 junction / symlink 不改字符串、只改实际指向，根内一条链接能把 `stat` /
-`open` 带到根外去——已存在的路径要 `realpath` 解到实际位置再比一次边界，指到根外的一律拒；路径不存在时
-物理那道不拦，「不存在」的错交给后面的步骤报。校验后毫秒级把目录换成链接的竞态不防（纯 Node 拿不到句柄级
-final-path），本机桌面的威胁模型下不做：
+分组只出结构、不出文本：没有身份的单元单独一摞，不硬塞进一个叫「未认领」的种类——`kind` 是自由填写的字段，真有人写这个词就撞上了；
+种类之间按名字字典序排，代码里不认任何具体的种类名，要突出哪一类是界面的事：
 
-{/* ref file="../plugins/unit-folder/src/browse.ts" lines="54-75" hash="a0bd61ec1166" blob="a96f2b7a8f58" */}
+{/* ref file="../plugins/unit-folder/src/scan.ts" lines="164-187" hash="66bdecf817b6" blob="741a4d4102eb" */}
 
-## 怎么用
+建单元写出生证，读写共用 `validateIdentity` 这一份字段表，写出去的读回来一定认得。容器根不在不替人建：根是设置里的事实，替人建出来会掩盖「设置指错了地方」。
+目录名里不放时间：`createdAt` 比它准，而目录名要经得住内容变化：
 
-装：`plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`，或进 home `pnpm add` 再在 `cordis.yml` 手写一条 `id: unit-folder`
-的条目（没有 `config`）。装完到「设置」填 `units-root`。确认它真在干活：日志里有 `服务就绪（ctx.gwbUnitFolder）`，
-在树上点一个单元后 `unit-folder.current` 回那个单元的 `{ unitPath, unitName, path }`。开发循环与发版见仓根 README。
+{/* ref file="../plugins/unit-folder/src/create.ts" lines="73-101" hash="6a265cd295aa" blob="d2d37f67ac99" */}
+
+测试：`tests/scan.test.ts` 与 `tests/create.test.ts` 在临时目录里建真实的单元目录，覆盖六项缺一、多出字段、根不存在、根是文件、重名重新生成。
+
+### 5 node 侧 → 外壳：登记窗格
+
+node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，工具窗格，整页一份）与 `viewer`（原文，文档窗格，一份装一个文件），
+两者的 `client` / `style` 都是从 `dist/index.js` 算出的 `file://` 地址，再用 `describeSelf` 报显示名「单元文件夹」。注销由外壳登记在本插件的 effect 上，
+本插件卸载时窗格自动消失。窗格 id 是契约：保存的布局里存着它们。测试：没有自动测试，装进隔离 home 后用 `shell.panes` 看。
+
+### 6 外壳 ⇄ 浏览器侧：挂载与开原文窗格
+
+外壳调 `mountPane(args, container)`，两个窗格共用这一个函数、按 `pane.id` 分派。点文件时单元树不直接打开原文窗格，只说出这一下是哪种开法，
+开在哪、同一个文件是否已经开着、预览窗格替不替换全归外壳。单元树是工具窗格，所以单击是预览，Ctrl / ⌘ 单击或中键是正式开一个新标签，再加 Alt 开到旁边：
+
+@@docfirst ref ../plugins/unit-folder/src/client/open-file.ts:39-44 @@
+@@docfirst ref ../plugins/unit-folder/src/client/open-file.ts:68-73 @@
+
+原文窗格装哪个文件只存在它自己的参数里（key 是文件的绝对路径），随布局保存，整页重载后还在。外壳替换预览窗格的内容时调句柄上的 `retarget`，
+原地换文件、不卸载，折行开关保留。原文窗格不起定时器：自己轮询只会把「盘慢」与「卡死」混成同一种症状，文件变了点「重读」：
+
+{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="779-814" hash="f6023ac072f8" blob="5c36a0ffc918" */}
+
+测试：`tests/open-file.test.ts` 覆盖手势到开法、文件到 key 与参数、保存的参数读回来。
+
+### 7 node 侧 ⇄ 设置插件
+
+`units-root` 是这个插件唯一的设置项，经 `gwbSettings.define` 声明、存在 `<home>/settings.json`；`cordis.yml` 条目上没有 `config`，也不读环境变量。
+每条命令现读一次，不在加载时读成常量；没配时不给默认值，因为容器根是这台机器的事实，编一个只会造成「配置了但不在」的假象。设置插件是局部注入，
+不在时本插件照常加载，命令一律回 `unconfigured`。测试：`tests/settings.test.ts` 覆盖设置值到绝对路径的换算（非字符串、空白、相对路径）。
+
+站点插件 `@godcreator/gwb-docs-site` 自己的 `units-root` 空着时，会经 `settings.get { section: 'unit-folder', key: 'units-root' }` 借这一项，
+所以条目 id `unit-folder` 与设置键都不能随便改。
+
+### 8 node 侧 ⇄ 数据插件 ⇢ 置顶文档
+
+置顶是人在树上点图钉、插件因这个动作自己写下的，所以是数据不是设置——判据跟外壳把布局存进 data 一样：人在设置界面里手填的是设置，插件因人的操作写下的是数据。
+它存在数据插件的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。数据插件加载时把盘上那份读进内存；人先点了置顶、数据插件后加载的那种顺序，
+以内存里最近的动作为准、反过来写盘：
+
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="167-185" hash="3595503bad88" blob="55206a0602ef" */}
+
+盘上那份人手改得到，读回来要验形状（`parsePinnedDoc`）。测试：`tests/current.test.ts` 覆盖文档形状、置顶表的增删与回落。
+
+### 9 node 侧 → 消费方插件
+
+依赖方向是消费方认识本插件，本插件不认识任何消费方：用它的插件局部注入 `gwbUnitFolder`，用 `current()` 取初值、`on('unit-folder/selection')` 听变化，
+两样的形状是同一个 `UnitSelection`。工具条登记接口 `registerToolbarButton` 按调用方的 fiber 认出登记方的条目与包名，不由登记方自己报；
+注销登记在调用方的 effect 上，登记方卸载时按钮自动消失：
+
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="205-235" hash="10c602fa332a" blob="55206a0602ef" */}
+
+**此刻容器里没有插件用这个服务**：站点插件 0.6 删掉了它登记的「启动站点」按钮，也不再注入 `gwbUnitFolder`。服务、事件与登记接口仍然是契约，
+删掉它们是破坏性版本，要不要删等人决定，见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)。
+测试：`tests/toolbar.test.ts` 覆盖登记表的规矩；产物测试确认 `.d.ts` 里有服务与事件的类型声明。
+
+### 10 node 侧 → 内核事件 → 浏览器侧
+
+登记表一变（登记、注销、被替换），node 侧 `gwbKernel.emit({ t: 'gwb-unit-folder-toolbar' })`；浏览器侧用 `window.gwb.on` 听，认出这条后重取
+`unit-folder.toolbarButtons`。事件只是提醒，按钮表本身仍经第 1 条取。内核接口用 `requireKernel(ctx)` 从根上下文取，不写进 `inject`。
+测试：`tests/toolbar.test.ts` 覆盖事件的认法。
+
+### 11 node 侧 → 外部进程
+
+`unit-folder.open` 启动 `explorer.exe <目录>`，`unit-folder.code` 启动 `Code.exe -n <目录>`。两条都以「进程能不能启动」算成败，不看退出码（explorer 成功时退出码也可能是 1）。
+
+VSCode 必须找到 `Code.exe` 本身：PATH 上的 `code` 是 `.cmd`，Node 修 CVE-2024-27980 之后不开 shell 启动 `.cmd` 会抛 EINVAL；开了 shell，目录名就成了命令文本的一部分，
+引号、百分号这些合法的文件名字符会被命令解释器解释。所以用 `where.exe` 找到 `code.cmd`，推出旁边的 `Code.exe`，用独立参数、不开 shell 启动。找不到就回失败，
+不改用 shell 拼接——那条路正是要堵的漏洞。路径在一次加载期内缓存，中途装了 VSCode 要重新加载本插件才认：
+
+{/* ref file="../plugins/unit-folder/src/vscode.ts" lines="1-28" hash="91fd6b6c0f0d" blob="96ce7943f768" */}
+
+测试：`tests/vscode.test.ts` 覆盖从 `code.cmd` 推出 `Code.exe` 的位置；真正启动进程没有自动测试。
+
+### 12 node 侧 → 说明书插件
+
+局部注入 `gwbSkills`，登记包根的 `skills/` 目录（相对产物写作 `'../skills/'`，所以 `skills` 必须在 `package.json` 的 `files` 里）。
+说明书 `unit-folder` 告诉 agent 什么时候用这些命令、怎么用它们回答「X 在哪」「我现在看的是哪个」。缺了说明书插件，agent 读不到这份说明书，命令照常可用。
+测试：自述测试核对 `description` 里写的说明书份数与 `skills/` 目录一致。
+
+## 各模块对外能做什么
+
+**浏览器侧**（`src/client/`）：单元树窗格按种类分组列出单元，每行是出生证里的图标、短名与两行自述；可按状态与种类筛选（默认藏起退役的）、按文字筛选；
+置顶块不受筛选影响；单元展开出文件树，点文件开原文窗格；工具条上能用 VSCode 打开选中单元或它的一级子目录、复制路径、在资源管理器打开容器根。
+原文窗格显示行号、能切换折行、点路径复制绝对路径；二进制文件不显示，超过 512 KB 截断。过滤、展开、目录清单都只存在窗格内存里，关掉再开回到默认。
+
+**node 侧**（`src/index.ts`）：登记十一条命令与两个窗格，提供服务 `gwbUnitFolder`，记住本会话最近一次点击与置顶表，`current()` 变了就广播；
+`unit-folder.list` 每次现扫时顺带清掉过期状态——置顶了但目录已不在的从置顶表摘掉并存盘，最近一次点击的单元不在了就清掉那次点击，两样清完只广播一次。
+
+**判断与读盘**（`src/scan.ts`、`browse.ts`、`current.ts`、`create.ts`、`vscode.ts`、`toolbar.ts`）：出生证字段表与校验、现扫与分组、路径验证、
+列一层目录、读原文、置顶表的形状与增删、`current()` 的回落、建单元、找 VSCode、工具条登记表。不依赖 cordis，都在 `tests/` 里直接测。
+
+## 依赖谁
+
+| 依赖 | 用来做什么 | 缺了会怎样 |
+| --- | --- | --- |
+| 外壳 `gwb-shell`（必需） | 注册两个窗格、报显示名 | 本插件不加载 |
+| 命令总线 `gwb-commands`（必需） | 登记十一条命令；浏览器侧只经它通信 | 本插件不加载 |
+| 设置 `gwb-settings`（局部注入） | 声明并现读 `units-root` | 照常加载；所有要容器根的命令回 `unconfigured` |
+| 数据 `gwb-data`（局部注入） | 读写置顶文档 `pinned` | 照常加载；置顶只存在内存里，日志 warn 一次 |
+| 说明书 `gwb-skills`（局部注入） | 登记说明书 `unit-folder` | 照常加载；agent 读不到说明书 |
+| 内核包 `gwb-kernel-desktop` | 推工具条登记表变化的内核事件；接口类型 | 宿主不是 gwb 内核时构造就抛错 |
+
+必需依赖只有前两个：
+
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="97-99" hash="608eedbb45ea" blob="55206a0602ef" */}
+
+每个依赖的 peer 范围、是否可选，以及按名字调用与约定通道，见[插件之间怎么连](/docs/wiring)。
+
+## 不做的事
+
+- **不认识任何消费方**：谁要知道当前单元谁来注入本插件，本插件不为某个具体消费方发明契约（轨迹卡[「选中往外报」](/trajectory/2026-09-09-report-selection-not-extension-point)）
+- **不认领已有目录、不改已有出生证**：给已有目录补写或改写 `unit.json` 是人的事，或别的插件的事（[刻意不做](/future/not-doing)）
+- **不建仓、不建文档站**：建单元到 `unit.json` 为止，插件仓用 `devkit.scaffold`，站用 `docs-site.create`
+- **不缓存清单、不跨会话记「当前」**：清单每次现扫；`current()` 只存在内存里，重启后是第一个置顶或空
+- **不给容器根默认值、不替人建容器根**
+- **找不到 `Code.exe` 不改用 shell 启动 VSCode**
+- **不防校验之后的链接替换竞态**
+
+## 接着读
+
+契约逐项的形状（出生证字段表、服务、事件、十一条命令、置顶文档）在[服务与命令](/docs/service-and-commands)；peer 写法与跟别的插件的约定在
+[插件之间怎么连](/docs/wiring)；怎么装、怎么跑在仓根 README（正本是[生成正本里的 README](/docs/outputs/readme)）。取舍的来历在轨迹区。

@@ -1,0 +1,42 @@
+---
+born-at: 2026-09-26T02:16
+type: choice
+parent: [2026-09-08-gwb-unit-folder]
+label: 迁 workspace 布局
+domain: 仓与构建
+---
+
+## 背景
+
+devkit 0.21 起 `devkit.dev` / `devkit.release` 只收 `packages` 里列出的包目录，仓根本身就是插件包的仓用不了；0.23.3 起样式检查只在 devkit 里有一份，
+构建之后、发版之前对 `dist/style.css` 与源码 `.tsx` 查前缀、主题令牌与 `var()` 的 fallback。本仓原来是单包布局，仓根 `package.json` 就是插件。
+
+## 结论与边界
+
+照 `devkit.scaffold` 生成的仓与 gwb-dsh 仓的样子迁：仓根改成不发布的 private 包，`pnpm-workspace.yaml` 加 `plugins/*`，插件包用 `git mv` 搬进
+`plugins/unit-folder/`，配置（tsconfig、oxlint、vitest、components.json）跟着包走；`probes/` 与文档站留在仓根，文档站不进 workspace。
+插件包写上团队源的 `publishConfig.registry`，删掉自带的 `scripts/publish.ts` 与三条发版脚本，发版只走 `devkit.release`。
+
+几处没照模板做、或者做法跟模板不同：
+
+- **node 侧仍由 tsc 逐个文件输出**，没改成模板的 esbuild 单文件。本包要输出 `.d.ts` 给注入服务的插件用，产物测试还按单引号字面量查命令名
+  （esbuild 会把字符串改成双引号），改打包方式就得改测试。浏览器侧的外置名单改成照模板从内核包页面入口的 importmap 读
+- **模板带过的两份测试副本留着**（`tests/prefix.test.ts`、`tests/artifact.test.ts`）：`pnpm check` 里就能查出漏前缀，不用等 `devkit.dev`；
+  产物测试里命令名、服务与事件名、`.d.ts` 的几条是本仓自己的
+- **样式检查报的三类问题**：外壳的映射文件 `theme.reference.css` 里没有 `leading-relaxed`、`leading-normal`、`tracking-wider`、`backdrop-blur-sm`、
+  `font-normal`、`animate-pulse` 对应的变量，Tailwind 编出带写死 fallback 的 `var()`——改写任意值，骨架屏的闪动改成本插件自己的
+  `@utility skeleton-pulse`；`text-balance` 被当成颜色类（它是 `text-wrap: balance`，devkit 按 `text-` 前缀判颜色）——改成任意属性
+  `[text-wrap:balance]`；状态字面量 `'paused'` 被当成漏写前缀的类名（Tailwind 有 `paused` 这个工具类）——把「搁着、退役压暗显示」
+  挪进 `units.ts` 的 `QUIET_STATUSES`，`.tsx` 里不再出现这个字面量
+- **`gwb.provides` 没删**：devkit 0.19 起不再读它，但 `@godcreator/gwb-repo-kit` 0.3.0（源上 latest）的自述测试仍要求它与源码提供的服务一一对应
+
+## 依据
+
+迁移提交 `e520032`：仓根 `pnpm install`、`pnpm build`、`pnpm check`（12 个测试文件 123 条）全过。devkit 的产物、样式、注入与 peer 一致三项检查
+没有经 `devkit.dev` 跑（这次不开隔离 home），而是把 gwb-lifecycle-plugins 仓里 `plugins/devkit/src/` 的 `artifactProblems`、`styleProblems`、
+`wiringProblems` 打包成一个临时脚本对 `plugins/unit-folder` 直接调，改完后三项全过。
+
+## 代价与遗留
+
+`text-balance` 与 `'paused'` 两处是 devkit 样式检查的误报，本仓绕开了，没有改 devkit。`package.json` 按新布局重写，git 没认出它是改名，
+`git log --follow plugins/unit-folder/package.json` 接不上迁移之前的历史，要看旧历史查仓根 `package.json`。

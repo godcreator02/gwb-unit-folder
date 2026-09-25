@@ -299,7 +299,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
       {
         name: 'unit-folder.list',
         description: '现扫单元容器，回全部单元清单',
-        usage: '认领过的按 kind 分组（出生证读不出的带 reason 落 unidentified）、另带 pinned：置顶的单元条目数组，按置顶先后。置顶了但目录已不在的，这一次顺手从置顶表里摘掉并存盘；最近一次点击的单元已不在的，清掉这次点击并广播 unit-folder/selection。无参数',
+        usage: '认领过的按 kind 分组（没出生证的与读不出的归进 unidentified，读不出的带 reason）、另带 pinned：置顶的单元条目数组，按置顶先后。置顶了但目录已不在的，这一次顺带从置顶表里摘掉并存盘；最近一次点击的单元已不在的，清掉这次点击并广播 unit-folder/selection。无参数',
       },
       async () => {
         const root = this.resolveUnitsRoot()
