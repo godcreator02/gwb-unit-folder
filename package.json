@@ -22,7 +22,6 @@
     "skills",
     "src"
   ],
-  "//gwb": "只有 provides 一格（devkit.services 读它把服务的用法带进回执，repo-kit 自述守卫钉它与源码提供的服务互为充要）。窗格件的名字归运行时——node 半调 ctx.gwbShell.describeSelf，格是 init 里 registerPane 的",
   "gwb": {
     "provides": {
       "gwbUnitFolder": {
@@ -45,7 +44,6 @@
   "engines": {
     "node": ">=24"
   },
-  "//components": "radix / cva / cn 是 shadcn 组件的运行时依赖，但**打进本束**——它们不在 importmap 里，外置成裸名就是运行期炸，所以按判据算 dev。tailwindcss / @tailwindcss/cli 是构建输入；@tailwindcss/node 给 tests/prefix.test.ts 在不带前缀的输入下试编；tw-animate-css 给 animate-in 一族",
   "peerDependencies": {
     "@godcreator/gwb-commands": "^0.4.5",
     "@godcreator/gwb-plugin-api": "^0.2.7",
