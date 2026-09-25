@@ -146,4 +146,4 @@ pnpm add @godcreator/gwb-unit-folder@<版本>
 容器根装完到界面的「设置」里填 `units-root`（如 `D:\unitfolders`）。必需的外壳 `gwb-shell`、命令总线 `gwb-commands`
 写在 peer 里，home 里要先装着（home 不自动补装 peer，缺了 `plugin-manager.list` 的 `unmetPeers` 会报出来）；
 `gwb-skills`（说明书）、`gwb-settings`（设置界面）、`gwb-data`（置顶存盘）是可选 peer、局部注入，
-缺哪个本插件照样加载，只少对应的那部分功能。
+缺哪个本插件照样加载，只少对应的那部分功能。插件之间怎么连（提供、注入、按名字调用的命令）见文档站「插件之间怎么连」页。
