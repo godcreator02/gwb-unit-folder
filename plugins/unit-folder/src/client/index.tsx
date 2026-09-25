@@ -39,7 +39,8 @@ import { ToolbarButtons } from './toolbar-buttons.js'
 import { VIEWER_PANE, fileOfParams, openModeOf, openViewer, type OpenMode, type ViewerFile } from './open-file.js'
 import type { HostBridge, PaneArgs, PaneHandle, ShellBridge } from './types.js'
 import {
-  DEFAULT_STATUSES, QUIET_STATUSES,
+  DEFAULT_STATUSES,
+  QUIET_STATUSES,
   STATUS_LABEL,
   UNIT_STATUSES,
   filterGroups,
@@ -52,33 +53,17 @@ import {
 } from './units.js'
 
 /**
- * 单元文件夹的浏览器半，**两格**（node 半 registerPane 的 main / viewer）：
+ * 单元文件夹的浏览器侧，两个窗格（node 侧 registerPane 的 main / viewer）：
  *
- * * **树格**（`main`）：单元条目是出生证里的 lucide 图标 + title + 两行 purpose；种类吸顶
- *   可折叠分组；筛选框旁一颗筛选下拉管状态与种类（默认藏起退役的）；置顶块可放多个；
- *   一键折叠三步；单元展开出文件树
- * * **原文格**（`viewer`）：行号、折行开关、点路径复制
+ * * 单元树（`main`，工具窗格）：单元行是出生证里的图标、title 与两行 purpose；按种类分组；筛选下拉管状态与种类；
+ *   置顶块；单元展开出文件树。点单元行、展开单元内目录时向 node 侧报一次选中（`unit-folder.select`），收起不报
+ * * 原文（`viewer`，文档窗格）：一份装一个文件，行号、折行开关、点路径复制
  *
- * 树格是工具窗格（整页一份），原文格是**文档窗格**（能多开，一份装一个文件）。两格之间不经
- * 总线：树里点文件就是 `openPane('viewer', …)`，装哪个文件住在那一份的参数里（key 是文件的
- * 绝对路径），跟着布局落盘、整页重载还在。点法照外壳的手势约定——单击预览（下一次单击顶掉
- * 它）、Ctrl+单击或中键正式开一个新标签、Ctrl+Alt+单击开到旁边，见 open-file.ts。
- *
- * 工具条那排扩展按钮点击时带上树格的 `pane.instance` 当 `from`，登记方开窗格时递给外壳，
- * 新窗格就落在单元树旁边。
- *
- * 数据命令全在宿主半现扫现读：`unit-folder.list`（容器清单，带 data 里置顶的那几条）、
- * `listDir`（单元内一层）、`readFile`（单文件原文）、`open`（资源管理器）。
- *
- * **选中往外报**：点单元行、点单元内目录，除了展开之外还 fire-and-forget 一条
- * `unit-folder.select`——宿主半据此记「当前单元」、经服务面 `ctx.gwbUnitFolder` 与事件
- * `unit-folder/selection` 交给别的件（第一个消费方是文档站件）。收起同一行不发。
- * 置顶是单元行右侧那颗图钉：`unit-folder.pin` / `unpin`，落 data，然后重取清单。
- *
- * 目录清单与展开状态留在树格的 state 里——关上再开不重读，刷新才重读。
+ * 两个窗格之间不经命令总线：树里点文件就是 `openPane('viewer', …)`，装哪个文件存在那一份的参数里，见 open-file.ts。
+ * 目录清单与展开状态只存在单元树窗格的 state 里，刷新才重读
  */
 
-// ── 数据形状（与宿主半的回包对应） ──────────────────────────────────────────────
+// ── 数据形状（与 node 侧的回执对应） ──────────────────────────────────────────────
 
 interface BrowseEntry {
   name: string
@@ -106,7 +91,7 @@ type PreviewState =
   | { status: 'loaded'; data: FilePreview }
   | { status: 'error'; message: string }
 
-/** 命令总线的回包信封。带 `code` 的失败（unconfigured）原样透传，见宿主半 */
+/** 命令总线的回执。带 `code` 的失败（unconfigured）原样传过来，见 node 侧 */
 interface Reply<T> {
   ok?: boolean
   data?: T
@@ -114,17 +99,17 @@ interface Reply<T> {
   code?: string
 }
 
-// ── 单元行的面孔 ──────────────────────────────────────────────────────────────
+// ── 单元行显示什么 ──────────────────────────────────────────────────────────────
 
-/** 出生证 icon 认不出的名字画这枚；没出生证与读不出各有一枚，一眼分得出「要去补证」 */
-const FALLBACK_ICON = FolderIcon
+/** 出生证 icon 认不出时画这个；没出生证与读不出各用一个图标，看得出要去补出生证 */
+const DEFAULT_UNIT_ICON = FolderIcon
 
 function iconOf(name: string): LucideIcon {
-  return (icons as Record<string, LucideIcon | undefined>)[lucideKey(name)] ?? FALLBACK_ICON
+  return (icons as Record<string, LucideIcon | undefined>)[lucideKey(name)] ?? DEFAULT_UNIT_ICON
 }
 
-/** 一个单元的面孔：图标、两行文案、悬停说明、状态 */
-function unitFaceOf(unit: UnitEntry): {
+/** 一个单元行显示什么：图标、两行文字、悬停说明、状态 */
+function unitRowContentOf(unit: UnitEntry): {
   Icon: LucideIcon
   head: string
   subtitle: string
@@ -155,19 +140,16 @@ function unitFaceOf(unit: UnitEntry): {
   }
 }
 
-function fmtSize(bytes: number): string {
+function formatByteSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-// ── 文件树（单元展开后的附页） ────────────────────────────────────────────────
+// ── 文件树（单元展开后的目录层） ────────────────────────────────────────────────
 
-/**
- * 一层附页行：目录可再展开，文件点了进查看器。DSH 把树摊平成行自己管缩进；
- * React 里直接递归，效果相同、账更好算。
- */
-function PageRows({
+/** 一层目录的行：目录可再展开（按层递归渲染），文件点了开原文窗格 */
+function DirectoryRows({
   dir,
   depth,
   expanded,
@@ -224,7 +206,7 @@ function PageRows({
                 <span className="unitfolder:truncate">{entry.name}</span>
               </div>
               {open && (
-                <PageRows
+                <DirectoryRows
                   dir={abs}
                   depth={depth + 1}
                   expanded={expanded}
@@ -249,7 +231,7 @@ function PageRows({
             )}
             style={{ paddingLeft: depth * 16 + 8 + 18 }}
             onClick={(e) => onOpenFile(abs, entry.name, openModeOf(e))}
-            // 中键不进 onClick，走 auxclick；按下时拦掉浏览器的中键自动滚动。右键（button 2）不算开
+            // 中键不触发 onClick，走 auxclick；按下时拦掉浏览器的中键自动滚动。右键（button 2）不算打开
             onMouseDown={(e) => {
               if (e.button === 1) e.preventDefault()
             }}
@@ -262,7 +244,7 @@ function PageRows({
             </span>
             <span className="unitfolder:truncate">{entry.name}</span>
             {entry.size !== undefined && (
-              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px]">{fmtSize(entry.size)}</span>
+              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px]">{formatByteSize(entry.size)}</span>
             )}
           </div>
         )
@@ -271,28 +253,25 @@ function PageRows({
   )
 }
 
-/** 树里用的路径拼接。展示与展开集统一走正斜杠，落命令时再换成系统形态 */
+/** 树里用的路径拼接，统一用正斜杠；node 侧 path.resolve 时换成系统写法 */
 function joinPath(dir: string, name: string): string {
   return `${dir.replace(/[\\/]+$/, '')}/${name}`
 }
 
-/** 展开容器的浅底与缩进参考线（定稿效果图里那圈 twrapper） */
-function TreePage(props: Omit<Parameters<typeof PageRows>[0], 'depth'>): React.ReactNode {
+/** 单元展开后那一块：浅底加左侧参考线 */
+function ExpandedUnitTree(props: Omit<Parameters<typeof DirectoryRows>[0], 'depth'>): React.ReactNode {
   return (
     <div className="unitfolder:bg-accent/20 unitfolder:mx-2 unitfolder:mb-1.5 unitfolder:rounded-sm unitfolder:border-l-2 unitfolder:py-1 unitfolder:pl-1">
-      <PageRows {...props} depth={0} />
+      <DirectoryRows {...props} depth={0} />
     </div>
   )
 }
 
-// ── 原文查看器 ────────────────────────────────────────────────────────────────
+// ── 原文 ────────────────────────────────────────────────────────────────
 
 /**
- * 原文带行号：**一行一个 flex 行**（行号 | 文本），行号永远跟自己那行文本的头上对齐——
- * 折行时文本在自己的格子里流，行号不动。
- *
- * 折行用 `break-words` 不用 `break-all`：前者只在单词放不下时才切，CJK 照常逐字换行，
- * 不会出现「registry 被切成 reg istry」那种碎法。
+ * 原文带行号：一行一个 flex 行（行号 | 文本），折行时行号仍对齐自己那行文本的开头。
+ * 折行用 `break-words` 不用 `break-all`：只在单词放不下时才切，英文单词不会被切成两半，CJK 照常逐字换行
  */
 function renderCode(text: string, wrap: boolean): React.ReactNode {
   const lines = text.split('\n')
@@ -329,7 +308,7 @@ function UnitsViewer({
   const [preview, setPreview] = useState<PreviewState>({ status: 'idle' })
   const [wrap, setWrap] = useState(true)
   const [copied, setCopied] = useState(false)
-  const tokenRef = useRef(0)
+  const latestLoadRef = useRef(0)
 
   const displayPath = useMemo(() => {
     if (selected === null || containerRoot === '') return null
@@ -340,7 +319,7 @@ function UnitsViewer({
 
   const load = useCallback(
     (path: string | null) => {
-      const token = ++tokenRef.current
+      const token = ++latestLoadRef.current
       if (path === null) {
         setPreview({ status: 'idle' })
         return
@@ -349,7 +328,7 @@ function UnitsViewer({
       void host
         .call('unit-folder.readFile', { path })
         .then((res) => {
-          if (token !== tokenRef.current) return
+          if (token !== latestLoadRef.current) return
           const reply = res as Reply<FilePreview>
           if (reply.ok && reply.data !== undefined) setPreview({ status: 'loaded', data: reply.data })
           else setPreview({ status: 'error', message: reply.error ?? '读取失败' })
@@ -377,7 +356,7 @@ function UnitsViewer({
     return (
       <div className="unitfolder:flex unitfolder:h-full unitfolder:flex-col">
         <div className="unitfolder:text-muted-foreground unitfolder:flex unitfolder:h-full unitfolder:items-center unitfolder:justify-center unitfolder:px-4 unitfolder:text-center unitfolder:text-sm">
-          在单元树里点一个文件看原文：单击预览，Ctrl+单击另开一格，Ctrl+Alt+单击开到旁边。
+          在单元树里点一个文件看原文：单击预览，Ctrl+单击另开一个标签，Ctrl+Alt+单击开到旁边。
         </div>
       </div>
     )
@@ -386,7 +365,7 @@ function UnitsViewer({
   return (
     <div className="unitfolder:flex unitfolder:h-full unitfolder:min-w-0 unitfolder:flex-col">
       <div className="unitfolder:flex unitfolder:flex-none unitfolder:items-center unitfolder:gap-2 unitfolder:border-b unitfolder:px-3 unitfolder:py-2">
-        {/* 点路径复制绝对路径：DSH 的老交互，贴进终端或别处都顺手 */}
+        {/* 点路径复制绝对路径 */}
         <button
           type="button"
           className="unitfolder:text-foreground unitfolder:hover:text-primary unitfolder:m-0 unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:truncate unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left unitfolder:font-mono unitfolder:text-xs"
@@ -397,7 +376,7 @@ function UnitsViewer({
         </button>
         {preview.status === 'loaded' && (
           <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-xs">
-            {fmtSize(preview.data.size)}
+            {formatByteSize(preview.data.size)}
             {preview.data.truncated ? ' · 超长截断' : ''}
           </span>
         )}
@@ -443,22 +422,22 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [collapsedKinds, setCollapsedKinds] = useState<Set<string>>(() => new Set())
   const [query, setQuery] = useState('')
-  /** 过滤只住内存：关掉窗格再开回到默认（退役的藏起来、种类不限） */
+  /** 过滤只存在内存里：关掉窗格再开回到默认（藏起退役的、种类不限） */
   const [statuses, setStatuses] = useState<ReadonlySet<UnitStatus>>(DEFAULT_STATUSES)
   const [kinds, setKinds] = useState<ReadonlySet<string>>(() => new Set())
   const [selected, setSelected] = useState<{ path: string; name: string } | null>(null)
-  /** 「选中」的那个单元（蓝底高亮带的落点）：点谁谁选中并展开，再点一下收起并取消 */
+  /** 选中的单元（高亮的那一行）：点谁谁选中并展开，再点一下收起并取消选中 */
   const [activeUnit, setActiveUnit] = useState<string | null>(null)
-  const inventoryToken = useRef(0)
+  const latestInventoryRequestRef = useRef(0)
 
   const data = inventory.status === 'loaded' ? inventory.data : null
   const containerRoot = data?.container ?? ''
 
   const loadInventory = useCallback(() => {
-    const token = ++inventoryToken.current
+    const token = ++latestInventoryRequestRef.current
     setInventory({ status: 'loading' })
     void host.call('unit-folder.list').then((res) => {
-      if (token !== inventoryToken.current) return
+      if (token !== latestInventoryRequestRef.current) return
       const reply = res as Reply<UnitInventory>
       if (reply.ok && reply.data !== undefined) setInventory({ status: 'loaded', data: reply.data })
       else setInventory({ status: 'error', message: reply.error ?? '扫描失败', unconfigured: reply.code === 'unconfigured' })
@@ -510,10 +489,10 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
   )
 
   /**
-   * 往宿主半报一次选中。**fire-and-forget**：展开不等它，它失败只在控制台说一声——
-   * 「当前单元」是给别的件看的，报不上去不该让树本身卡住
+   * 往 node 侧报一次选中，展开不等回执；失败只在控制台 warn——「当前单元」是给别的插件看的，
+   * 报不上去不让树卡住
    */
-  const select = useCallback(
+  const reportSelection = useCallback(
     (path: string) => {
       host.call('unit-folder.select', { path }).then(
         (res) => {
@@ -529,19 +508,19 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
   /** 单元内的目录：展开时顺带报选中，收起不报 */
   const toggleDir = useCallback(
     (dir: string) => {
-      if (!expanded.has(dir)) select(dir)
+      if (!expanded.has(dir)) reportSelection(dir)
       togglePath(dir)
     },
-    [expanded, select, togglePath],
+    [expanded, reportSelection, togglePath],
   )
 
-  /** 刷新 = 重拉清单 + 所有展开着的目录重读；展开与选中都保住 */
+  /** 刷新：重取清单，所有展开着的目录重读；展开与选中都保留 */
   const refresh = useCallback(() => {
     loadInventory()
     for (const dir of expanded) loadListing(dir)
   }, [expanded, loadInventory, loadListing])
 
-  /** 一键折叠三步（DSH 的分寸）：有展开的先全收；然后收组；最后全开 */
+  /** 一键折叠：有展开的单元先全部收起；没有就在「收起全部种类分组」与「全部展开」之间切换 */
   const collapseStep = useCallback(() => {
     if (data === null) return
     if (expanded.size > 0) {
@@ -567,14 +546,14 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
     [host],
   )
 
-  /** 置顶 / 取消置顶，落在宿主半的 data 里；成不成都重取清单，置顶块跟着盘上那份走 */
+  /** 置顶 / 取消置顶，存进 node 侧的 data 文档；成不成都重取清单，置顶块以存下的那份为准 */
   const togglePin = useCallback(
     (path: string, pinnedNow: boolean) => {
       const call = host.call(pinnedNow ? 'unit-folder.unpin' : 'unit-folder.pin', { path })
       call.then(
         (res) => {
           const reply = res as Reply<unknown>
-          if (!reply.ok) console.warn(`[gwb-unit-folder] 置顶没落：${reply.error ?? '未知原因'}`)
+          if (!reply.ok) console.warn(`[gwb-unit-folder] 置顶没存上：${reply.error ?? '未知原因'}`)
           loadInventory()
         },
         (err: unknown) => console.warn(`[gwb-unit-folder] 置顶调不通：${String(err)}`),
@@ -583,7 +562,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
     [host, loadInventory],
   )
 
-  /** 选中单元的第一级子目录清单（下拉框用）；没拉过就回 null，由 onEnsureDirs 现场拉 */
+  /** 选中单元的第一级子目录清单（目录下拉用）；还没读过就回 null，由 onEnsureDirs 去读 */
   const activeDirEntries = useMemo(() => {
     if (activeUnit === null) return null
     const listing = listings.get(activeUnit)
@@ -596,8 +575,8 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
   }, [activeUnit, listings, loadListing])
 
   /**
-   * 点了一个文件：选中高亮留在树里，原文格按开法经外壳开（见 open-file.ts）——来源是树格
-   * 自己，外壳把它摆在最近用过的那组原文格里，没有就开到单元树旁边
+   * 点了一个文件：树里高亮它，按开法经外壳开原文窗格（见 open-file.ts）；外壳把它开在最近用过的
+   * 那组原文窗格里，没有就开到单元树旁边
    */
   const openFile = useCallback(
     (path: string, name: string, mode: OpenMode) => {
@@ -607,7 +586,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
     [shell, containerRoot],
   )
 
-  /** 文字筛选时分组全部摊开——收着找东西等于把结果藏起来 */
+  /** 有文字筛选时分组全部展开：收着的分组会藏住筛中的结果 */
   const filtered = query.trim() !== ''
 
   const groups = useMemo(
@@ -620,12 +599,12 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
   const pinnedPaths = useMemo(() => new Set((data?.pinned ?? []).map((u) => u.path)), [data])
 
   const renderUnitRow = (unit: UnitEntry, keyPrefix = ''): React.ReactNode => {
-    const face = unitFaceOf(unit)
+    const rowContent = unitRowContentOf(unit)
     const open = expanded.has(unit.path)
     const active = activeUnit === unit.path
     const pinnedHere = pinnedPaths.has(unit.path)
-    const retired = face.status === 'retired'
-    const quiet = face.status !== null && QUIET_STATUSES.has(face.status)
+    const retired = rowContent.status === 'retired'
+    const quiet = rowContent.status !== null && QUIET_STATUSES.has(rowContent.status)
     return (
       <div key={`${keyPrefix}${unit.path}`}>
         <div
@@ -636,7 +615,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
         >
           <button
             type="button"
-            title={face.title}
+            title={rowContent.title}
             className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:items-start unitfolder:gap-2.5 unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left unitfolder:text-foreground"
             onClick={() => {
               if (active) {
@@ -647,16 +626,16 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
               }
               setActiveUnit(unit.path)
               if (!open) togglePath(unit.path)
-              // 选中往外报：点谁谁是「当前单元」。收起（上面那支）不报
-              select(unit.path)
+              // 点中的单元报成「当前单元」；上面收起那一支不报
+              reportSelection(unit.path)
             }}
           >
             {/* 图标对齐第一行文字：行高 13px×1.5 ≈ 20px，16px 的图标下移 2px 居中 */}
-            <face.Icon
+            <rowContent.Icon
               className={cn(
                 'unitfolder:mt-0.5 unitfolder:size-4 unitfolder:shrink-0',
-                quiet || face.status === null ? 'unitfolder:text-muted-foreground' : 'unitfolder:text-foreground',
-                face.broken && 'unitfolder:text-destructive',
+                quiet || rowContent.status === null ? 'unitfolder:text-muted-foreground' : 'unitfolder:text-foreground',
+                rowContent.broken && 'unitfolder:text-destructive',
               )}
             />
             <span className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:flex-col unitfolder:gap-0.5">
@@ -668,26 +647,26 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
                     retired && 'unitfolder:line-through unitfolder:decoration-1',
                   )}
                 >
-                  {face.head}
+                  {rowContent.head}
                 </span>
-                {quiet && face.status !== null && (
+                {quiet && rowContent.status !== null && (
                   <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:rounded-sm unitfolder:border unitfolder:px-1 unitfolder:text-[10px] unitfolder:leading-4">
-                    {STATUS_LABEL[face.status]}
+                    {STATUS_LABEL[rowContent.status]}
                   </span>
                 )}
               </span>
-              {/* purpose 摆两行，再长省略；全文在悬停说明里 */}
+              {/* purpose 显示两行，再长省略；全文在悬停说明里 */}
               <span
                 className={cn(
                   'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:break-words',
-                  face.broken ? 'unitfolder:text-destructive' : active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground',
+                  rowContent.broken ? 'unitfolder:text-destructive' : active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground',
                 )}
               >
-                {face.subtitle}
+                {rowContent.subtitle}
               </span>
             </span>
           </button>
-          {/* 置顶：人在树上点出来的、落 data——不是设置。置顶块里那条同样带这颗，点它就是取消 */}
+          {/* 置顶按钮：置顶块里那一行同样有它，点了就是取消置顶 */}
           <IconButton
             label={pinnedHere ? '取消置顶' : '置顶'}
             icon={
@@ -701,7 +680,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
           />
         </div>
         {open && (
-          <TreePage
+          <ExpandedUnitTree
             dir={unit.path}
             expanded={expanded}
             listings={listings}
@@ -718,7 +697,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
     const collapsed = !filtered && collapsedKinds.has(group.kindKey)
     return (
       <div key={group.kindKey} className="unitfolder:mb-1">
-        {/* 种类分组头：吸顶。筛选时全部摊开（收着找东西等于把结果藏起来） */}
+        {/* 种类分组头：滚动时停在顶部；有文字筛选时不能收起 */}
         <div
           className="unitfolder:bg-background/95 unitfolder:sticky unitfolder:top-0 unitfolder:z-10 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2 unitfolder:px-2 unitfolder:py-1.5 unitfolder:backdrop-blur-[8px]"
           onClick={() => {
@@ -771,12 +750,11 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
         onEnsureDirs={ensureDirs}
         onOpenInCode={openInCode}
       />
-      {/* 滚动走**原生滚动条**（外壳全局的 ::-webkit-scrollbar 细条胶囊），容器直接
-          贴窗格边——原生条画在自己盒子里、占布局空间，贴边也不会被 dockview 的
-          边框裁掉；radix 的浮动条才会越界 */}
+      {/* 用原生滚动条（外壳全局的 ::-webkit-scrollbar 样式）：它画在自己盒子里、占布局空间，
+          容器贴窗格边也不会被 dockview 的边框裁掉；radix 的浮动滚动条会越界 */}
       <div className="unitfolder:min-h-0 unitfolder:flex-1 unitfolder:overflow-y-auto unitfolder:overflow-x-hidden">
         <div className="unitfolder:px-2 unitfolder:py-1">
-          {/* 置顶块：图钉点出来的，按置顶先后，不受过滤影响——置顶就是「不管筛成什么样都要看得见」 */}
+          {/* 置顶块：按置顶先后，不受过滤影响 */}
           {(data?.pinned ?? []).length > 0 && (
             <div className="unitfolder:mx-1 unitfolder:mb-2.5 unitfolder:border-b unitfolder:pb-2">
               <div className="unitfolder:text-muted-foreground unitfolder:flex unitfolder:items-center unitfolder:gap-1.5 unitfolder:px-1.5 unitfolder:pb-1 unitfolder:pt-0.5 unitfolder:text-[11px] unitfolder:tracking-widest">
@@ -799,13 +777,9 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
 }
 
 /**
- * 原文格：只有一件事——把**这一份参数里的那个文件**的原文摆出来（多份各显各的）。
- *
- * 装哪个文件只有一条渠道：外壳给的参数。挂上时读 `pane.params`；外壳顶掉预览格的内容时走
- * `retarget`（`onSwap` 接进来），这棵树不拆、折行开关留着。格里没有原地换文件的入口，所以
- * 不调 `setPaneContent`——key 与参数一直是外壳开它时给的那份。
- *
- * **它一条定时器都不起**：文件变了点「重读」，自己轮询只会把盘慢与卡死混成一种症状。
+ * 原文窗格：显示这一份参数里那个文件的原文。装哪个文件只来自外壳给的参数：挂载时读 `pane.params`；
+ * 外壳替换预览窗格的内容时经 `retarget`（`onSwap` 接进来）原地换文件，折行开关保留。
+ * 窗格里没有原地换文件的入口，所以不调 `setPaneContent`。不起定时器，文件变了点「重读」
  */
 function ViewerPane({
   host,
@@ -820,13 +794,12 @@ function ViewerPane({
 }) {
   const [selection, setSelection] = useState<ViewerFile | null>(initial)
 
-  // 外壳软换这一格的参数时换文件（参数认不出就回空态）。mountPane 把这支递给 retarget
+  // 外壳换这一份的参数时换文件（认不出的参数回空态）；mountPane 把这个函数交给 retarget
   useEffect(() => {
     onSwap((params) => setSelection(fileOfParams(params)))
   }, [onSwap])
 
-  // 标签直接显示当前文件名（空态回「文件原文」）。setPaneTitle 是 0.0.13 外壳才开的
-  // 口——可选调用，旧外壳上优雅降级成静态标题
+  // 标签显示当前文件名，空态显示「文件原文」
   useEffect(() => {
     shell.setPaneTitle?.(selection === null ? '文件原文' : selection.name)
   }, [shell, selection])
@@ -841,8 +814,8 @@ function ViewerPane({
 }
 
 /**
- * 过滤下拉：状态三档 + 种类若干，都是多选；种类一个不勾 = 不按种类筛。勾选时菜单不收起，
- * 连着勾几项不用反复打开。过滤偏离默认时按钮上亮一个点，免得人忘了自己筛过
+ * 过滤下拉：状态三档加种类若干，都是多选；种类一个不勾 = 不按种类筛。勾选时菜单不收起，
+ * 过滤不是默认值时按钮上显示一个点
  */
 function FilterMenu({
   statuses,
@@ -900,11 +873,9 @@ function FilterMenu({
 }
 
 /**
- * 对选中单元的一个目录做一件事的下拉：首项是单元文件夹本身，后面是它的第一级子目录（仓多半住
- * 在那一层）。目录清单在下拉打开时现拉，复用树格的缓存；没选中单元时整颗灰掉。
- *
- * 这颗按钮不套 Tooltip——TooltipTrigger 与 DropdownMenuTrigger 两层 asChild 会互相覆盖事件，
- * 菜单点不开；下拉里的标题就是说明
+ * 对选中单元的一个目录做一件事的下拉：首项是单元目录本身，后面是它的第一级子目录（仓通常在那一层）。
+ * 目录清单在下拉打开时读，复用单元树已读过的清单；没选中单元时不可用。
+ * 触发按钮不套 Tooltip：TooltipTrigger 与 DropdownMenuTrigger 两层 asChild 会互相覆盖事件，菜单点不开
  */
 function DirMenu({
   label,
@@ -947,11 +918,11 @@ function DirMenu({
 
 /**
  * 工具条，固定两行、行内不折行：
- * - 第一行：标题 + 总数、容器根（放不下就截断）、动作图标——先是对选中单元的（VSCode、复制路径、
- *   别的件登记的扩展按钮），竖线隔开，再是对整棵树的（打开容器根、一键折叠、现扫）
- * - 第二行：文字筛选框占满，右边一颗筛选下拉（状态与种类）
+ * - 第一行：标题与总数、容器根（放不下就截断）、动作按钮——先是对选中单元的（VSCode、复制路径、
+ *   别的插件登记的按钮），竖线隔开，再是对整棵树的（打开容器根、一键折叠、现扫）
+ * - 第二行：文字筛选框占满，右边是筛选下拉（状态与种类）
  *
- * 未配置与报错的两句话也归这层
+ * 未配置与出错的提示也在这里
  */
 function PaneHeader({
   host,
@@ -978,7 +949,7 @@ function PaneHeader({
   onOpenInCode,
 }: {
   host: HostBridge
-  /** 树格自己的实例 id：扩展按钮点击时当 `from` 递给登记方 */
+  /** 单元树窗格的实例 id：登记进来的按钮点击时作为 `from` 传给登记方 */
   from: string
   total: number
   containerRoot: string
@@ -996,9 +967,9 @@ function PaneHeader({
   onCollapse(): void
   onOpenRoot(path: string): void
   onRefresh(): void
-  /** 选中单元的路径（蓝底那行）；null = 没选中，VSCode 下拉置灰 */
+  /** 选中单元的路径（高亮那一行）；null = 没选中，目录下拉不可用 */
   activeUnitPath: string | null
-  /** 选中单元的第一级子目录；null = 清单还没拉到 */
+  /** 选中单元的第一级子目录；null = 清单还没读到 */
   activeDirs: BrowseEntry[] | null
   onEnsureDirs(): void
   onOpenInCode(path: string): void
@@ -1042,8 +1013,8 @@ function PaneHeader({
             onEnsureDirs={onEnsureDirs}
             onPick={copyPath}
           />
-          {/* 扩展按钮排：别的件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的，
-              亮不亮跟着选中单元走（问登记方给的 state 命令），画在自家这几颗后面 */}
+          {/* 别的插件经 ctx.gwbUnitFolder.registerToolbarButton 登记进来的按钮，
+              可不可用跟着选中单元走（问登记方给的 state 命令），画在本插件的按钮后面 */}
           <ToolbarButtons host={host} unitPath={activeUnitPath} from={from} />
           <span className="unitfolder:bg-border unitfolder:mx-1 unitfolder:h-4 unitfolder:w-px" />
           <IconButton
@@ -1099,19 +1070,16 @@ function PaneHeader({
 }
 
 /**
- * 挂载：**两格共用这一个 `mountPane`**，按 `pane.id` 分派——一个 client 束是一份模块
- * 实例，两格共用它，React 根各自建各自的。契约要求**同步**返回 `{ dispose }`：
- * async/回函数都算违约。
- *
- * 原文格多给一支 `retarget`：外壳顶掉预览格的内容时软换（换文件、不拆这棵树）。
+ * 两个窗格共用这一个 `mountPane`，按 `pane.id` 分派，各建各的 React 根。句柄必须同步返回；
+ * 原文窗格的句柄多一个 `retarget`：外壳替换预览窗格的内容时原地换文件，不卸载这棵树
  */
 export function mountPane({ host, shell, pane }: PaneArgs, container: HTMLElement): PaneHandle {
   const isViewer = pane.id === VIEWER_PANE
-  /** 原文格的软换那支：ViewerPane 挂上之后填进来 */
+  /** 原文窗格换文件的函数：ViewerPane 挂载后填进来 */
   let swap: ((params: Record<string, unknown>) => void) | undefined
   const root = createRoot(container)
   root.render(
-    // 新版 shadcn 的 Tooltip.Root 要求外层有 Provider——窗格顶层给一把，IconButton 里各归各
+    // shadcn 的 Tooltip 要求外层有 Provider，窗格顶层放一个
     <TooltipProvider delayDuration={200}>
       {isViewer ? (
         <ViewerPane host={host} shell={shell} initial={fileOfParams(pane.params)} onSwap={(fn) => (swap = fn)} />

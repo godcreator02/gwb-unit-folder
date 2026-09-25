@@ -1,11 +1,7 @@
 /*
- * 本件的样式入口。件自己就是一个完整的 Tailwind 入口，围栏是**类名前缀**：类名从源头就是
- * `unitfolder:flex` 这种，全页有效，但只可能匹配到本件画出来的元素——弹层挂到 body 下也一样。
- * 前缀写 `unitfolder` 不写 `unit-folder`：Tailwind v4 的 prefix 只收小写 a-z，带连字符当场抛。
- *
- * 五行各有各的必要（正本见 gwb-devkit 手册「带界面的件」）：theme.css 带 prefix 让类名解析得
- * 出来但不输出变量；令牌包的映射面给语义色（不引颜色类整个是空的）；utilities 不带 preflight、
- * source(none) 只认下面那条 @source；tw-animate-css 给 animate-in 一族；@source 只扫 src/client。
+ * 本插件的样式入口。样式靠类名前缀隔离：类名从源头就是 `unitfolder:flex` 这种，全页有效，但只可能匹配到
+ * 本插件画出来的元素（浮层挂到 body 下也一样）。前缀写 `unitfolder` 不写 `unit-folder`：Tailwind v4 的 prefix 只收小写 a-z。
+ * 下面五行的写法照外壳的说明书 gwb-shell「用令牌配颜色与布局」，少一行对应的那批类就编不出规则。
  */
 
 @import 'tailwindcss/theme.css' theme(reference) prefix(unitfolder);
@@ -14,12 +10,9 @@
 @import 'tw-animate-css';
 @source "./";
 
-/*
- * 本件自己的类一律写成 `@utility`，跟工具类一样带前缀（`unitfolder:urow-active`）。写成裸的
- * `.urow-active` 就出了围栏，全页谁叫这个名字都会被染上。
- */
+/* 本插件自己的类一律写成 `@utility`，跟工具类一样带前缀（`unitfolder:urow-active`）；写成裸的 `.urow-active` 会染到全页同名的元素 */
 
-/* 展开选中那一行的高亮带（照 DSH 单元树的选中态） */
+/* 展开选中那一行的高亮底色 */
 @utility urow-active {
   background-color: oklch(0.32 0.05 262 / 90%);
 }

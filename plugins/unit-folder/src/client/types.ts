@@ -1,18 +1,16 @@
 /**
- * 外壳交给窗格插件的参数。**按形状收，不引用外壳包的类型**（外壳的同名文件是正本：界面插件仓
- * `plugins/shell/src/client/types.ts`）——外壳传来的实参天然兼容这几个结构，本插件不 import 外壳的包，
- * 测试也方便在纯 node 里造假的。
+ * 外壳交给窗格插件的参数，按形状收下本插件用到的那几样（正本是界面插件仓 `plugins/shell/src/client/types.ts`）。
+ * 测试里用它造假的外壳对象
  */
 
-/** 内核交出来的命令接口。整条链路是：界面 → IPC → 主进程 → fd3 → 内核 dispatch → ctx.gwbCommands */
+/** 命令接口。一次调用经页面 → 主进程 → 内核 → `ctx.gwbCommands` */
 export interface HostBridge {
   call(command: string, args?: unknown): Promise<unknown>
 }
 
 /**
- * 外壳交给窗格插件的那组方法。插件只操作得了**自己**的窗格——`openPane` 的 entryId 由
- * `PluginPane` 造这个对象时闭包绑定，插件报不出别人的。这儿只收本插件用到的几个方法
- * （外壳还给了 `setPaneContent` / `keepPane` / `bus` 等，本插件不用）。
+ * 外壳交给窗格插件的那组方法。插件只操作得了自己的窗格：`openPane` 的 entryId 由外壳造这个对象时绑定。
+ * 这里只收本插件用到的几个方法
  */
 export interface ShellBridge {
   /**
@@ -24,10 +22,7 @@ export interface ShellBridge {
     paneId: string,
     options?: { key?: string; params?: Record<string, unknown>; preview?: boolean; placement?: 'auto' | 'side' },
   ): void
-  /**
-   * 改这个窗格标签上的标题。**可选**：shell 0.0.13 起才有这个方法，旧外壳上没有
-   * （用 ?. 调用，没有就保持静态标题）。原文窗格把标签改成当前文件名用的是它。
-   */
+  /** 改这个窗格标签上的标题。原文窗格把标签改成当前文件名 */
   setPaneTitle?(title: string): void
 }
 
@@ -38,16 +33,16 @@ export interface PaneArgs {
   pane: {
     /** 这个窗格是本插件注册的哪一个（注册时给的那个 id） */
     id: string
-    /** 这**一份**的唯一键（dockview 的 panel id）。开两份时两份的这个值不一样，全页唯一 */
+    /** 这一份的唯一键（dockview 的 panel id）。开两份时两份的这个值不一样，全页唯一 */
     instance: string
-    /** 外壳把这个窗格当哪一类打开的（注册时说的 kind，不说就是 tool）。旧外壳不给 */
+    /** 外壳把这个窗格当哪一类打开的（注册时说的 kind，不说就是 tool） */
     kind?: 'tool' | 'document'
     /** 开这一份时给的参数（`openPane` 的 `params`），随布局保存。没给就没有这一项 */
     params?: Record<string, unknown>
   }
 }
 
-/** `mountPane` 回的句柄：给了 `retarget`，外壳换这个窗格的 params 时就原地换内容，不卸载重挂 */
+/** `mountPane` 回的句柄：给了 `retarget`，外壳换这个窗格的 params 时就原地换内容，不卸载重新挂载 */
 export interface PaneHandle {
   dispose(): void
   retarget?(params: Record<string, unknown>): void
@@ -55,8 +50,7 @@ export interface PaneHandle {
 
 import type { GwbWindowApi } from '@godcreator/gwb-kernel-desktop'
 
-// 页面的公共接口。直接用内核包的声明——本地另写一份收窄的会撞 TS2717（内核包在 node 侧
-// 编译里也全局声明了它，两份形状不同就报错）
+// 页面的全局接口直接用内核包的声明：本地另写一份收窄的会撞 TS2717（内核包在 node 侧编译里也全局声明了它）
 declare global {
   interface Window {
     gwb: GwbWindowApi

@@ -2,10 +2,7 @@ import type * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-/**
- * 一个图标按钮 + 悬停说明。DSH 的 IconButton 模式，官方件拼的——树格工具条那几颗
- * 与登记进来的扩展按钮共用这一份。
- */
+/** 一个图标按钮加悬停说明，由官方的 Button 与 Tooltip 组成；单元树工具条上的按钮与登记进来的扩展按钮共用 */
 export function IconButton({
   label,
   icon,
