@@ -14,25 +14,25 @@ description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、登�
 
 六项全部必给，`status` 只认三种，`icon` 是 lucide 的 kebab-case 名：
 
-{/* ref file="../plugins/unit-folder/src/scan.ts" lines="18-40" */}
+{/* ref file="../plugins/unit-folder/src/scan.ts" lines="18-40" hash="76dcb5695547" blob="60dc07dc6275" */}
 
 **严格读**：缺项、类型不对、值不在表里、多出不认识的字段，这个单元整行归进「读不出」并带上原因。多出的字段也拒，
 是因为出生证是手写的——拼错一个键名、留着旧写法（`retired: true`），宽松读法会把它悄悄吞掉。读盘与建单元
 共用这一处，字段表只有一份：
 
-{/* ref file="../plugins/unit-folder/src/scan.ts" lines="101-133" */}
+{/* ref file="../plugins/unit-folder/src/scan.ts" lines="101-133" hash="57a5eb8da8c8" blob="60dc07dc6275" */}
 
 ## 服务 `ctx.gwbUnitFolder`
 
 消费方写 `ctx.inject(['gwbUnitFolder'], …)`（或 `export const inject`）拿到这个服务。读的两个方法都同步，写的一个（登记按钮）回注销函数：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="67-88" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="67-88" hash="7f9819e3212e" blob="dd9ed334da73" */}
 
 `current()` 的回值形状与事件载荷是同一个 `UnitSelection`。三个字段：`unitPath` 是容器根下那一层的单元目录、
 `unitName` 是目录名、`path` 是人点的那个目录（点单元行时等于 `unitPath`，点单元内目录时是那个目录）——
 都是绝对路径：
 
-{/* ref file="../plugins/unit-folder/src/current.ts" lines="14-22" */}
+{/* ref file="../plugins/unit-folder/src/current.ts" lines="14-22" hash="68b7a5b3b6d1" blob="35f23ac3f4ae" */}
 
 **为什么读的是两个方法而不是一个。** `current()` 会回落到第一个置顶，所以光看它分不出「人点了」还是「没点过、只是置顶了」；
 要「只在人真点了时才动」的消费方得分——`pinned()` 单独给出来（全部置顶，按置顶先后），两者一比就知道。
@@ -42,25 +42,25 @@ description: ctx.gwbUnitFolder 的三个方法（读选中与置顶两个、登�
 按钮表经 `unit-folder.toolbarButtons` 交给浏览器侧。这个接口推翻了「选中往外报」否掉的候选 A，判据的前提具备了，
 经过见轨迹卡「工具条按钮登记口」：
 
-{/* ref file="../plugins/unit-folder/src/toolbar.ts" lines="1-63" */}
+{/* ref file="../plugins/unit-folder/src/toolbar.ts" lines="1-63" hash="71c018e0c513" blob="907bbca4f266" */}
 
 点击时传给那条命令的参数由 `clickArgsOf` 拼：选中的单元、菜单里挑的那项，外加 `from`——单元树窗格自己的实例 id
 （`pane.instance`）。登记方要开窗格就把它原样传给 `shell.openPane`，新窗格开在单元树旁边、不盖住它
 （文档站插件的「启动站点」就是这么开预览窗格的）。登记方的 `args` 最后展开，同名的覆盖前面几样：
 
-{/* ref file="../plugins/unit-folder/src/toolbar.ts" lines="75-89" */}
+{/* ref file="../plugins/unit-folder/src/toolbar.ts" lines="75-89" hash="53e87891a9d0" blob="907bbca4f266" */}
 
 ## 事件 `unit-folder/selection`
 
 `current()` 变了就在提供方的 ctx 上 emit 一次，载荷就是新的 `current()`。**点击、置顶、清掉已删单元几条路都经同一处判「变没变」**，
 所以没点过时置顶 / 取消置顶也会广播——消费方看到的「当前」确实变了：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="311-320" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="311-320" hash="c30c3ecb3cc8" blob="dd9ed334da73" */}
 
 类型：消费方只要 `import type {} from '@godcreator/gwb-unit-folder'`，Context 上的 `gwbUnitFolder` 与
 Events 上的 `'unit-folder/selection'` 就都有了。两条声明写在文件末尾：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="548-555" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="548-555" hash="bb45bdf6edcd" blob="dd9ed334da73" */}
 
 **它不做的事**：不跨会话（`current()` 只存在内存里，重启之后是第一个置顶或空）；没有「清空」命令——
 undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶、或者最近一次点击的单元已被删掉而且没有置顶。
@@ -73,35 +73,35 @@ undefined 只在从有到无时才会出现，比如摘掉了最后一个置顶�
 **建单元**（0.7 起）：`create` 不带路径参数，解出容器根之后把 `kind / title / purpose / icon / status?` 交给
 `src/create.ts` 算目录名、建目录、写出生证；字段不成立一个目录都不建：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="392-408" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="392-408" hash="1c5f48ecf382" blob="dd9ed334da73" */}
 
 **选中与置顶四条**是服务的命令入口。`select` 是浏览器侧点树时调的那条，agent 想替人「切到某个单元」
 也调它；它先确认目录还在（不在直接回失败），再算出所属单元、记下、变了就广播：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="488-506" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="488-506" hash="8e01ebf31d06" blob="dd9ed334da73" */}
 
 `current` 无参数，回 `{ ok: true, data: current() ?? null }`——回执形状跟本插件其余命令一致，没有「当前」时 data 是 null
 而不是缺字段：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="508-515" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="508-515" hash="68d1da297bad" blob="dd9ed334da73" */}
 
 `pin` 只认容器根下一层的单元目录，追加到置顶表末尾（已经在的不挪位置），存进 data 文档 `pinned`（`{ paths }`），
 **不改最近一次点击**；`unpin` 要给 `path`，摘掉那一个。两条的回执都等存盘完成——写没写成进回执，不悄悄失败：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="517-544" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="517-544" hash="c87911b0f567" blob="dd9ed334da73" */}
 
 **浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）里，`list` 回执带 `pinned`——置顶单元条目的数组，
 按置顶先后。`list` 每次现扫时顺带清掉过期的状态：置顶了但清单里找不到的（目录删了、换了容器根）从置顶表里摘掉并存盘；
 最近一次点击的单元不在清单里的，清掉这次点击。不然一个删掉的单元会一直占着「当前」。两样清完只判一次变没变、最多广播一次：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="351-390" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="351-390" hash="b7d5c2d8fa07" blob="dd9ed334da73" */}
 
 ## 置顶文档
 
 `<home>/data/<条目 id>/pinned.json`，形状 `{ paths: string[] }`。读回来要验形状——盘上那份是人手改得到的 JSON，
 `paths` 不是数组就当没置顶，数组里的空串与非字符串扔掉、重复的只留第一次：
 
-{/* ref file="../plugins/unit-folder/src/current.ts" lines="73-88" */}
+{/* ref file="../plugins/unit-folder/src/current.ts" lines="73-88" hash="2f4153d818ea" blob="35f23ac3f4ae" */}
 
 ## 依赖谁
 

@@ -39,8 +39,8 @@ node 侧收到 `select`：先过路径检查——解设置里的 `units-root`�
 所以单击是预览，Ctrl / 中键正式开一个新标签，Ctrl+Alt 开到旁边；开在哪归外壳（来源是单元树，开在最近用过的那组
 原文窗格里，没有就开到单元树旁边）：
 
-{/* ref file="../plugins/unit-folder/src/client/open-file.ts" lines="42-47" */}
-{/* ref file="../plugins/unit-folder/src/client/open-file.ts" lines="72-77" */}
+{/* ref file="../plugins/unit-folder/src/client/open-file.ts" lines="42-47" hash="008e39b925a4" blob="26dce8bd67d2" */}
+{/* ref file="../plugins/unit-folder/src/client/open-file.ts" lines="72-77" hash="5d4500a1a02b" blob="26dce8bd67d2" */}
 
 ## 拆成几块，依赖是单向的
 
@@ -63,23 +63,23 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 置顶文档验形状、置顶表的加与摘、`current()` 的回落规则、清单里找置顶与最近一次点击——全是「传入输入、比对输出」，
 所以全在 `tests/current.test.ts` 里测，`index.ts` 只负责接线。回落规则是整个服务的语义核心，它长这样：
 
-{/* ref file="../plugins/unit-folder/src/current.ts" lines="100-110" */}
+{/* ref file="../plugins/unit-folder/src/current.ts" lines="100-110" hash="9bda95e57a40" blob="35f23ac3f4ae" */}
 
 **node 侧不知道任何消费方。** 方向是**特殊认识一般**：用它的插件认识单元文件夹，单元文件夹不认识它们。
 本插件往 ctx 上提供的服务名只有一个，`static inject` 只放两个必需依赖——外壳（没它两个窗格没处注册）与命令总线
 （没它浏览器侧调不到任何东西）；每个依赖是必需还是局部注入、peer 怎么写、缺了会怎样，见[插件之间怎么连](/docs/wiring)：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="125-127" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="125-127" hash="27ba5b99c25f" blob="dd9ed334da73" */}
 
 设置、数据、说明书三个插件都是**局部注入**：缺哪个本插件照常加载、只少那一部分功能。数据插件那段顺带定了置顶怎么存盘、
 以及「人先点了置顶、数据插件后加载」那种顺序谁优先：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="202-224" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="202-224" hash="c65fbef9653c" blob="dd9ed334da73" */}
 
 **浏览器侧不知道 node 侧的实现。** 它只经命令总线通信（`host.call`），按形状收回执；报选中那一下
 不等回执、失败只在控制台说一声：
 
-{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="512-536" */}
+{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="512-536" hash="2d9fdb0252f5" blob="616a2f6f34a2" */}
 
 ## 两条判据
 
@@ -91,7 +91,7 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 **带路径参数的命令共用同一道路径检查。** 命令总线对外开放（agent 经 MCP 也在调），不能假定参数一定是界面从自己的
 清单里传来的：每条都先解 `units-root`、再把路径验成根内的绝对路径，越出根的一律回「路径不在容器根内」：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="291-303" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="291-303" hash="266ffdaf6831" blob="dd9ed334da73" */}
 
 检查其实有两道。词法那道看字符串：`..`、根外绝对路径、换盘符在 `path.relative` 的结果上都看得出来。物理那道看
 实际位置：NTFS 的 junction / symlink 不改字符串、只改实际指向，根内一条链接能把 `stat` /
@@ -99,7 +99,7 @@ create.ts                            （create.ts 建单元，复用 scan.ts 的
 物理那道不拦，「不存在」的错交给后面的步骤报。校验后毫秒级把目录换成链接的竞态不防（纯 Node 拿不到句柄级
 final-path），本机桌面的威胁模型下不做：
 
-{/* ref file="../plugins/unit-folder/src/browse.ts" lines="93-106" */}
+{/* ref file="../plugins/unit-folder/src/browse.ts" lines="93-106" hash="a697b40e43e2" blob="1f8dccea9dbb" */}
 
 ## 怎么用
 

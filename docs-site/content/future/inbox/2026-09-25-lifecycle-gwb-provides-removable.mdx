@@ -1,0 +1,14 @@
+---
+title: 'gwb.provides 不用写了：清单字段可以删'
+description: '来源：总控台会话（gwb-lifecycle-plugins 仓里的 devkit 删掉过度设计的机制，devkit 0.19.0、插件管理 0.10.0 同批发），2026-09-25；从旧的 feedback/inbox.mdx 拆出'
+docfirst: none
+---
+
+devkit 0.19.0 删了 `devkit.capabilities`、`devkit.audit-structure`、`devkit.audit-deps`，以及 `package.json` 里 `gwb.provides` 这一整套
+（发版不再核对它，也没有命令再读它）。`devkit.services` 改成从 home 里各包的 `.d.ts` 现读：给 cordis `Context` 补了服务、
+类型定义在自己声明里的包就是提供方，回执带类型定义原文。插件作者不用再写 `gwb.provides`；想让别人看懂服务，就在类型上写文档注释。
+插件包 `package.json` 的 `gwb.provides` 下次改到时删掉。
+
+本仓还没删的原因：`plugins/unit-folder/tests/self-report.test.ts` 用的是 `@godcreator/gwb-repo-kit` 0.3.0（源上 latest）的自述守卫，
+它仍要求 `gwb.provides` 与源码提供的服务互为充要，删了这个字段测试就红。要删得先定：等 repo-kit 发一版不再查 `gwb.provides`
+的守卫，或者本仓不再用这份自述守卫。

@@ -5,4 +5,3 @@ dist/
 # 文档站的构建产物（站本身进 git）
 docs-site/.next/
 docs-site/.source/
-docs-site/out/

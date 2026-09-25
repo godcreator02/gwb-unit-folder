@@ -54,15 +54,15 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 
 ## 命令
 
-| 命令                                                   | 参数                                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| `unit-folder.create`                                 | `{ kind, title, purpose, icon, status? }`——建单元：算目录名、建目录、写出生证       |
-| `unit-folder.list`                                   | 无参数。回执里 `pinned` 是置顶单元条目的数组（按置顶先后，目录已不在的一并去掉）；最近一次点击的单元已不在的，清掉那次点击 |
-| `unit-folder.listDir` / `readFile` / `open` / `code` | `{ path }`，容器根内的绝对路径                                               |
-| `unit-folder.select`                                 | `{ path }`——报一次选中，浏览器侧点树时调；agent 也能调。目录必须已存在                       |
-| `unit-folder.current`                                | 无参数，回 `current()`（null = 没有）                                       |
-| `unit-folder.pin`                                    | `{ path }`，必须是单元目录（容器根下一层）；追加进置顶                                   |
-| `unit-folder.unpin`                                  | `{ path }`，从置顶里去掉这一个                                               |
+| 命令 | 参数 |
+| --- | --- |
+| `unit-folder.create` | `{ kind, title, purpose, icon, status? }`——建单元：算目录名、建目录、写出生证 |
+| `unit-folder.list` | 无参数。回执里 `pinned` 是置顶单元条目的数组（按置顶先后，目录已不在的一并去掉）；最近一次点击的单元已不在的，清掉那次点击 |
+| `unit-folder.listDir` / `readFile` / `open` / `code` | `{ path }`，容器根内的绝对路径 |
+| `unit-folder.select` | `{ path }`——报一次选中，浏览器侧点树时调；agent 也能调。目录必须已存在 |
+| `unit-folder.current` | 无参数，回 `current()`（null = 没有） |
+| `unit-folder.pin` | `{ path }`，必须是单元目录（容器根下一层）；追加进置顶 |
+| `unit-folder.unpin` | `{ path }`，从置顶里去掉这一个 |
 
 原文窗格是**文档窗格**，一份装一个文件（装哪个文件记在它自己的参数里，随布局保存）。树里点文件照外壳的操作约定：
 单击预览（下一次单击替换它），Ctrl+单击或中键正式开一个新标签，Ctrl+Alt+单击开到旁边。
@@ -77,19 +77,19 @@ pnpm build        # esbuild（浏览器侧）+ tsc（node 侧）+ tailwindcss（
 pnpm test:all     # 全量测试（含产物测试，要先 build）
 ```
 
-文档站：`cd docs-site && pnpm doc`（docfirst check）、`pnpm dev`（[http://localhost:4319）。](http://localhost:4319）。)
+文档站：`cd docs-site && pnpm doc`（docfirst check）、`pnpm dev`（http://localhost:4319）。
 
 ## 结构
 
 插件包 `plugins/unit-folder/` 里：
 
-* `src/scan.ts` / `src/browse.ts` —— 容器现扫 + 出生证字段表与校验 + 路径校验、列目录、读原文
-* `src/create.ts` —— 建单元：目录名、写出生证
-* `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表的形状与增删、`current()` 回落规则
-* `src/index.ts` —— cordis Service：两个窗格的注册 + 十一条命令 + 服务 `gwbUnitFolder` + 事件
-* `src/client/` —— 浏览器侧：树窗格 / 原文窗格，`mountPane` 契约，过滤的纯逻辑在 `units.ts`、点文件开成什么样的原文窗格在 `open-file.ts`，shadcn 组件复制在本仓
-* `skills/unit-folder/` —— agent 说明书（经 gwb-skills 登记）
+- `src/scan.ts` / `src/browse.ts` —— 容器现扫 + 出生证字段表与校验 + 路径校验、列目录、读原文
+- `src/create.ts` —— 建单元：目录名、写出生证
+- `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表的形状与增删、`current()` 回落规则
+- `src/index.ts` —— cordis Service：两个窗格的注册 + 十一条命令 + 服务 `gwbUnitFolder` + 事件
+- `src/client/` —— 浏览器侧：树窗格 / 原文窗格，`mountPane` 契约，过滤的纯逻辑在 `units.ts`、点文件开成什么样的原文窗格在 `open-file.ts`，shadcn 组件复制在本仓
+- `skills/unit-folder/` —— agent 说明书（经 gwb-skills 登记）
 
 仓根的 `docs-site/` 是文档站，`probes/` 放实验材料。
 
-这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`。
+这份 README 是生成物，正本是 `docs-site/content/docs/outputs/readme.mdx`。

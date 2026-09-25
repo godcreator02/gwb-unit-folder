@@ -1,0 +1,10 @@
+{
+  "title": "生成正本",
+  "description": "README、AGENTS、CLAUDE 与随包说明书 SKILL.md 的 mdx 正本——render 生成到落点，改这里不改那边",
+  "pages": [
+    "readme",
+    "agents",
+    "claude",
+    "skills"
+  ]
+}

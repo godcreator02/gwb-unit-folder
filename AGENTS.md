@@ -6,15 +6,15 @@
 
 ## 硬约束
 
-* **服务、命令、出生证字段表是契约**：`gwbUnitFolder` 三个方法、事件 `unit-folder/selection` 的载荷、
+- **服务、命令、出生证字段表是契约**：`gwbUnitFolder` 三个方法、事件 `unit-folder/selection` 的载荷、
   十一条命令的名字与参数、`unit.json` 的六项（文档站插件也在读 `status`）都有别人对着写代码，改任何一样先问人
-* **带路径参数的命令共用同一道路径检查**：先解设置里的 `units-root`，再把路径验成容器根内的绝对路径，
+- **带路径参数的命令共用同一道路径检查**：先解设置里的 `units-root`，再把路径验成容器根内的绝对路径，
   越出根的一律回「路径不在容器根内」
-* **配置与数据分开**：`units-root` 是设置（`gwbSettings.define`）；置顶是数据（`gwbData` 文档
+- **配置与数据分开**：`units-root` 是设置（`gwbSettings.define`）；置顶是数据（`gwbData` 文档
   `pinned`）。设置项 `pinned-unit` 已删，产物测试检查它不会再出现
-* **依赖单向**：纯逻辑层（`scan` / `browse` / `current`）不知道 cordis 存在；浏览器侧只经命令总线
+- **依赖单向**：纯逻辑层（`scan` / `browse` / `current`）不知道 cordis 存在；浏览器侧只经命令总线
   通信；本插件不 import 任何消费方
-* **样式隔离靠类名前缀**：`src/client` 里每个类名都带 `unitfolder:`（本插件自己的类写成 `@utility`），
+- **样式隔离靠类名前缀**：`src/client` 里每个类名都带 `unitfolder:`（本插件自己的类写成 `@utility`），
   漏写不报任何错，`pnpm check` 里由 `tests/prefix.test.ts` 查，`devkit.dev` / `devkit.release` 的样式检查再查一遍；
   样式不靠窗格容器上的 `data-gwb-plugin`。外壳映射文件里没有的主题键（`leading-relaxed`、`animate-pulse` 这类）
   会编出写死的 fallback、过不了样式检查，写任意值或本插件自己的 `@utility`
@@ -40,16 +40,17 @@ skill「docfirst-docs」。
 
 ## 文档
 
-文档站在 `docs-site/`：`cd docs-site && pnpm doc` 检查，dev 端口 4319。仓根 `README.md` 与这份
-`AGENTS.md` 都是生成物，正本在 `docs-site/content/outputs/`，改正本后在站目录跑 `pnpm docfirst render`
-（本站没有 `doc:render` 脚本）。
+文档站在 `docs-site/`：`cd docs-site && pnpm doc` 检查，dev 端口 4319。仓根 `README.md`、`CLAUDE.md`、这份
+`AGENTS.md` 与随包说明书 `plugins/unit-folder/skills/unit-folder/SKILL.md` 都是生成物，正本在
+`docs-site/content/docs/outputs/`，改正本后在站目录运行 `pnpm doc:render`，生成物与正本放进同一个提交。
+改了被钉的代码，同一个提交里在站目录 `pnpm doc:confirm` 写回、逐条复核剩下的黄灯（做法见 skill「docfirst-docs」）。
 
 ## 代码地图
 
 路径相对插件包 `plugins/unit-folder/`：
 
-* `src/scan.ts` / `src/browse.ts` / `src/current.ts` —— 纯逻辑层，不依赖 cordis，`tests/` 里传入输入、比对输出
-* `src/create.ts` —— 建单元：算目录名、建目录、写出生证
-* `src/index.ts` —— cordis Service：窗格注册、十一条命令、服务、事件（先读它）
-* `src/client/` —— 浏览器侧：树窗格 / 原文窗格，只经命令总线通信
-* `skills/unit-folder/` —— agent 说明书
+- `src/scan.ts` / `src/browse.ts` / `src/current.ts` —— 纯逻辑层，不依赖 cordis，`tests/` 里传入输入、比对输出
+- `src/create.ts` —— 建单元：算目录名、建目录、写出生证
+- `src/index.ts` —— cordis Service：窗格注册、十一条命令、服务、事件（先读它）
+- `src/client/` —— 浏览器侧：树窗格 / 原文窗格，只经命令总线通信
+- `skills/unit-folder/` —— agent 说明书
