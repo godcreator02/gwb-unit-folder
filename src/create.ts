@@ -4,14 +4,14 @@ import { IDENTITY_FILE, validateIdentity, type UnitIdentity } from './scan.js'
 
 /**
  * 建单元：算目录名、建目录、写出生证，到 `unit.json` 为止。仓怎么建、要不要文档站，
- * 交给目标线自己的工具。
+ * 交给建仓、建站各自的工具。
  *
- * 目录名 = 五位随机小写字母数字 + `-` + 功能名（如 `a1b2c-gwbbase`）；功能名可省，
- * 省了就只有随机段。撞名重摇。字段表与读盘共用 `validateIdentity`，写出去的出生证
- * 读回来一定认得。时间不进目录名——`createdAt` 比它准，而目录名要经得住内容变。
+ * 目录名 = 五位随机小写字母数字 + `-` + 功能名（如 `igldu-gwbkernel`）；功能名可省，
+ * 省了就只有随机段。重名就重新生成随机段。写出生证与扫描时读出生证共用 `validateIdentity`，
+ * 写出去的出生证读回来一定认得。时间不进目录名——`createdAt` 比它准，而目录名要经得住内容变。
  */
 
-/** 建单元时调用方给的那几项。`status` / `slug` 可省，省了是 `active` / 无功能名；`createdAt` 由本件填 */
+/** 建单元时调用方给的那几项。`status` / `slug` 可省，省了是 `active` / 无功能名；`createdAt` 由本插件填 */
 export interface CreateUnitInput {
   kind: unknown
   title: unknown
@@ -27,12 +27,12 @@ export interface CreatedUnit {
   identity: UnitIdentity
 }
 
-/** 撞名重摇的上限。五位随机撞一次已是万一，连撞五十次只可能是调用方的 random 坏了 */
+/** 重名后重新生成的次数上限。五位随机重名一次已是万一，连续重名五十次只可能是调用方的 random 坏了 */
 const MAX_ATTEMPTS = 50
 
 /**
  * 随机段的字符集，只用小写字母与数字。Windows 文件系统大小写不敏感——收了大写等于没写，
- * 还会把两个不同的名字算成同一个，白摇一趟。
+ * 还会把两个不同的名字算成同一个，白白多生成一次。
  */
 const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz'
 
@@ -41,7 +41,7 @@ const ID_LENGTH = 5
 
 /**
  * 功能名：小写字母数字，段间单个连字符（`gwb-test`）。开头结尾不许是连字符，也不许出现
- * 路径分隔——这个名字要拼进目录名，放 `..` 或 `/` 进来就能穿出容器根。
+ * 路径分隔——这个名字要拼进目录名，放 `..` 或 `/` 进来就能指到容器根外面。
  */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const SLUG_MAX = 32
@@ -81,7 +81,7 @@ function normalizeSlug(raw: unknown): { ok: true; slug: string } | { ok: false; 
 /**
  * 在容器根下建一个单元。参数先整份验过（验不过一个目录都不建），再建目录、写出生证。
  *
- * 建目录用非递归的 `mkdirSync`：目录已经在就抛 EEXIST，那就是撞名，重摇。容器根本身
+ * 建目录用非递归的 `mkdirSync`：目录已经在就抛 EEXIST，那就是重名，重新生成随机段。容器根本身
  * 不在也不替人建——根是设置里的事实，建出来只会掩盖「设置指错了地方」。
  */
 export function createUnit(
