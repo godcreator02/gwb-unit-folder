@@ -1,97 +1,12 @@
 {
-  "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.11",
-  "author": {
-    "name": "godcreator"
-  },
-  "description": "单元文件夹插件：出生证（unit.json）字段表的正本——建单元、现扫单元容器根读出生证，树里按状态与种类过滤、展开看文件、点文件读原文；「人现在看的是哪个单元」经 unit-folder/selection 事件往外报。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
+  "name": "gwb-unit-folder-workspace",
+  "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./client": "./dist/client.js",
-    "./style.css": "./dist/style.css",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "skills",
-    "src"
-  ],
-  "gwb": {
-    "provides": {
-      "gwbUnitFolder": {
-        "summary": "「人现在看的是哪个单元」与置顶单元：单元树里点了谁、钉了谁，往外报；外加往单元树工具条登记动作按钮的接口",
-        "usage": "inject: ['gwbUnitFolder']（或 ctx.inject 局部注入，没装本插件照常加载）。current() 回 { unitPath, unitName, path } 或 undefined（没点过回落到第一个置顶单元）；pinned() 回置顶单元的绝对路径；ctx.on('unit-folder/selection', (sel) => …) 听选中变化，载荷与 current() 同形。registerToolbarButton({ id, icon, label, command, state?, args? }) 往单元树窗格的工具条放一个按钮：点击调 command，参数 { unitPath?, item?, from?, …args }（from 是单元树窗格的实例 id，开窗格时传给 shell.openPane）；state 命令回 { enabled, items } 决定按钮可不可用与菜单。回注销函数，登记方卸载时自动注销"
-      }
-    }
-  },
+  "description": "单元文件夹的 pnpm workspace：插件放在 plugins/（装进 home、由 cordis 加载的包）。文档站 docs-site/ 自己一套依赖，不进 workspace。",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node build.ts && tailwindcss -i src/client/styles.css -o dist/style.css",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/client/tsconfig.json",
-    "lint": "oxlint . --deny-warnings",
-    "test": "vitest run --passWithNoTests --tags-filter=!slow",
-    "test:all": "vitest run --passWithNoTests",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run test",
-    "prepublishOnly": "pnpm build",
-    "publish:dev": "node scripts/publish.ts",
-    "publish:release": "node scripts/publish.ts --release"
+    "build": "pnpm -r --filter \"./plugins/*\" build",
+    "check": "pnpm -r --no-bail check",
+    "test:all": "pnpm -r --no-bail test:all"
   },
-  "engines": {
-    "node": ">=24"
-  },
-  "peerDependencies": {
-    "@godcreator/gwb-kernel-desktop": "^0.7.2",
-    "@godcreator/gwb-commands": "^0.5.1",
-    "@godcreator/gwb-shell": "^0.14.0",
-    "@godcreator/gwb-settings": "^0.3.4",
-    "@godcreator/gwb-data": "^0.1.8",
-    "@godcreator/gwb-skills": "^0.4.6",
-    "cordis": "^4.0.0-rc.10"
-  },
-  "peerDependenciesMeta": {
-    "@godcreator/gwb-settings": {
-      "optional": true
-    },
-    "@godcreator/gwb-data": {
-      "optional": true
-    },
-    "@godcreator/gwb-skills": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "@godcreator/gwb-repo-kit": "0.3.0",
-    "@tailwindcss/cli": "^4.3.3",
-    "@tailwindcss/node": "^4.3.3",
-    "@types/node": "^24.0.0",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.5",
-    "class-variance-authority": "^0.7.1",
-    "cn": "^0.2.5",
-    "cordis": "4.0.0-rc.10",
-    "esbuild": "^0.27.0",
-    "lucide-react": "^1.41.0",
-    "oxlint": "1.76.0",
-    "oxlint-tsgolint": "7.0.2001",
-    "radix-ui": "^1.6.7",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "tailwindcss": "^4.3.3",
-    "tw-animate-css": "^1.4.0",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://git.tianshen02.online:28377/godcreator/gwb-unit-folder.git"
-  },
-  "keywords": [
-    "gwb",
-    "gwb-plugin"
-  ]
+  "engines": { "node": ">=24" }
 }

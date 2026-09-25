@@ -5,4 +5,4 @@ import { registerSelfReportGuard } from '@godcreator/gwb-repo-kit'
 
 /** 自述防漏——正本住 @godcreator/gwb-repo-kit，这儿只是挂号薄壳 */
 const here = path.dirname(fileURLToPath(import.meta.url))
-registerSelfReportGuard({ describe, it, expect }, { root: path.resolve(here, '..') })
+registerSelfReportGuard({ describe, it, expect }, { root: path.resolve(here, '..'), docsDir: '../../docs-site/content/docs' })

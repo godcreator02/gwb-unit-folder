@@ -23,58 +23,58 @@ description: 单元文件夹提供的服务、命令、事件与窗格，注入�
 | data 文档 | `pinned` | 经 `gwbData` 存置顶表 `{ paths }` |
 | 说明书 | `unit-folder` | 包根 `skills/unit-folder/`，经 `gwbSkills.register` 登记 |
 
-{/* has file="../src/index.ts" text="super(ctx, 'gwbUnitFolder')" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="super(ctx, 'gwbUnitFolder')" */}
 
-{/* has file="../src/index.ts" text="export const SELECTION_EVENT = 'unit-folder/selection'" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="export const SELECTION_EVENT = 'unit-folder/selection'" */}
 
-{/* has file="../src/toolbar.ts" text="export const TOOLBAR_EVENT = 'gwb-unit-folder-toolbar'" */}
+{/* has file="../plugins/unit-folder/src/toolbar.ts" text="export const TOOLBAR_EVENT = 'gwb-unit-folder-toolbar'" */}
 
-{/* has file="../src/index.ts" text="id: 'main'," */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="id: 'main'," */}
 
-{/* has file="../src/index.ts" text="id: 'viewer'," */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="id: 'viewer'," */}
 
-{/* has file="../src/index.ts" text="key: 'units-root'," */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="key: 'units-root'," */}
 
-{/* has file="../src/current.ts" text="export const PINNED_DOC = 'pinned'" */}
+{/* has file="../plugins/unit-folder/src/current.ts" text="export const PINNED_DOC = 'pinned'" */}
 
 ### 注入
 
 | 服务 | 提供方包 | 必需 / 局部注入 | peer 写法 | 用来做什么 | 缺了会怎样 |
 | --- | --- | --- | --- | --- | --- |
-| `gwbShell` | `@godcreator/gwb-shell` | 必需（`static inject`） | `^0.14.0` | 注册两个窗格、`describeSelf` 报名字 | 本插件不加载 |
-| `gwbCommands` | `@godcreator/gwb-commands` | 必需（`static inject`） | `^0.5.1` | 登记十一条命令 | 本插件不加载 |
-| `gwbSettings` | `@godcreator/gwb-settings` | 局部注入 | `^0.3.4`，可选 | 声明并读取 `units-root` | 照常加载；读不到容器根，命令一律回 `code: 'unconfigured'` |
-| `gwbData` | `@godcreator/gwb-data` | 局部注入 | `^0.1.8`，可选 | 读写置顶文档 `pinned` | 照常加载；置顶只存在内存里，日志 warn 一次 |
-| `gwbSkills` | `@godcreator/gwb-skills` | 局部注入 | `^0.4.6`，可选 | 登记说明书 `unit-folder` | 照常加载；agent 读不到这份说明书 |
+| `gwbShell` | `@godcreator/gwb-shell` | 必需（`static inject`） | `^0.14.1` | 注册两个窗格、`describeSelf` 报名字 | 本插件不加载 |
+| `gwbCommands` | `@godcreator/gwb-commands` | 必需（`static inject`） | `^0.5.2` | 登记十一条命令 | 本插件不加载 |
+| `gwbSettings` | `@godcreator/gwb-settings` | 局部注入 | `^0.3.5`，可选 | 声明并读取 `units-root` | 照常加载；读不到容器根，命令一律回 `code: 'unconfigured'` |
+| `gwbData` | `@godcreator/gwb-data` | 局部注入 | `^0.1.9`，可选 | 读写置顶文档 `pinned` | 照常加载；置顶只存在内存里，日志 warn 一次 |
+| `gwbSkills` | `@godcreator/gwb-skills` | 局部注入 | `^0.4.7`，可选 | 登记说明书 `unit-folder` | 照常加载；agent 读不到这份说明书 |
 | `gwbKernel` | 内核包 `@godcreator/gwb-kernel-desktop` | 不注入，`requireKernel(ctx)` 从根上下文取 | `^0.7.2` | 推工具条登记表变化的内核事件；接口类型也从内核包 `import type` | 宿主不是 gwb 内核时构造就抛错 |
 
 peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Service` 基类。三个局部注入的插件在
 `peerDependenciesMeta` 里标 `optional: true`——home 里可以没有它们，有的话版本要在范围里。
 局部注入拿到的 `settings` / `data` 在那个插件卸载时设回 undefined。
 
-{/* has file="../src/index.ts" text="static inject = ['gwbShell', 'gwbCommands']" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="static inject = ['gwbShell', 'gwbCommands']" */}
 
-{/* has file="../src/index.ts" text="ctx.inject(['gwbSettings'], (scoped) => {" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="ctx.inject(['gwbSettings'], (scoped) => {" */}
 
-{/* has file="../src/index.ts" text="ctx.inject(['gwbData'], (scoped) => {" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="ctx.inject(['gwbData'], (scoped) => {" */}
 
-{/* has file="../src/index.ts" text="ctx.inject(['gwbSkills'], (scoped) => {" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="ctx.inject(['gwbSkills'], (scoped) => {" */}
 
-{/* has file="../src/index.ts" text="this.kernel = requireKernel(ctx)" */}
+{/* has file="../plugins/unit-folder/src/index.ts" text="this.kernel = requireKernel(ctx)" */}
 
-{/* has file="../package.json" text="&quot;@godcreator/gwb-kernel-desktop&quot;: &quot;^0.7.2&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-kernel-desktop&quot;: &quot;^0.7.2&quot;" */}
 
-{/* has file="../package.json" text="&quot;@godcreator/gwb-commands&quot;: &quot;^0.5.1&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-commands&quot;: &quot;^0.5.2&quot;" */}
 
-{/* has file="../package.json" text="&quot;@godcreator/gwb-shell&quot;: &quot;^0.14.0&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-shell&quot;: &quot;^0.14.1&quot;" */}
 
-{/* has file="../package.json" text="&quot;@godcreator/gwb-settings&quot;: &quot;^0.3.4&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-settings&quot;: &quot;^0.3.5&quot;" */}
 
-{/* has file="../package.json" text="&quot;@godcreator/gwb-data&quot;: &quot;^0.1.8&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-data&quot;: &quot;^0.1.9&quot;" */}
 
-{/* has file="../package.json" text="&quot;@godcreator/gwb-skills&quot;: &quot;^0.4.6&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-skills&quot;: &quot;^0.4.7&quot;" */}
 
-{/* has file="../package.json" text="&quot;cordis&quot;: &quot;^4.0.0-rc.10&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;cordis&quot;: &quot;^4.0.0-rc.10&quot;" */}
 
 ### 按名字调用与约定通道
 
@@ -86,11 +86,11 @@ peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Ser
 | 磁盘文件 | 人、agent、gwb-docs-site | 每个单元目录下的 `unit.json` | 出生证：本插件建单元时写、扫描时读；gwb-docs-site 读 `status` 跳过退役单元、读 `purpose` 放进 `docs-site.list` 回执的 `unitPurpose` |
 | 共享 id | gwb-docs-site | 条目 id `unit-folder`（也就是设置的分区名） | gwb-docs-site 自己的 `units-root` 空着时，经 `settings.get { section: 'unit-folder', key: 'units-root' }` 借本插件的容器根 |
 
-{/* has file="../src/client/toolbar-buttons.tsx" text="host.call(b.command, clickArgsOf(b, { unitPath, item, from }))" */}
+{/* has file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" text="host.call(b.command, clickArgsOf(b, { unitPath, item, from }))" */}
 
-{/* has file="../src/client/toolbar-buttons.tsx" text="host.call(b.state, { unitPath, ...(b.args ?? {}) })" */}
+{/* has file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" text="host.call(b.state, { unitPath, ...(b.args ?? {}) })" */}
 
-{/* has file="../src/scan.ts" text="export const IDENTITY_FILE = 'unit.json'" */}
+{/* has file="../plugins/unit-folder/src/scan.ts" text="export const IDENTITY_FILE = 'unit.json'" */}
 
 ## 「启动站点」按钮：本插件这一侧
 

@@ -15,15 +15,22 @@
 * **依赖单向**：纯逻辑层（`scan` / `browse` / `current`）不知道 cordis 存在；浏览器侧只经命令总线
   通信；本插件不 import 任何消费方
 * **样式隔离靠类名前缀**：`src/client` 里每个类名都带 `unitfolder:`（本插件自己的类写成 `@utility`），
-  漏写不报任何错，由 `tests/prefix.test.ts` 检查；样式不靠窗格容器上的 `data-gwb-plugin`
+  漏写不报任何错，`pnpm check` 里由 `tests/prefix.test.ts` 查，`devkit.dev` / `devkit.release` 的样式检查再查一遍；
+  样式不靠窗格容器上的 `data-gwb-plugin`。外壳映射文件里没有的主题键（`leading-relaxed`、`animate-pulse` 这类）
+  会编出写死的 fallback、过不了样式检查，写任意值或本插件自己的 `@utility`
 
 ## 怎么跑
 
+仓是 pnpm workspace：仓根是不发布的 private 包，插件包在 `plugins/unit-folder/`。在仓根：
+
 ```powershell
 pnpm check      # typecheck + lint + 纯逻辑测试
-pnpm build      # tsc（node 侧）+ esbuild（浏览器侧）+ tailwindcss（样式表，类名前缀 unitfolder）
+pnpm build      # esbuild（浏览器侧）+ tsc（node 侧）+ tailwindcss（样式表，类名前缀 unitfolder）
 pnpm test:all   # 全量测试（含产物测试，要先 build）
 ```
+
+在隔离 home 里验证：`devkit.dev {"home":"<home 名>","dir":"<仓根>","packages":["plugins/unit-folder"]}`；
+发版：`devkit.release {"dir":"<仓根>","packages":["plugins/unit-folder"]}`，发到插件包 `publishConfig.registry` 写的团队源。
 
 装进 home：`plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`，`cordis.yml` 条目是
 `id: unit-folder`（没有 `config`）；装完到设置面填 `units-root`。
@@ -38,6 +45,8 @@ skill「docfirst-docs」。
 （本站没有 `doc:render` 脚本）。
 
 ## 代码地图
+
+路径相对插件包 `plugins/unit-folder/`：
 
 * `src/scan.ts` / `src/browse.ts` / `src/current.ts` —— 纯逻辑层，不依赖 cordis，`tests/` 里传入输入、比对输出
 * `src/create.ts` —— 建单元：算目录名、建目录、写出生证

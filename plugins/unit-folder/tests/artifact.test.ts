@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist')
 const built = fs.existsSync(distDir)
 
-/** 页面 importmap 提供的那四个，跟 build.ts 的 SHARED 一一对应 */
+/** 页面 importmap 提供的那四个（内核包页面入口里写死的名字，build.ts 构建时从那里读） */
 const SHARED = new Set(['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client'])
 
 const CLIENT = 'client.js'

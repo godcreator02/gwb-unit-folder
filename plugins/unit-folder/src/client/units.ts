@@ -44,6 +44,9 @@ export const STATUS_LABEL: Record<UnitStatus, string> = {
   retired: '退役',
 }
 
+/** 树里文字压暗显示的状态：搁着的与退役的 */
+export const QUIET_STATUSES: ReadonlySet<UnitStatus> = new Set<UnitStatus>(['paused', 'retired'])
+
 /** 「没出生证 / 读不出」那一摞在种类过滤里的键。带下划线打头，真种类名撞不上 */
 export const UNIDENTIFIED_KIND = '__unidentified'
 

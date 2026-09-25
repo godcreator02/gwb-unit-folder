@@ -23,3 +23,14 @@
 @utility urow-active {
   background-color: oklch(0.32 0.05 262 / 90%);
 }
+
+/* 骨架屏的明暗闪动。外壳的映射文件里没有 --animate-pulse，用 Tailwind 的 animate-pulse 会编出写死的 fallback */
+@utility skeleton-pulse {
+  animation: unitfolder-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes unitfolder-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}

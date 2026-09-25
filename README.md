@@ -69,9 +69,11 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 
 ## 本地命令
 
+仓是 pnpm workspace，插件包在 `plugins/unit-folder/`。在仓根：
+
 ```powershell
 pnpm check        # typecheck + lint + 纯逻辑测试
-pnpm build        # tsc（node 侧）+ esbuild（浏览器侧）+ tailwindcss（样式表，类名前缀 unitfolder）
+pnpm build        # esbuild（浏览器侧）+ tsc（node 侧）+ tailwindcss（样式表，类名前缀 unitfolder）
 pnpm test:all     # 全量测试（含产物测试，要先 build）
 ```
 
@@ -79,12 +81,15 @@ pnpm test:all     # 全量测试（含产物测试，要先 build）
 
 ## 结构
 
+插件包 `plugins/unit-folder/` 里：
+
 * `src/scan.ts` / `src/browse.ts` —— 容器现扫 + 出生证字段表与校验 + 路径校验、列目录、读原文
 * `src/create.ts` —— 建单元：目录名、写出生证
 * `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表的形状与增删、`current()` 回落规则
 * `src/index.ts` —— cordis Service：两个窗格的注册 + 十一条命令 + 服务 `gwbUnitFolder` + 事件
 * `src/client/` —— 浏览器侧：树窗格 / 原文窗格，`mountPane` 契约，过滤的纯逻辑在 `units.ts`、点文件开成什么样的原文窗格在 `open-file.ts`，shadcn 组件复制在本仓
 * `skills/unit-folder/` —— agent 说明书（经 gwb-skills 登记）
-* `docs-site/` —— 文档站
+
+仓根的 `docs-site/` 是文档站，`probes/` 放实验材料。
 
 这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`。

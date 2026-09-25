@@ -12,12 +12,10 @@
   },
   "ignorePatterns": [
     "**/node_modules/**",
-    ".claude/**",
     "**/*.js",
     "**/*.mjs",
     "**/*.config.ts",
-    "dist/**",
-    "docs-site/**"
+    "dist/**"
   ],
   "overrides": [
     {

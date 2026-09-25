@@ -39,7 +39,7 @@ import { ToolbarButtons } from './toolbar-buttons.js'
 import { VIEWER_PANE, fileOfParams, openModeOf, openViewer, type OpenMode, type ViewerFile } from './open-file.js'
 import type { HostBridge, PaneArgs, PaneHandle, ShellBridge } from './types.js'
 import {
-  DEFAULT_STATUSES,
+  DEFAULT_STATUSES, QUIET_STATUSES,
   STATUS_LABEL,
   UNIT_STATUSES,
   filterGroups,
@@ -300,12 +300,12 @@ function renderCode(text: string, wrap: boolean): React.ReactNode {
     <div className="unitfolder:flex unitfolder:flex-col">
       {lines.map((line, i) => (
         <div key={i} className="unitfolder:flex unitfolder:items-baseline">
-          <span className="unitfolder:w-9 unitfolder:shrink-0 unitfolder:select-none unitfolder:pr-3 unitfolder:text-right unitfolder:font-mono unitfolder:text-xs unitfolder:leading-relaxed unitfolder:text-muted-foreground/60">
+          <span className="unitfolder:w-9 unitfolder:shrink-0 unitfolder:select-none unitfolder:pr-3 unitfolder:text-right unitfolder:font-mono unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:text-muted-foreground/60">
             {i + 1}
           </span>
           <span
             className={cn(
-              'unitfolder:min-w-0 unitfolder:flex-1 unitfolder:font-mono unitfolder:text-xs unitfolder:leading-relaxed',
+              'unitfolder:min-w-0 unitfolder:flex-1 unitfolder:font-mono unitfolder:text-xs unitfolder:leading-[1.625]',
               wrap ? 'unitfolder:whitespace-pre-wrap unitfolder:break-words' : 'unitfolder:whitespace-pre',
             )}
           >
@@ -625,7 +625,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
     const active = activeUnit === unit.path
     const pinnedHere = pinnedPaths.has(unit.path)
     const retired = face.status === 'retired'
-    const quiet = face.status === 'paused' || retired
+    const quiet = face.status !== null && QUIET_STATUSES.has(face.status)
     return (
       <div key={`${keyPrefix}${unit.path}`}>
         <div
@@ -663,7 +663,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
               <span className="unitfolder:flex unitfolder:min-w-0 unitfolder:items-center unitfolder:gap-1.5">
                 <span
                   className={cn(
-                    'unitfolder:truncate unitfolder:text-[13px] unitfolder:leading-normal unitfolder:font-medium',
+                    'unitfolder:truncate unitfolder:text-[13px] unitfolder:leading-[1.5] unitfolder:font-medium',
                     quiet && 'unitfolder:text-muted-foreground',
                     retired && 'unitfolder:line-through unitfolder:decoration-1',
                   )}
@@ -679,7 +679,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
               {/* purpose 摆两行，再长省略；全文在悬停说明里 */}
               <span
                 className={cn(
-                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-relaxed unitfolder:break-words',
+                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:break-words',
                   face.broken ? 'unitfolder:text-destructive' : active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground',
                 )}
               >
@@ -720,7 +720,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
       <div key={group.kindKey} className="unitfolder:mb-1">
         {/* 种类分组头：吸顶。筛选时全部摊开（收着找东西等于把结果藏起来） */}
         <div
-          className="unitfolder:bg-background/95 unitfolder:sticky unitfolder:top-0 unitfolder:z-10 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2 unitfolder:px-2 unitfolder:py-1.5 unitfolder:backdrop-blur-sm"
+          className="unitfolder:bg-background/95 unitfolder:sticky unitfolder:top-0 unitfolder:z-10 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2 unitfolder:px-2 unitfolder:py-1.5 unitfolder:backdrop-blur-[8px]"
           onClick={() => {
             if (filtered) return
             setCollapsedKinds((prev) => {
@@ -734,7 +734,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
           <span className={cn('unitfolder:transition-transform', !collapsed && 'unitfolder:rotate-90')}>
             <ChevronRightIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
           </span>
-          <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-wider">{group.label}</span>
+          <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-[0.05em]">{group.label}</span>
           <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{group.units.length}</span>
         </div>
         {!collapsed && group.units.map((u) => renderUnitRow(u))}
@@ -1020,7 +1020,7 @@ function PaneHeader({
       <div className="unitfolder:flex unitfolder:min-w-0 unitfolder:items-center unitfolder:gap-2">
         <span className="unitfolder:shrink-0 unitfolder:text-sm unitfolder:font-semibold">
           单元
-          {total > 0 && <b className="unitfolder:text-muted-foreground unitfolder:ml-1.5 unitfolder:font-mono unitfolder:text-xs unitfolder:font-normal">{total}</b>}
+          {total > 0 && <b className="unitfolder:text-muted-foreground unitfolder:ml-1.5 unitfolder:font-mono unitfolder:text-xs unitfolder:font-[400]">{total}</b>}
         </span>
         <span className="unitfolder:text-muted-foreground unitfolder:min-w-0 unitfolder:flex-1 unitfolder:truncate unitfolder:font-mono unitfolder:text-xs" title={containerRoot}>
           {containerRoot}

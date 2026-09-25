@@ -41,7 +41,7 @@ function TooltipContent({
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          "unitfolder:z-50 unitfolder:w-fit unitfolder:origin-(--radix-tooltip-content-transform-origin) unitfolder:animate-in unitfolder:rounded-md unitfolder:bg-foreground unitfolder:px-3 unitfolder:py-1.5 unitfolder:text-xs unitfolder:text-balance unitfolder:text-background unitfolder:fade-in-0 unitfolder:zoom-in-95 unitfolder:data-[side=bottom]:slide-in-from-top-2 unitfolder:data-[side=left]:slide-in-from-right-2 unitfolder:data-[side=right]:slide-in-from-left-2 unitfolder:data-[side=top]:slide-in-from-bottom-2 unitfolder:data-[state=closed]:animate-out unitfolder:data-[state=closed]:fade-out-0 unitfolder:data-[state=closed]:zoom-out-95",
+          "unitfolder:z-50 unitfolder:w-fit unitfolder:origin-(--radix-tooltip-content-transform-origin) unitfolder:animate-in unitfolder:rounded-md unitfolder:bg-foreground unitfolder:px-3 unitfolder:py-1.5 unitfolder:text-xs unitfolder:[text-wrap:balance] unitfolder:text-background unitfolder:fade-in-0 unitfolder:zoom-in-95 unitfolder:data-[side=bottom]:slide-in-from-top-2 unitfolder:data-[side=left]:slide-in-from-right-2 unitfolder:data-[side=right]:slide-in-from-left-2 unitfolder:data-[side=top]:slide-in-from-bottom-2 unitfolder:data-[state=closed]:animate-out unitfolder:data-[state=closed]:fade-out-0 unitfolder:data-[state=closed]:zoom-out-95",
           className
         )}
         {...props}
