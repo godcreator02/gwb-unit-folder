@@ -1,13 +1,25 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { addPinned, findPinned, isUnitDir, parsePinnedDoc, removePinned, resolveCurrent, samePath, selectionFor, type UnitSelection } from '../src/current.js'
+import {
+  addPinned,
+  findPinned,
+  isUnitDir,
+  isUnitListed,
+  parsePinnedDoc,
+  removePinned,
+  resolveCurrent,
+  samePath,
+  selectExistingDir,
+  selectionFor,
+  type UnitSelection,
+} from '../src/current.js'
 import type { UnitEntry } from '../src/scan.js'
 
 /**
  * 「当前看的是哪个单元」这一层是纯的：给一条根内路径推出所属单元、置顶文档验形状、
- * `current()` 怎么回落——全是「喂输入看输出」，所以全在这儿测；`index.ts` 只剩接线。
+ * `current()` 怎么回落——全是「传入输入、比对输出」，所以全在这儿测；`index.ts` 只负责接到命令与服务上。
  *
- * 这几条判错的后果都直接进服务面：`unitPath` 算错，消费方（文档站件）就去读错的仓；
+ * 这几条判错的后果都直接进服务接口：`unitPath` 算错，消费方就拿到错的单元；
  * 回落规则错，人没点过树时「当前」不是置顶而是空，或者点过之后置顶反过来盖住点击。
  */
 
@@ -28,7 +40,7 @@ describe('selectionFor：根内一条路径 → 所属单元', () => {
     expect(selectionFor(root, inner)).toEqual<UnitSelection>({ unitPath: unit, unitName: '26090520ntn', path: inner })
   })
 
-  it('正斜杠写法照认——浏览器半的树用正斜杠拼路径，落命令时不换', () => {
+  it('正斜杠写法照认——浏览器侧的树用正斜杠拼路径，调命令时不换', () => {
     const slashed = `${root.replaceAll('\\', '/')}/26090520ntn/console`
     expect(selectionFor(root, slashed)).toEqual<UnitSelection>({
       unitPath: unit,
@@ -42,6 +54,31 @@ describe('selectionFor：根内一条路径 → 所属单元', () => {
     expect(selectionFor(root, path.join(root, '..'))).toBeNull()
     expect(selectionFor(root, path.join(root, 'x', '..', '..', 'y'))).toBeNull()
     expect(selectionFor(root, path.resolve(root, '..', 'elsewhere', 'a'))).toBeNull()
+  })
+})
+
+describe('selectExistingDir：选中之前确认目录还在', () => {
+  const inner = path.join(unit, 'console')
+
+  it('目录在：回所属单元，与 selectionFor 同形', () => {
+    expect(selectExistingDir(root, inner, () => true)).toEqual({
+      ok: true,
+      data: { unitPath: unit, unitName: '26090520ntn', path: inner },
+    })
+  })
+
+  it('目录不在（单元已删）：直接报错，不记下选中', () => {
+    const asked: string[] = []
+    const outcome = selectExistingDir(root, inner, (dir) => {
+      asked.push(dir)
+      return false
+    })
+    expect(outcome).toEqual({ ok: false, error: `不是已存在的目录：${inner}` })
+    expect(asked).toEqual([inner])
+  })
+
+  it('根本身在也不算选中——推不出所属单元', () => {
+    expect(selectExistingDir(root, root, () => true)).toEqual({ ok: false, error: `算不出所属单元：${root}` })
   })
 })
 
@@ -130,5 +167,22 @@ describe('findPinned：清单里置顶的那几条', () => {
   it.runIf(process.platform === 'win32')('Windows 下盘符大小写不算差异——置顶那条是参数解出来的，清单那条是扫出来的', () => {
     expect(samePath(unit, unit.replace(/^D:/, 'd:'))).toBe(true)
     expect(findPinned(inventory, [unit.replace(/^D:/, 'd:')]).entries.map((e) => e.name)).toEqual(['26090520ntn'])
+  })
+})
+
+describe('isUnitListed：最近一次点击的单元还在不在', () => {
+  const inventory = {
+    byKind: [{ kind: '插件工位', units: [entry('26090811jjr')] }],
+    unidentified: [entry('26090520ntn')],
+  }
+
+  it('认领过的与未认领的都算在', () => {
+    expect(isUnitListed(inventory, path.join(root, '26090811jjr'))).toBe(true)
+    expect(isUnitListed(inventory, unit)).toBe(true)
+  })
+
+  it('清单里没有（目录删了、换了容器根）就是不在，调用方据此清掉点击', () => {
+    expect(isUnitListed(inventory, path.join(root, '26090914exf'))).toBe(false)
+    expect(isUnitListed({ byKind: [], unidentified: [] }, unit)).toBe(false)
   })
 })

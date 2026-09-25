@@ -46,13 +46,13 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 | 命令 | 干什么 |
 | --- | --- |
 | `unit-folder.create` | 建一个新单元：`{kind, title, purpose, icon, status?, slug?}`，`status` 省了是 `active`，`slug` 省了目录名只有随机段。回 `{ name, path, identity }` |
-| `unit-folder.list` | 重新扫描容器根，回全部单元：认领过的按 `kind` 分组，没出生证或读不出的归进 `unidentified`（读不出的带 `reason`）；回包另带 `pinned`（置顶的单元条目数组，按置顶先后；目录已不在的，这次扫描时一并从置顶里移除）。无参数 |
+| `unit-folder.list` | 重新扫描容器根，回全部单元：认领过的按 `kind` 分组，没出生证或读不出的归进 `unidentified`（读不出的带 `reason`）；回包另带 `pinned`（置顶的单元条目数组，按置顶先后；目录已不在的，这次扫描时一并从置顶里移除）。最近一次点击的单元已不在的，这次扫描时清掉那次点击并广播 `unit-folder/selection`。无参数 |
 | `unit-folder.toolbarButtons` | 此刻有哪些插件往单元树窗格的工具条登记了按钮（浏览器侧取按钮列表用）。无参数 |
 | `unit-folder.listDir` | 列容器根内一个目录的一层：`{path}` |
 | `unit-folder.readFile` | 读容器根内一个文件的原文（截断预览）：`{path}` |
 | `unit-folder.open` | 在资源管理器里打开一个目录：`{path}`，目录必须已存在 |
 | `unit-folder.code` | 用 VSCode 新窗口打开一个目录（`code -n`）：`{path}`，目录必须已存在；找不到 VSCode（PATH 上没有 `code`）回失败，不降级 |
-| `unit-folder.select` | 报一次选中：`{path}`（单元目录或单元内目录）。回 `{ unitPath, unitName, path }`。树里点一下就是这条，agent 想替人「切到某个单元」也调它 |
+| `unit-folder.select` | 报一次选中：`{path}`（单元目录或单元内目录，必须已存在，不存在直接回失败）。回 `{ unitPath, unitName, path }`。树里点一下就是这条，agent 想替人「切到某个单元」也调它 |
 | `unit-folder.current` | 此刻的「当前单元」：最近一次点击，没点过回落到第一个置顶，都没有是 null。无参数 |
 | `unit-folder.pin` | 把一个单元加进置顶（可以有多个，追加到末尾）：`{path}`，**必须是容器根下一层的单元目录**。存进 data 文档 `pinned`。回 `{ paths }` |
 | `unit-folder.unpin` | 把一个单元从置顶里移除：`{path}`。回 `{ paths }` |
@@ -70,7 +70,7 @@ description: 用户提到「单元」「容器根」「unitfolders」「当前�
 
 ## 「当前单元」：给别的插件的服务
 
-坐在工作台里看某个单元时，别的插件（第一个消费方是文档站插件 gwb-docs-site）要知道人现在看的是哪个。
+坐在工作台里看某个单元时，别的插件可能要知道人现在看的是哪个。
 本插件把这件事**往外报**，不认识任何消费方——依赖方向是具体的消费方认识通用的本插件：
 
 ```ts
@@ -88,7 +88,7 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 
 这个服务被别的插件 inject：**改它的方法签名、事件形状、命令名与参数形状之前先问人。**
 判据与否掉的两条路见文档站的轨迹卡「选中往外报」；其中「注册按钮」那条从 0.4 起推翻——
-第二个消费方（文档站插件）出现了，判据的前提变了，见轨迹卡「工具条按钮登记口」。登记的形状
+文档站插件要在单元树上放「启动站点」按钮，判据的前提变了，见轨迹卡「工具条按钮登记口」。登记的形状
 （`ToolbarButtonSpec`：id / icon / label / command / state? / args?）也在契约里：
 
 ```ts
@@ -97,7 +97,7 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
   icon: 'book-open',
   label: '启动站点',
   command: 'docs-site.viewUnit',   // 点击调，参数 { unitPath, item?, from }——from 是单元树窗格的实例 id，开窗格时递给 shell.openPane
-  state: 'docs-site.unitSites',    // 问亮不亮（可省=常亮），参数 { unitPath }，回 { enabled, items? }
+  state: 'docs-site.unitSites',    // 问可不可用（可省=一直可用），参数 { unitPath }，回 { enabled, items? }
 })
 ```
 
@@ -124,7 +124,7 @@ const off = ctx.gwbUnitFolder.registerToolbarButton({
 地方或者权限不对。别把前者当成「这儿没有单元」报给用户。
 
 **置顶是数据不是设置。** 人在树上点图钉，本插件把它写进 `gwbData` 的文档 `pinned`（`{ paths: [...] }`，
-按置顶先后）。判据跟外壳的布局档一样：设置界面里手填的是设置，插件因人的操作自己写下的是数据。
+按置顶先后）。判据跟外壳把布局存进 data 一样：设置界面里手填的是设置，插件因人的操作自己写下的是数据。
 没装 data 插件时置顶只存在内存里，日志会 warn 一次。
 
 ## 怎么装
@@ -143,6 +143,7 @@ pnpm add @godcreator/gwb-unit-folder@<版本>
   name: "@godcreator/gwb-unit-folder"
 ```
 
-容器根装完到界面的「设置」里填 `units-root`（如 `D:\unitfolders`）。硬依赖 `gwb-shell` / `gwb-commands` / `cordis`
-由 peer 自动装进 home；`gwb-skills`（说明书）、`gwb-settings`（设置界面）、`gwb-data`（置顶存盘）都是局部注入，
+容器根装完到界面的「设置」里填 `units-root`（如 `D:\unitfolders`）。必需的外壳 `gwb-shell`、命令总线 `gwb-commands`
+写在 peer 里，home 里要先装着（home 不自动补装 peer，缺了 `plugin-manager.list` 的 `unmetPeers` 会报出来）；
+`gwb-skills`（说明书）、`gwb-settings`（设置界面）、`gwb-data`（置顶存盘）是可选 peer、局部注入，
 缺哪个本插件照样加载，只少对应的那部分功能。

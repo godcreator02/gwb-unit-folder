@@ -6,7 +6,7 @@ import type { UnitEntry, UnitInventory } from './scan.js'
  * `current()` 怎么回落。**不碰盘、不碰 cordis**——`index.ts` 只是把这几个函数接到命令与
  * 服务上，判断都在这儿，测试也只测这儿。
  *
- * 这个概念为什么从本件往外报、而不是别处来问：树里点一下就是「选中」，那是本件本来就
+ * 这个概念为什么从本插件往外报、而不是别处来问：树里点一下就是「选中」，那是本插件本来就
  * 有的动作；把它交出去只是把一个已有的事实说出来，不为别人发明契约。判据与否掉的两条
  * 路见文档站轨迹卡「选中往外报」。
  */
@@ -47,6 +47,21 @@ export function selectionFor(root: string, target: string): UnitSelection | null
   const unitName = rel.split(path.sep)[0]
   if (unitName === undefined || unitName === '') return null
   return { unitPath: path.join(rootResolved, unitName), unitName, path: targetResolved }
+}
+
+/**
+ * `unit-folder.select` 的判断：目录得还在，再推出所属单元。不在的直接报错——记下一个不存在的
+ * 目录，「当前单元」就指向一个不存在的路径。判存在由调用方传入（`isDirectory`），这一层照旧不碰盘
+ */
+export function selectExistingDir(
+  root: string,
+  target: string,
+  isDirectory: (dir: string) => boolean,
+): { ok: true; data: UnitSelection } | { ok: false; error: string } {
+  if (!isDirectory(target)) return { ok: false, error: `不是已存在的目录：${target}` }
+  const selection = selectionFor(root, target)
+  if (selection === null) return { ok: false, error: `算不出所属单元：${target}` }
+  return { ok: true, data: selection }
 }
 
 /** 是不是单元目录本身（容器根下一层）。置顶只认这种——单元内的目录不是单元 */
@@ -121,4 +136,13 @@ export function findPinned(
     else entries.push(hit)
   }
   return { entries, gone }
+}
+
+/**
+ * 最近一次点击的那个单元还在不在清单里。不在（目录删了、换了容器根）调用方就清掉这次点击，
+ * 不然 `current()` 会一直指着一个已经不存在的单元。
+ */
+export function isUnitListed(inventory: Pick<UnitInventory, 'byKind' | 'unidentified'>, unitPath: string): boolean {
+  const all = [...inventory.byKind.flatMap((g) => g.units), ...inventory.unidentified]
+  return all.some((u) => samePath(u.path, unitPath))
 }

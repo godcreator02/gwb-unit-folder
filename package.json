@@ -1,10 +1,10 @@
 {
   "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.10",
+  "version": "0.7.11",
   "author": {
     "name": "godcreator"
   },
-  "description": "单元文件夹件：出生证（unit.json）字段表的正本——建单元、现扫单元容器根读出生证，树里按状态与种类过滤、展开看文件、点文件读原文；「人现在看的是哪个单元」经 unit-folder/selection 事件往外报。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
+  "description": "单元文件夹插件：出生证（unit.json）字段表的正本——建单元、现扫单元容器根读出生证，树里按状态与种类过滤、展开看文件、点文件读原文；「人现在看的是哪个单元」经 unit-folder/selection 事件往外报。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,8 +25,8 @@
   "gwb": {
     "provides": {
       "gwbUnitFolder": {
-        "summary": "「人现在看的是哪个单元」与置顶单元：单元树里点了谁、钉了谁，往外报；外加往单元树工具条登记动作按钮的口",
-        "usage": "inject: ['gwbUnitFolder']（或 ctx.inject 局部注入，没装本件照挂）。current() 回 { unitPath, unitName, path } 或 undefined（没点过回落到第一个置顶单元）；pinned() 回置顶单元的绝对路径；ctx.on('unit-folder/selection', (sel) => …) 听选中变化，载荷与 current() 同形。registerToolbarButton({ id, icon, label, command, state?, args? }) 往树格工具条放一颗按钮：点击调 command，参数 { unitPath?, item?, from?, …args }（from 是树格的实例 id，开窗格时递给 shell.openPane）；state 命令回 { enabled, items } 定灰亮与菜单。回注销函数，件卸载时自动摘"
+        "summary": "「人现在看的是哪个单元」与置顶单元：单元树里点了谁、钉了谁，往外报；外加往单元树工具条登记动作按钮的接口",
+        "usage": "inject: ['gwbUnitFolder']（或 ctx.inject 局部注入，没装本插件照常加载）。current() 回 { unitPath, unitName, path } 或 undefined（没点过回落到第一个置顶单元）；pinned() 回置顶单元的绝对路径；ctx.on('unit-folder/selection', (sel) => …) 听选中变化，载荷与 current() 同形。registerToolbarButton({ id, icon, label, command, state?, args? }) 往单元树窗格的工具条放一个按钮：点击调 command，参数 { unitPath?, item?, from?, …args }（from 是单元树窗格的实例 id，开窗格时传给 shell.openPane）；state 命令回 { enabled, items } 决定按钮可不可用与菜单。回注销函数，登记方卸载时自动注销"
       }
     }
   },
@@ -45,25 +45,27 @@
     "node": ">=24"
   },
   "peerDependencies": {
-    "@godcreator/gwb-commands": "^0.4.5",
-    "@godcreator/gwb-plugin-api": "^0.2.7",
-    "@godcreator/gwb-shell": "^0.13.5",
-    "@godcreator/gwb-skills": "^0.4.3",
-    "cordis": "^4.0.0-rc.9"
+    "@godcreator/gwb-kernel-desktop": "^0.7.2",
+    "@godcreator/gwb-commands": "^0.5.1",
+    "@godcreator/gwb-shell": "^0.14.0",
+    "@godcreator/gwb-settings": "^0.3.4",
+    "@godcreator/gwb-data": "^0.1.8",
+    "@godcreator/gwb-skills": "^0.4.6",
+    "cordis": "^4.0.0-rc.10"
   },
   "peerDependenciesMeta": {
+    "@godcreator/gwb-settings": {
+      "optional": true
+    },
+    "@godcreator/gwb-data": {
+      "optional": true
+    },
     "@godcreator/gwb-skills": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@godcreator/gwb-commands": "0.4.5",
-    "@godcreator/gwb-data": "0.1.5",
-    "@godcreator/gwb-plugin-api": "^0.2.7",
     "@godcreator/gwb-repo-kit": "0.3.0",
-    "@godcreator/gwb-settings": "0.3.1",
-    "@godcreator/gwb-shell": "^0.13.5",
-    "@godcreator/gwb-skills": "0.4.3",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/node": "^4.3.3",
     "@types/node": "^24.0.0",
@@ -71,7 +73,7 @@
     "@types/react-dom": "19.2.5",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
-    "cordis": "4.0.0-rc.9",
+    "cordis": "4.0.0-rc.10",
     "esbuild": "^0.27.0",
     "lucide-react": "^1.41.0",
     "oxlint": "1.76.0",

@@ -1,9 +1,6 @@
-import type { GwbContext, GwbKernelApi } from '@godcreator/gwb-plugin-api'
+import type { GwbContext, GwbKernelApi } from '@godcreator/gwb-kernel-desktop'
 
-/**
- * plugin-api 的两个运行时薄 helper 就地内联（实施 Spec D6：该包收敛为纯类型面，helper 打进
- * 消费者）。无状态纯函数，勿加副作用。
- */
+/** 内核包根只导出类型，这两个无状态小函数由插件自带一份。不加副作用 */
 
 /** 取内核服务。不要写进 `export const inject` */
 export function requireKernel(ctx: Pick<GwbContext, 'gwbKernel'>): GwbKernelApi {
