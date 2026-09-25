@@ -85,3 +85,23 @@ devkit 0.19.0 删了 `devkit.capabilities`、`devkit.audit-structure`、`devkit.
 - dev 里的命令总线、外壳、说明书删掉（已在 peer）
 
 随适配内核 0.6 那一轮一起改、一起发，版本号照说明书 `gwb-release` 升。规矩正本是 devkit 文档站的规则页「用到的插件写 peer」与说明书 `gwb-release`（`run skill.read {"name":"gwb-release"}`）。
+
+## 2026-09-25 要跟内核 0.7：peer 里写上内核包时直接写 ^0.7.0
+
+来源：gwb-kernel（内核仓 `D:\unitfolders\igldu-gwbkernel\gwb-kernel`），提交 `6ab4ed8`，2026-09-25；总控台会话代投。
+
+内核包 `@godcreator/gwb-kernel-desktop` 马上从 0.6.2 发 0.7.0，这是破坏性版本：内核服务删掉了 `gwbKernel.launcherVersion`，home 里的 `runtime.json` 删掉了 `appDir`（内核仓轨迹卡 `2026-09-25-drop-launcher-version`）。此前 0.6.1、0.6.2 还给页面加了导航锁（内核仓 `docs-site/content/docs/seams/ipc.mdx` 的「页面保证」）：
+
+- 页面的主框架只能是内核的 `index.html`：不带 `target` 的链接点击、拖进窗口的链接一律拒绝，页面上没有任何反应
+- `window.open(url)` 与 `target="_blank"` 的链接不再开新窗口：`http:`、`https:` 地址交给系统默认浏览器打开，别的协议（`file:`、`javascript:`、`data:`、自定义协议）拒绝
+- 页面经 `window.gwb.command` 调命令，只接收顶层框架发来的；iframe 里调用拿到的是 `ok: false` 的回执
+
+本仓的情况：
+
+- `@godcreator/gwb-unit-folder`（`package.json` 第 49–55 行）：peer 里还没写内核包。没写范围也算不兼容，所以 `plugin-manager.list` 现在就把它标成 `kernelUntested`，`devkit.release` 会报「peer 里没写内核包」拒发
+- `launcherVersion`、`appDir`、`window.open`、`target="_blank"`：都没有用到；浏览器端（`src/client/`）也没有普通链接
+
+要做的：
+
+1. 照上面「迁到内核装进 home」那条把内核包写进 peer 时，直接写 `^0.7.0`：等内核 0.7.0 发布，在装了 0.7.0 的隔离 home 里验过再写，版本号照说明书 `gwb-release` 升，然后发版。「内核直接跟 0.6」那条里别的改动照做
+2. 以后页面里要打开外部网页，写 `target="_blank"` 或调用 `window.open(url)`，内核交给系统浏览器；不带 `target` 的链接点了没有反应
