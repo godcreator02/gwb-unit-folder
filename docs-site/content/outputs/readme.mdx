@@ -1,28 +1,27 @@
 ---
 title: README（仓根正本）
-description: 仓根 README.md 由这一页摆出去——改这里，跑 docfirst render，一起提交
+description: 仓根 README.md 的正本——render 生成到仓根
 ---
 
 # gwb-unit-folder
 
-单元文件夹插件（gwb-kernel 正线）：现扫单元容器根读出生证、树里展开单元看文件、点文件在第二格看原文；
-**0.3 起往外报「人现在看的是哪个单元」**——提供服务 `ctx.gwbUnitFolder` 与事件 `unit-folder/selection`，
-别的件（第一个消费方是文档站件）局部注入它就知道当前单元。自 [26090620ufd 的旧线件](../../../26090620ufd/gwb-plugin-unit-folder)
-按新线契约重做，版式正本是旧仓 `design/units-pane.html` 的定稿效果图。
+单元文件夹插件：现扫单元容器根读出生证、树里展开单元看文件、点文件在第二个窗格看原文；
+往外报「人现在看的是哪个单元」——提供服务 `ctx.gwbUnitFolder` 与事件 `unit-folder/selection`，
+别的插件（第一个消费方是文档站插件）局部注入它就知道当前单元。
 
-设计、依赖方向、服务面与命令面的论断在文档站 `docs-site/`（论断钉在源码上，`docfirst check` 守着）；
-方向了断在[轨迹区](/trajectory)的轨迹卡。这份 README 只讲怎么装、怎么跑。
+设计、依赖方向、服务与命令的论断在文档站 `docs-site/`（论断钉在源码上，`pnpm doc` 检查）；
+取舍的理由在文档站轨迹区的轨迹卡。这份 README 只讲怎么装、怎么跑。
 
 ## 装
 
-正路是经工作台 `plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动路：
+在工作台里调 `plugin-manager.install {"pkg":"@godcreator/gwb-unit-folder"}`；手动装：
 
 ```powershell
 cd $env:APPDATA\gwb-kernel\homes\<home 名>
 pnpm add @godcreator/gwb-unit-folder@<版本>
 ```
 
-`<home>\cordis.yml` 加条目（id 手写，**没有 config**——件不吃 `cordis.yml` 的 `config`）：
+`<home>\cordis.yml` 加条目（id 手写，**没有 config**——本插件不读 `cordis.yml` 的 `config`）：
 
 ```yaml
 - id: unit-folder
@@ -30,18 +29,20 @@ pnpm add @godcreator/gwb-unit-folder@<版本>
 ```
 
 装完到「设置」里给单元文件夹填 **`units-root`**（容器根的绝对路径，如 `D:\unitfolders`）——这是它唯一的设置项，
-不填碰容器根的命令全回 `code: 'unconfigured'`。
+不填时用到容器根的命令全回 `code: 'unconfigured'`。
 
 **出生证 `unit.json` 六项全部必给**（`kind` / `title` / `purpose` / `status` / `icon` / `createdAt`），多一项不认识的也不行；
-字段表见文档站「服务面与命令面」或随包说明书。新开单元走 `unit-folder.create`。
+字段表见文档站「服务面与命令面」页或随包说明书。新开单元用 `unit-folder.create`。
 
-**置顶不是设置**：单元行右侧那颗图钉点出来（可以有多个），落 `gwbData` 的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。
-判据跟外壳的布局档一样：人在设置面里手填的是设置，件因人的操作自己写下的是数据。没装 data 件置顶只活在内存。
+**置顶不是设置**：单元行右侧的图钉点下去就置顶（可以有多个），存进 `gwbData` 的文档 `pinned`
+（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。判据跟外壳的布局文件一样：人在设置面里手填的是设置，
+插件因人的操作自己写下的是数据。没装数据插件时，置顶只存在内存里。
 
-硬依赖 `gwb-shell` / `gwb-commands` 与 `cordis` 由 peer 自动带进 home；`gwb-settings` / `gwb-data` / `gwb-skills`
-都是局部注入，缺哪个本件照挂、只少那一面。
+必需依赖 `gwb-shell` / `gwb-commands` 与 `cordis` 写在 peer 里；home 里的 pnpm 不自动补装 peer，peer 里的插件
+没装时由 `plugin-manager.list` 的 `unmetPeers` 报出来。`gwb-settings` / `gwb-data` / `gwb-skills` 都是局部注入，
+缺哪个本插件照常加载，只少那一部分功能。
 
-## 服务面（给写件的人）
+## 服务（给写插件的人）
 
 ```ts
 import type {} from '@godcreator/gwb-unit-folder'
@@ -49,52 +50,46 @@ import type {} from '@godcreator/gwb-unit-folder'
 ctx.inject(['gwbUnitFolder'], (scoped) => {
   scoped.gwbUnitFolder.current()   // { unitPath, unitName, path } | undefined
   scoped.gwbUnitFolder.pinned()    // 全部置顶单元的绝对路径，按置顶先后：string[]
-  scoped.on('unit-folder/selection', (selection) => { /* 同一个形状，变了就来 */ })
+  scoped.on('unit-folder/selection', (selection) => { /* 同一个形状，选中变了就触发 */ })
 })
 ```
 
-方向是**特殊认识一般**：消费方认识本件，本件不认识任何消费方。`current()` 是最近一次点击（多开的格以最后一次为准），
-本会话没点过时回落到第一个置顶单元，都没有是 undefined。**这面被别人 inject，改它先问人。**
+方向是**特殊认识一般**：消费方认识本插件，本插件不认识任何消费方。`current()` 是最近一次点击（多开的窗格以最后一次为准），
+本会话没点过时回落到第一个置顶单元，都没有是 undefined。**这个服务被别的插件 inject，改它先问人。**
 
 ## 命令
 
 | 命令 | 参数 |
 | --- | --- |
 | `unit-folder.create` | `{ kind, title, purpose, icon, status? }`——建单元：算目录名、建目录、写出生证 |
-| `unit-folder.list` | 无参数。回包 `pinned` 是置顶单元条目的数组（按置顶先后，目录已不在的顺手摘掉） |
+| `unit-folder.list` | 无参数。回执里 `pinned` 是置顶单元条目的数组（按置顶先后，目录已不在的一并去掉） |
 | `unit-folder.listDir` / `readFile` / `open` / `code` | `{ path }`，容器根内的绝对路径 |
-| `unit-folder.select` | `{ path }`——报一次选中，浏览器半点树时调；agent 也能调 |
+| `unit-folder.select` | `{ path }`——报一次选中，浏览器侧点树时调；agent 也能调 |
 | `unit-folder.current` | 无参数，回 `current()`（null = 没有） |
 | `unit-folder.pin` | `{ path }`，必须是单元目录（容器根下一层）；追加进置顶 |
-| `unit-folder.unpin` | `{ path }`，从置顶里摘掉这一个 |
+| `unit-folder.unpin` | `{ path }`，从置顶里去掉这一个 |
 
-原文格是**文档窗格**，一份装一个文件（装哪个住在它自己的参数里，跟着布局落盘）。树里点文件照外壳的手势约定：
-单击预览（下一次单击顶掉它），Ctrl+单击或中键正式开一个新标签，Ctrl+Alt+单击开到旁边。
+原文窗格是**文档窗格**，一份装一个文件（装哪个文件记在它自己的参数里，随布局保存）。树里点文件照外壳的操作约定：
+单击预览（下一次单击替换它），Ctrl+单击或中键正式开一个新标签，Ctrl+Alt+单击开到旁边。
 
-## 开发循环
+## 本地命令
 
 ```powershell
 pnpm check        # typecheck + lint + 纯逻辑测试
-pnpm build        # tsc（node 半）+ esbuild（浏览器半）+ tailwindcss（样式表，类名前缀 unitfolder）
-pnpm test:all     # 全量测试（含产物守卫，要先 build）
+pnpm build        # tsc（node 侧）+ esbuild（浏览器侧）+ tailwindcss（样式表，类名前缀 unitfolder）
+pnpm test:all     # 全量测试（含产物测试，要先 build）
 ```
-
-发正式版：先抬 `package.json` 版本号并提交，再经工作台 `devkit.release {"dir":"<仓根>"}`。手工兜底是
-`pnpm publish --no-git-checks`——不手写 `--registry`，`@godcreator` 的 scope 路由住用户级配置。
-
-实机验证按 devkit 手册（skill `gwb-devkit`）：开隔离 home、装包、给 `units-root`、看日志与命令回执。
 
 文档站：`cd docs-site && pnpm doc`（docfirst check）、`pnpm dev`（http://localhost:4319）。
 
 ## 结构
 
-- `src/scan.ts` / `src/browse.ts` —— 纯机：容器现扫 + 出生证字段表与校验 + 路径校验/列目录/读原文
-- `src/create.ts` —— 建单元：目录名、出生证落盘
-- `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表形状与加摘、`current()` 回落规则
-- `src/index.ts` —— cordis Service：两格窗格注册 + 十一条命令 + 服务面 `gwbUnitFolder` + 事件
-- `src/client/` —— 浏览器半：树格 / 原文格，`mountPane` 契约，过滤纯逻辑在 `units.ts`、点文件开成什么样的原文格在 `open-file.ts`，shadcn 组件自 vendor
-- `skills/unit-folder/` —— agent 说明书（gwb-skills 挂载）
-- `docs-site/` —— fumadocs 站 + docfirst 六区（现状 / 轨迹 / 交接 / 未来 / 生成正本 / 反馈）
+- `src/scan.ts` / `src/browse.ts` —— 容器现扫 + 出生证字段表与校验 + 路径校验、列目录、读原文
+- `src/create.ts` —— 建单元：目录名、写出生证
+- `src/current.ts` —— 纯逻辑：从路径推所属单元、置顶表的形状与增删、`current()` 回落规则
+- `src/index.ts` —— cordis Service：两个窗格的注册 + 十一条命令 + 服务 `gwbUnitFolder` + 事件
+- `src/client/` —— 浏览器侧：树窗格 / 原文窗格，`mountPane` 契约，过滤的纯逻辑在 `units.ts`、点文件开成什么样的原文窗格在 `open-file.ts`，shadcn 组件复制在本仓
+- `skills/unit-folder/` —— agent 说明书（经 gwb-skills 登记）
+- `docs-site/` —— 文档站
 
-这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`；仓根 `AGENTS.md` 同理出自
-`agents.mdx`。改完正本在 `docs-site` 跑 `pnpm exec docfirst render` 重摆，一起提交。
+这份 README 是生成物，正本是 `docs-site/content/outputs/readme.mdx`。
