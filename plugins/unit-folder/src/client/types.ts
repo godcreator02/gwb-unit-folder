@@ -29,7 +29,8 @@ export interface ShellBridge {
 /** 外壳调插件的 `mountPane` 时给的参数 */
 export interface PaneArgs {
   host: HostBridge
-  shell: ShellBridge
+  /** `portal` 是本窗格浮层的挂载点，在这张桌面里，切桌面时跟着隐藏；只有 `mountPane` 用它，所以不放进 `ShellBridge` */
+  shell: ShellBridge & { portal: HTMLElement }
   pane: {
     /** 这个窗格是本插件注册的哪一个（注册时给的那个 id） */
     id: string

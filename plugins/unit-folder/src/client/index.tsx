@@ -36,6 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { IconButton } from '@/components/ui/icon-button'
 import { ToolbarButtons } from './toolbar-buttons.js'
+import { PortalContainerContext, usePortalContainer } from './portal-container.js'
 import { VIEWER_PANE, fileOfParams, openModeOf, openViewer, type OpenMode, type ViewerFile } from './open-file.js'
 import type { HostBridge, PaneArgs, PaneHandle, ShellBridge } from './types.js'
 import {
@@ -835,6 +836,7 @@ function FilterMenu({
   const customized =
     kinds.size > 0 || statuses.size !== DEFAULT_STATUSES.size || [...statuses].some((s) => !DEFAULT_STATUSES.has(s))
   const keepOpen = (e: Event): void => e.preventDefault()
+  const portalContainer = usePortalContainer()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -845,7 +847,7 @@ function FilterMenu({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="unitfolder:max-h-96 unitfolder:w-44 unitfolder:overflow-y-auto">
+      <DropdownMenuContent container={portalContainer} align="end" className="unitfolder:max-h-96 unitfolder:w-44 unitfolder:overflow-y-auto">
         <DropdownMenuLabel className="unitfolder:text-muted-foreground unitfolder:text-xs">状态</DropdownMenuLabel>
         {UNIT_STATUSES.map((s) => (
           <DropdownMenuCheckboxItem key={s} checked={statuses.has(s)} onSelect={keepOpen} onCheckedChange={() => onToggleStatus(s)}>
@@ -892,6 +894,7 @@ function DirMenu({
   onEnsureDirs(): void
   onPick(path: string): void
 }) {
+  const portalContainer = usePortalContainer()
   return (
     <DropdownMenu onOpenChange={(open) => { if (open) onEnsureDirs() }}>
       <DropdownMenuTrigger asChild disabled={activeUnitPath === null}>
@@ -899,7 +902,7 @@ function DirMenu({
           {icon}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
+      <DropdownMenuContent container={portalContainer} align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
         <DropdownMenuLabel>{label}</DropdownMenuLabel>
         {activeUnitPath !== null && <DropdownMenuItem onClick={() => onPick(activeUnitPath)}>单元文件夹</DropdownMenuItem>}
         {activeDirs === null ? (
@@ -1080,13 +1083,15 @@ export function mountPane({ host, shell, pane }: PaneArgs, container: HTMLElemen
   const root = createRoot(container)
   root.render(
     // shadcn 的 Tooltip 要求外层有 Provider，窗格顶层放一个
-    <TooltipProvider delayDuration={200}>
-      {isViewer ? (
-        <ViewerPane host={host} shell={shell} initial={fileOfParams(pane.params)} onSwap={(fn) => (swap = fn)} />
-      ) : (
-        <UnitFolderPane host={host} shell={shell} instance={pane.instance} />
-      )}
-    </TooltipProvider>,
+    <PortalContainerContext.Provider value={shell.portal}>
+      <TooltipProvider delayDuration={200}>
+        {isViewer ? (
+          <ViewerPane host={host} shell={shell} initial={fileOfParams(pane.params)} onSwap={(fn) => (swap = fn)} />
+        ) : (
+          <UnitFolderPane host={host} shell={shell} instance={pane.instance} />
+        )}
+      </TooltipProvider>
+    </PortalContainerContext.Provider>,
   )
   return {
     dispose() {

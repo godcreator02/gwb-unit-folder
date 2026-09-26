@@ -3,6 +3,7 @@ import { BookOpenIcon, CircleDotIcon, GlobeIcon, RocketIcon, type LucideIcon } f
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { IconButton } from '@/components/ui/icon-button'
+import { usePortalContainer } from '@/portal-container'
 import { clickArgsOf, isToolbarNudge, parseButtonState, type ButtonState, type RegisteredToolbarButton } from '../toolbar.js'
 import type { HostBridge } from './types.js'
 
@@ -30,6 +31,7 @@ function iconFor(name: string): LucideIcon {
 const keyOf = (button: RegisteredToolbarButton): string => `${button.entryId}:${button.id}`
 
 export function ToolbarButtons({ host, unitPath, from }: { host: HostBridge; unitPath: string | null; from: string }) {
+  const portalContainer = usePortalContainer()
   const [buttons, setButtons] = useState<RegisteredToolbarButton[]>([])
   /** 每个按钮此刻的状态（state 命令问来的）；没问过的不在表上，按不可用处理 */
   const [statesByButton, setStatesByButton] = useState<Map<string, ButtonState>>(() => new Map())
@@ -110,7 +112,7 @@ export function ToolbarButtons({ host, unitPath, from }: { host: HostBridge; uni
                   <Icon className="unitfolder:size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
+              <DropdownMenuContent container={portalContainer} align="end"className="unitfolder:max-h-72 unitfolder:overflow-y-auto">
                 {items.map((item) => (
                   <DropdownMenuItem key={item.id} onClick={() => runButtonCommand(button, item.id)}>
                     {item.label}
