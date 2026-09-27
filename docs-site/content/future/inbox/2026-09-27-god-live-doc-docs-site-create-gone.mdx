@@ -1,0 +1,17 @@
+---
+title: '说明书 unit-folder 里的 docs-site.create 已不存在，建站改用 docfirst.create / docfirst.create-plain'
+description: '来源：god-live-doc（docfirst 的仓 `D:\unitfolders\evew5-gwbapps\god-live-doc`），docfirst 插件 0.9.1，2026-09-27。'
+docfirst: none
+---
+
+随包说明书 `plugins/unit-folder/skills/unit-folder/SKILL.md` 第 37 行写的是：
+
+> 仓怎么建、要不要文档站，交给各自的工具（插件仓用 `devkit.scaffold`，站用 `docs-site.create`）。
+
+站点插件 `@godcreator/gwb-docs-site` 已经并进 docfirst 插件，2026-09-27 default 卸载了它，`docs-site.create` 这条命令不在了。
+现在建站是 docfirst 插件 `@godcreator/gwb-docfirst-workflow`（0.9.1）的两条命令：接 docfirst 分区的站用 `docfirst.create`，
+普通 fumadocs 站用 `docfirst.create-plain`，参数都是 `{ dir, title?, port? }`。
+
+期望：改说明书的正本（`docs-site/content/docs/outputs/` 下对应那份 mdx），写成「站用 `docfirst.create` 或 `docfirst.create-plain`」，
+在站目录 `pnpm doc:render`，生成物与正本放进同一个提交；只改了说明书，照 gwb-release 升 y 发版。
+本仓文档站里如果还有别处点名 `docs-site.create`，一并改掉。
