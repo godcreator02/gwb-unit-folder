@@ -39,12 +39,12 @@ description: 单元文件夹提供的服务、命令、事件、窗格与设置�
 
 | 服务 | 提供方包 | 必需 / 局部注入 | peer 写法 | 用来做什么 | 缺了会怎样 |
 | --- | --- | --- | --- | --- | --- |
-| `gwbShell` | `@godcreator/gwb-shell` | 必需（`static inject`） | `^0.15.0` | 注册两个窗格、`describeSelf` 报名字 | 本插件不加载 |
+| `gwbShell` | `@godcreator/gwb-shell` | 必需（`static inject`） | `^0.15.1` | 注册两个窗格、`describeSelf` 报名字 | 本插件不加载 |
 | `gwbCommands` | `@godcreator/gwb-commands` | 必需（`static inject`） | `^0.5.2` | 登记十一条命令 | 本插件不加载 |
 | `gwbSettings` | `@godcreator/gwb-settings` | 局部注入 | `^0.3.5`，可选 | 声明并读取 `units-root` | 照常加载；读不到容器根，命令一律回 `code: 'unconfigured'` |
 | `gwbData` | `@godcreator/gwb-data` | 局部注入 | `^0.1.9`，可选 | 读写置顶文档 `pinned` | 照常加载；置顶只存在内存里，日志 warn 一次 |
 | `gwbSkills` | `@godcreator/gwb-skills` | 局部注入 | `^0.4.7`，可选 | 登记说明书 `unit-folder` | 照常加载；agent 读不到这份说明书 |
-| `gwbKernel` | 内核包 `@godcreator/gwb-kernel-desktop` | 不注入，`requireKernel(ctx)` 从根上下文取 | `^0.7.2` | 推工具条登记表变化的内核事件；接口类型也从内核包 `import type` | 宿主不是 gwb 内核时构造就抛错 |
+| `gwbKernel` | 内核包 `@godcreator/gwb-kernel-desktop` | 不注入，`requireKernel(ctx)` 从根上下文取 | `^0.8.0` | 推工具条登记表变化的内核事件；接口类型也从内核包 `import type` | 宿主不是 gwb 内核时构造就抛错 |
 
 peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Service` 基类。三个局部注入的插件在
 `peerDependenciesMeta` 里标 `optional: true`——home 里可以没有它们，有的话版本要在范围里。
@@ -60,11 +60,11 @@ peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Ser
 
 {/* has file="../plugins/unit-folder/src/index.ts" text="this.kernel = requireKernel(ctx)" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-kernel-desktop&quot;: &quot;^0.7.2&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-kernel-desktop&quot;: &quot;^0.8.0&quot;" */}
 
 {/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-commands&quot;: &quot;^0.5.2&quot;" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-shell&quot;: &quot;^0.15.0&quot;" */}
+{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-shell&quot;: &quot;^0.15.1&quot;" */}
 
 {/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-settings&quot;: &quot;^0.3.5&quot;" */}
 
