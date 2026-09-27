@@ -19,7 +19,7 @@ description: 把「容器根下一层一个目录、目录里一张 unit.json」
 
 ## 接缝图
 
-插件分三个模块：浏览器侧（两个窗格）、node 侧（cordis 服务，负责接线与会话状态）、判断与读盘（不依赖 cordis 的函数与磁盘读写）。
+插件分三个模块：浏览器侧（两个窗格）、node 侧（cordis 服务，负责登记命令与窗格、记住会话状态）、判断与读盘（不依赖 cordis 的函数与磁盘读写）。
 模块之外是人、agent、工作台的几个插件、内核、磁盘和两个外部程序。
 
 <UnitFolderSeams />
@@ -72,7 +72,7 @@ agent 经 MCP 入口 `run {"command":"unit-folder.list"}` 调的是同一组命�
 
 {/* ref file="../plugins/unit-folder/src/scan.ts" lines="141-162" hash="f8668c45a5e7" blob="741a4d4102eb" */}
 
-分组只出结构、不出文本：没有身份的单元单独一摞，不硬塞进一个叫「未认领」的种类——`kind` 是自由填写的字段，真有人写这个词就撞上了；
+分组只出结构、不出文本：没有身份的单元单独一组，不归进一个叫「未认领」的种类——`kind` 是自由填写的字段，真有人写这个词就会和它重名；
 种类之间按名字字典序排，代码里不认任何具体的种类名，要突出哪一类是界面的事：
 
 {/* ref file="../plugins/unit-folder/src/scan.ts" lines="164-187" hash="66bdecf817b6" blob="741a4d4102eb" */}
@@ -99,7 +99,7 @@ node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，
 @@docfirst ref ../plugins/unit-folder/src/client/open-file.ts:68-73 @@
 
 原文窗格装哪个文件只存在它自己的参数里（key 是文件的绝对路径），随布局保存，整页重载后还在。外壳替换预览窗格的内容时调句柄上的 `retarget`，
-原地换文件、不卸载，折行开关保留。原文窗格不起定时器：自己轮询只会把「盘慢」与「卡死」混成同一种症状，文件变了点「重读」：
+原地换文件、不卸载，折行开关保留。原文窗格不用定时器：自己轮询只会把「盘慢」与「卡死」混成同一种症状，文件变了点「重读」：
 
 {/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="779-814" hash="f6023ac072f8" blob="5c36a0ffc918" */}
 
@@ -148,7 +148,7 @@ node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，
 
 VSCode 必须找到 `Code.exe` 本身：PATH 上的 `code` 是 `.cmd`，Node 修 CVE-2024-27980 之后不开 shell 启动 `.cmd` 会抛 EINVAL；开了 shell，目录名就成了命令文本的一部分，
 引号、百分号这些合法的文件名字符会被命令解释器解释。所以用 `where.exe` 找到 `code.cmd`，推出旁边的 `Code.exe`，用独立参数、不开 shell 启动。找不到就回失败，
-不改用 shell 拼接——那条路正是要堵的漏洞。路径在一次加载期内缓存，中途装了 VSCode 要重新加载本插件才认：
+不改用 shell 拼接——那条路正是要防的漏洞。路径在一次加载期内缓存，中途装了 VSCode 要重新加载本插件才认：
 
 {/* ref file="../plugins/unit-folder/src/vscode.ts" lines="1-28" hash="91fd6b6c0f0d" blob="96ce7943f768" */}
 
@@ -158,7 +158,6 @@ VSCode 必须找到 `Code.exe` 本身：PATH 上的 `code` 是 `.cmd`，Node 修
 
 局部注入 `gwbSkills`，登记包根的 `skills/` 目录（相对产物写作 `'../skills/'`，所以 `skills` 必须在 `package.json` 的 `files` 里）。
 说明书 `unit-folder` 告诉 agent 什么时候用这些命令、怎么用它们回答「X 在哪」「我现在看的是哪个」。缺了说明书插件，agent 读不到这份说明书，命令照常可用。
-测试：自述测试核对 `description` 里写的说明书份数与 `skills/` 目录一致。
 
 ## 各模块对外能做什么
 

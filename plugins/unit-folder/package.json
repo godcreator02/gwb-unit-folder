@@ -65,7 +65,6 @@
     }
   },
   "devDependencies": {
-    "@godcreator/gwb-repo-kit": "0.3.0",
     "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/node": "^4.3.3",
     "@types/node": "^24.0.0",

@@ -1,0 +1,26 @@
+---
+born-at: 2026-09-27T16:30
+type: choice
+parent: [2026-09-26-workspace-and-style-check]
+label: 去掉 repo-kit 自述测试
+domain: 仓与构建
+---
+
+## 背景
+
+插件包的 devDependencies 里有 `@godcreator/gwb-repo-kit` 0.3.0，只给 `tests/self-report.test.ts` 用：它调 `registerSelfReportGuard`，
+核对 `description` 里写的服务、说明书份数、命令条数，`gwb.provides` 与源码提供的服务一一对应，源码注入的服务名在文档站现状区出现过。
+这个包在本机已经没有源码，2026-09-27 清理团队源时连同全部版本一起删掉了，本仓再 `pnpm install` 就会失败。
+
+## 结论与边界
+
+去掉这个 devDependency，删掉 `tests/self-report.test.ts`，不把守卫的代码抄回本仓。用到它的三个仓（本仓、gwb-docs-site、gwb-agent-hooks-skills）同一天一起去掉。
+
+## 依据
+
+去掉之后仓根 `pnpm install`、`pnpm check` 通过：11 个测试文件 118 条。
+
+## 代价与遗留
+
+`description` 与源码对不对得上、注入的服务名有没有写进文档，都不再有测试核对，改了服务或说明书要手动改 `description`。
+`gwb.provides` 不再被任何测试要求，删不删见路线图。

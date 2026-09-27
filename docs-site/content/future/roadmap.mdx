@@ -11,7 +11,7 @@ description: 接下来可能去哪、此刻在哪个阶段——只有方向没�
 - **工具条登记接口与服务留不留**：唯一的登记方（站点插件的「启动站点」按钮）已经删了。删掉 `registerToolbarButton`、
   `unit-folder.toolbarButtons` 与浏览器侧的按钮渲染是破坏性版本；留着就维持现状页里「此刻没有使用者」的写法。
   经过见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)
-- **删掉插件包 `package.json` 的 `gwb.provides`**：devkit 已不读它，但 `@godcreator/gwb-repo-kit` 0.3.0 的自述测试还要求它，
+- **删掉插件包 `package.json` 的 `gwb.provides`**：devkit 已不读它，本仓也没有测试再查它，可以直接删；
   见收件 `future/inbox/2026-09-25-lifecycle-gwb-provides-removable.mdx`
 
 ## 候选项（只有方向，没有排期）
@@ -19,6 +19,6 @@ description: 接下来可能去哪、此刻在哪个阶段——只有方向没�
 - **第二个「选中」来源出现时，抽出共享的当前上下文插件**：把 `current()` 那一部分从本插件抽出，消费方只换注入名。
   触发条件是事件不是日期——真有第二个插件能「选中」单元才动手
 - **`current()` 跨会话记录**：等有消费方真需要「上次看的」再议，记录形态先不定
-- **浮层跟着桌面走**：外壳要求弹窗、菜单、提示的 Content 传 `container={args.shell.portal}`，本插件的 Tooltip 与 DropdownMenu 还没传；
+- **浮层渲染到当前桌面**：外壳要求弹窗、菜单、提示的 Content 传 `container={args.shell.portal}`，本插件的 Tooltip 与 DropdownMenu 还没传；
   切桌面时浮层可能留在 body 上
 - **窗格参数类型改从外壳的 `@godcreator/gwb-shell/pane` 引**：`src/client/types.ts` 此刻是按形状手写的一份

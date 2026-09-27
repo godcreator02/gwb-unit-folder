@@ -29,9 +29,6 @@ importers:
         specifier: ^0.4.7
         version: 0.4.7(@godcreator/gwb-commands@0.5.2(@godcreator/gwb-kernel-desktop@0.7.2(cordis@4.0.0-rc.10))(cordis@4.0.0-rc.10))(@godcreator/gwb-kernel-desktop@0.7.2(cordis@4.0.0-rc.10))(cordis@4.0.0-rc.10)
     devDependencies:
-      '@godcreator/gwb-repo-kit':
-        specifier: 0.3.0
-        version: 0.3.0
       '@tailwindcss/cli':
         specifier: ^4.3.3
         version: 4.3.3
@@ -294,9 +291,6 @@ packages:
     resolution: {integrity: sha512-gLucUWY143nPibKhdq+k21GcCFgTnrarrxGm7+IltKBWBGxOVGD3AG4XS3knp4PUUShTYZypbdaagbHXGk1Jww==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-kernel-desktop/-/0.7.2/gwb-kernel-desktop-0.7.2.tgz}
     peerDependencies:
       cordis: 4.0.0-rc.10
-
-  '@godcreator/gwb-repo-kit@0.3.0':
-    resolution: {integrity: sha512-nyjr5TNr2OP66zk/2xkbwGgxR9HFwKJyV/ahbfhSt2VRY2MVH7GP/h+eJ6DMoGMxM1HJ4NxpYafGC6DwPWpPlQ==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-repo-kit/-/0.3.0/gwb-repo-kit-0.3.0.tgz}
 
   '@godcreator/gwb-settings@0.3.5':
     resolution: {integrity: sha512-63zCiLF0jOFkoDZgygNi/QaUhwnAXyPHffRRs+vsYLEfQyCSaKPa1axz5PoIwPihOJDLDgo31TbqFENyIQ/8hQ==, tarball: https://git.tianshen02.online:28377/api/packages/godcreator/npm/%40godcreator%2Fgwb-settings/-/0.3.5/gwb-settings-0.3.5.tgz}
@@ -2332,8 +2326,6 @@ snapshots:
       cordis: 4.0.0-rc.10(@cordisjs/plugin-include@1.1.0)(@cordisjs/plugin-loader@1.0.0-rc.7)
     transitivePeerDependencies:
       - node-addon-require-builtin
-
-  '@godcreator/gwb-repo-kit@0.3.0': {}
 
   '@godcreator/gwb-settings@0.3.5(@godcreator/gwb-commands@0.5.2(@godcreator/gwb-kernel-desktop@0.7.2(cordis@4.0.0-rc.10))(cordis@4.0.0-rc.10))(@godcreator/gwb-kernel-desktop@0.7.2(cordis@4.0.0-rc.10))(@godcreator/gwb-skills@0.4.7(@godcreator/gwb-commands@0.5.2(@godcreator/gwb-kernel-desktop@0.7.2(cordis@4.0.0-rc.10))(cordis@4.0.0-rc.10))(@godcreator/gwb-kernel-desktop@0.7.2(cordis@4.0.0-rc.10))(cordis@4.0.0-rc.10))(cordis@4.0.0-rc.10)':
     dependencies:
