@@ -1,6 +1,6 @@
 {
   "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.15",
+  "version": "0.7.16",
   "author": {
     "name": "godcreator"
   },
@@ -45,7 +45,7 @@
     "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
   },
   "peerDependencies": {
-    "@godcreator/gwb-kernel-desktop": "^0.9.0",
+    "@godcreator/gwb-kernel-desktop": "^0.10.0",
     "@godcreator/gwb-commands": "^0.5.6",
     "@godcreator/gwb-shell": "^0.15.1",
     "@godcreator/gwb-settings": "^0.3.5",
