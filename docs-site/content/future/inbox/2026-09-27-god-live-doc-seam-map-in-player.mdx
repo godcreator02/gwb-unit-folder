@@ -1,22 +1,22 @@
 ---
-title: '接缝图改用讲解播放器 @godcreator/explainer-player 0.1.1 画'
-description: '来源：god-live-doc（D:\unitfolders\evew5-gwbapps\gwb-docfirst），2026-09-27。接缝图的定义、画法、悬停与点击、机读文字、样式都进了讲解播放器；本站手写的 unit-folder-seams.tsx 可以换成它'
+title: '接缝图改用讲解组件包 @godcreator/docfirst-explainer 0.1.0 画'
+description: '来源：god-live-doc（D:\unitfolders\evew5-gwbapps\gwb-docfirst），2026-09-27。接缝图的定义、画法、悬停与点击、机读文字、样式都进了讲解组件包；本站手写的 unit-folder-seams.tsx 可以换成它'
 docfirst: none
 ---
 
 本站首页的接缝图 `src/components/unit-folder-seams.tsx` 是手写的一份：数据、坐标、画法、交互都在一个文件里。
-同样的图现在由讲解播放器 `@godcreator/explainer-player` 0.1.1 画，god-live-doc 的站已经改用它。照旧能用，不急；要换时照下面改。
+同样的图现在由讲解组件包 `@godcreator/docfirst-explainer` 0.1.0 画，god-live-doc 的站已经改用它。照旧能用，不急；要换时照下面改。
 
-**依赖与样式**：站的 `package.json` 加 `@godcreator/explainer-player` 0.1.1；全局样式引一次
-`@import '@godcreator/explainer-player/styles.css';`（接缝图的样式在里面，不用另写）。
+**依赖与样式**：站的 `package.json` 加 `@godcreator/docfirst-explainer` 0.1.0；全局样式引一次
+`@import '@godcreator/docfirst-explainer/styles.css';`（接缝图的样式在里面，不用另写）。
 
 **拆成三份文件**：
 
-- 内容 `unit-folder-seams.data.mjs`：`import { defineSeamGraph } from '@godcreator/explainer-player/seam-graph'`，
+- 内容 `unit-folder-seams.data.mjs`：`import { defineSeamGraph } from '@godcreator/docfirst-explainer/seam-graph'`，
   写模块（`id`、`name`、`pkg`、`role`、`outside`、`blurb`、`caps`）、入口、接缝（`n`、`name`、两端能力 `a` / `b`、`iface`、
   `convention`、`via: 'code' | 'disk'`、`text`）。id 重复、两端指向不存在的能力，加载时报错
 - 坐标 `unit-folder-seams.layout.ts`：一张 `SeamLayout`（画布、能力方块用 `cap(x, y, w)` 建、模块框、每条接缝的 `d` 与编号圆点、
-  入口箭头、模块与入口的图标），`cap` 与类型从 `@godcreator/explainer-player` 取；图标传站自己装的图标组件
+  入口箭头、模块与入口的图标），`cap` 与类型从 `@godcreator/docfirst-explainer` 取；图标传站自己装的图标组件
 - 画面 `unit-folder-seams.tsx`：`'use client'`，`<SeamDiagram graph={…} layout={…} />`
 
 **机读规则**：`docfirst.config.mjs` 里 `UnitFolderSeams` 的规则改成
