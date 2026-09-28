@@ -1,8 +1,8 @@
 /**
- * 名册里给人看的那一半：格式包给机制，项目在 docfirst.config.mjs 里声明压平表，这里给 React 表。
+ * 组件名册里给页面渲染用的那一半：docfirst.config.mjs 声明每个组件在机读版里变成什么文字，这里给出 React 组件表。
  * 表的类型由 registry.ts 的名单限定：少一个编译不过，多一个也编译不过。
- * 跟压平表齐不齐，由 scripts/verify-roster.mjs 两头对。
- * 底下是 fumadocs 的默认表，再把 pre 换成格式包那个会画状态点的。
+ * 两边的组件名是否一致，由 scripts/verify-roster.mjs 核对。
+ * 先放 fumadocs 的默认组件表，再把 pre 换成 @godcreator/docfirst-workflow/fumadocs/pre 里会画状态点的 DocfirstPre。
  */
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { File, Files, Folder } from 'fumadocs-ui/components/files'
