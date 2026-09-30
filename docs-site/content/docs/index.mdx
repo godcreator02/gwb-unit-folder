@@ -28,9 +28,9 @@ description: 把「容器根下一层一个目录、目录里一张 unit.json」
 
 ### 1 浏览器侧 → 命令总线 → node 侧
 
-两个窗格不 import node 侧的任何符号，只经 `host.call('unit-folder.<名>', args)` 说话，回执统一是 `{ ok, data?, error?, code? }`。
+两个窗格不 import node 侧的任何符号，只经 `host.call('unit-folder.<名>', args)` 通信，回执统一是 `{ ok, data?, error?, code? }`。
 node 侧负责校验参数与回执形状；浏览器侧按形状收，缺配置这种要区别对待的失败只认 `code: 'unconfigured'`，不认错误文字。
-报选中是其中特别的一次调用：展开单元不等它的回执，失败只在控制台 warn——「当前单元」是给别的插件看的，报不上去不该让树卡住：
+报选中是其中特别的一次调用：展开单元不等它的回执，失败只在控制台 warn——「当前单元」是给别的插件看的，报告失败不该让单元树卡住：
 
 {/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="492-507" hash="65ff3fe3ee63" blob="e3f45a0d223d" */}
 
@@ -68,7 +68,7 @@ agent 经 MCP 入口 `run {"command":"unit-folder.list"}` 调的是同一组命�
 `rootExists: false`；根指到文件、没权限、盘掉了才报错，拿空表冒充「这里没有单元」会把人往错的方向引。
 
 不缓存是有意的：一次现扫只是列一个目录、每个子目录读一个小文件，规模几十个；缓存却要回答「谁负责失效、手建的目录什么时候进表」，代价更大。
-每次现读，盘上的就是真相：
+每次现读，磁盘上是什么就报什么：
 
 {/* ref file="../plugins/unit-folder/src/scan.ts" lines="141-162" hash="f8668c45a5e7" blob="741a4d4102eb" */}
 
@@ -111,18 +111,18 @@ node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，
 每条命令现读一次，不在加载时读成常量；没配时不给默认值，因为容器根是这台机器的事实，编一个只会造成「配置了但不在」的假象。设置插件是局部注入，
 不在时本插件照常加载，命令一律回 `unconfigured`。测试：`tests/settings.test.ts` 覆盖设置值到绝对路径的换算（非字符串、空白、相对路径）。
 
-站点插件 `@godcreator/gwb-docs-site` 自己的 `units-root` 空着时，会经 `settings.get { section: 'unit-folder', key: 'units-root' }` 借这一项，
-所以条目 id `unit-folder` 与设置键都不能随便改。
+docfirst 插件 `@godcreator/gwb-docfirst-workflow` 建站（`docfirst.create` / `docfirst.create-plain`）时经 `settings.get { section: 'unit-folder', key: 'units-root' }`
+读这一项，在容器根里查哪些端口已被别的站占用，所以条目 id `unit-folder` 与设置键都不能随便改。
 
 ### 8 node 侧 ⇄ 数据插件 ⇢ 置顶文档
 
 置顶是人在树上点图钉、插件因这个动作自己写下的，所以是数据不是设置——判据跟外壳把布局存进 data 一样：人在设置界面里手填的是设置，插件因人的操作写下的是数据。
-它存在数据插件的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。数据插件加载时把盘上那份读进内存；人先点了置顶、数据插件后加载的那种顺序，
+它存在数据插件的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。数据插件加载时把磁盘上那份读进内存；人先点了置顶、数据插件后加载的那种顺序，
 以内存里最近的动作为准、反过来写盘：
 
 {/* ref file="../plugins/unit-folder/src/index.ts" lines="167-185" hash="3595503bad88" blob="55206a0602ef" */}
 
-盘上那份人手改得到，读回来要验形状（`parsePinnedDoc`）。测试：`tests/current.test.ts` 覆盖文档形状、置顶表的增删与回落。
+磁盘上那份人可以手改，读回来要验形状（`parsePinnedDoc`）。测试：`tests/current.test.ts` 覆盖文档形状、置顶表的增删与回落。
 
 ### 9 node 侧 → 消费方插件
 
@@ -132,7 +132,7 @@ node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，
 
 {/* ref file="../plugins/unit-folder/src/index.ts" lines="205-235" hash="10c602fa332a" blob="55206a0602ef" */}
 
-**此刻容器里没有插件用这个服务**：站点插件 0.6 删掉了它登记的「启动站点」按钮，也不再注入 `gwbUnitFolder`。服务、事件与登记接口仍然是契约，
+**此刻容器里没有插件注入这个服务，也没有登记方**。服务、事件与登记接口仍然是契约，
 删掉它们是破坏性版本，要不要删等人决定，见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)。
 测试：`tests/toolbar.test.ts` 覆盖登记表的规矩；产物测试确认 `.d.ts` 里有服务与事件的类型声明。
 
@@ -192,7 +192,7 @@ VSCode 必须找到 `Code.exe` 本身：PATH 上的 `code` 是 `.cmd`，Node 修
 
 - **不认识任何消费方**：谁要知道当前单元谁来注入本插件，本插件不为某个具体消费方发明契约（轨迹卡[「选中往外报」](/trajectory/2026-09-09-report-selection-not-extension-point)）
 - **不认领已有目录、不改已有出生证**：给已有目录补写或改写 `unit.json` 是人的事，或别的插件的事（[刻意不做](/future/not-doing)）
-- **不建仓、不建文档站**：建单元到 `unit.json` 为止，插件仓用 `devkit.scaffold`，站用 `docs-site.create`
+- **不建仓、不建文档站**：建单元到 `unit.json` 为止，插件仓用 `devkit.scaffold`，文档站用 `docfirst.create`（接 docfirst 分区）或 `docfirst.create-plain`（普通 fumadocs 站）
 - **不缓存清单、不跨会话记「当前」**：清单每次现扫；`current()` 只存在内存里，重启后是第一个置顶或空
 - **不给容器根默认值、不替人建容器根**
 - **找不到 `Code.exe` 不改用 shell 启动 VSCode**
