@@ -298,6 +298,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.list',
+        effect: 'read',
         description: '现扫单元容器，回全部单元清单',
         usage: '认领过的按 kind 分组（没出生证的与读不出的归进 unidentified，读不出的带 reason）、另带 pinned：置顶的单元条目数组，按置顶先后。置顶了但目录已不在的，这一次顺带从置顶表里摘掉并存盘；最近一次点击的单元已不在的，清掉这次点击并广播 unit-folder/selection。无参数',
       },
@@ -338,6 +339,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.create',
+        effect: 'write',
         description: '在容器根下建一个新单元：算目录名、建目录、写出生证 unit.json',
         usage:
           '参数 { kind, title, purpose, icon, status?, slug? }，前四项非空字符串。kind 是中文种类短词（先 unit-folder.list 看已有的种类，能归进去就别造新词）；title 是树里显示的短名；purpose 是它唯一的自述，一句话说清这个单元是什么、干什么，容易跟谁混就点一句（不写历史、版本沿革、已完成的任务清单）；icon 是 lucide 图标名，kebab-case（https://lucide.dev/icons ，如 puzzle / book-open / server）；status 是 active / paused / retired，省了是 active；slug 是目录名里的功能名——小写字母数字、段间用单个连字符（如 gwb-test），省了目录名就只有随机段。目录名 <五位随机小写字母数字>-<slug>，重名就重新生成随机段；createdAt 由本插件填——时间不进目录名。到 unit.json 为止，仓与文档站交给目标线自己的工具。回 { name, path, identity }',
@@ -363,6 +365,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.toolbarButtons',
+        effect: 'read',
         description: '此刻有哪些插件往单元树窗格的工具条里登记了按钮',
         usage: '浏览器侧取表用，人一般不调。无参数',
       },
@@ -372,6 +375,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.listDir',
+        effect: 'read',
         description: '列容器根内一个目录的一层（不递归）',
         usage: '参数 { path: string }——要列的目录，容器根内的绝对路径',
       },
@@ -386,6 +390,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.readFile',
+        effect: 'read',
         description: '读容器根内一个文件的原文（截断预览）',
         usage: '参数 { path: string }——要读的文件，容器根内的绝对路径',
       },
@@ -395,6 +400,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.open',
+        effect: 'write',
         description: '在资源管理器里打开容器根内一个目录',
         usage: '参数 { path: string }——要打开的目录，容器根内的绝对路径，必须已存在',
       },
@@ -413,6 +419,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.code',
+        effect: 'write',
         description: '用 VSCode 新窗口打开容器根内一个目录（code -n）',
         usage:
           '参数 { path: string }——要打开的目录，容器根内的绝对路径，必须已存在。找不到 VSCode 可执行入口（PATH 上没有 code）时回失败，不改用别的办法',
@@ -436,6 +443,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.select',
+        effect: 'write',
         description: '报一次选中（树里点行，agent 也能调）',
         usage:
           '参数 { path: string }——点的那个目录，容器根内的绝对路径，必须已存在（不存在直接回失败）。回 { unitPath, unitName, path }，并在 current() 变了时广播 unit-folder/selection',
@@ -456,6 +464,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.current',
+        effect: 'read',
         description: '此刻的「当前单元」',
         usage: '最近一次点击，没点过回落到第一个置顶单元，都没有 data 是 null。回 { unitPath, unitName, path } | null。无参数',
       },
@@ -465,6 +474,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.pin',
+        effect: 'write',
         description: '把一个单元加进置顶（清单最上那块「置顶」，可以有多个）',
         usage: '参数 { path: string }——单元目录，必须是容器根下一层；追加到置顶表末尾，已经置顶的不挪位置；存进 data 文档 pinned（{ paths }）。不改最近一次点击。回 { paths }',
       },
@@ -481,6 +491,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     register(
       {
         name: 'unit-folder.unpin',
+        effect: 'write',
         description: '把一个单元从置顶里摘掉',
         usage: '参数 { path: string }——要摘的单元目录，容器根内的绝对路径；不在置顶表里也回 ok。回 { paths }',
       },

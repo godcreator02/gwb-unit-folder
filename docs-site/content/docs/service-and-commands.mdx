@@ -58,7 +58,7 @@ description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三�
 
 消费方只要 `import type {} from '@godcreator/gwb-unit-folder'`，Context 上的 `gwbUnitFolder` 与 Events 上的 `'unit-folder/selection'` 就都有了：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="496-503" hash="bb45bdf6edcd" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="507-514" hash="bb45bdf6edcd" blob="a1fc4f4c5f8b" */}
 
 「当前」不跨会话：`current()` 只存在内存里，重启之后是第一个置顶或空。没有「清空」命令，undefined 只在从有到无时出现——
 摘掉了最后一个置顶，或者最近一次点击的单元已被删掉而且没有置顶。
@@ -71,27 +71,27 @@ description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三�
 **建单元**：`create` 不带路径参数，解出容器根之后把 `kind / title / purpose / icon / status? / slug?` 交给 `src/create.ts` 算目录名、建目录、写出生证；
 字段不成立一个目录都不建：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="338-361" hash="107ae8e01934" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="339-363" hash="0f303310f44a" blob="a1fc4f4c5f8b" */}
 
 **选中与置顶四条**是服务的命令入口。`select` 是浏览器侧点树时调的那条，agent 想替人「切到某个单元」也调它；它先确认目录还在（不在直接回失败），
 再算出所属单元、记下、变了就广播：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="436-454" hash="e8f740df9677" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="443-462" hash="7197ccbfb029" blob="a1fc4f4c5f8b" */}
 
 `current` 无参数，回 `{ ok: true, data: current() ?? null }`，没有「当前」时 data 是 null 而不是缺字段：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="456-463" hash="68d1da297bad" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="464-472" hash="90f6b76bc318" blob="a1fc4f4c5f8b" */}
 
 `pin` 只认容器根下一层的单元目录，追加到置顶表末尾（已经在的不挪位置），存进 data 文档 `pinned`，不改最近一次点击；`unpin` 要给 `path`，摘掉那一个。
 两条的回执都等存盘完成，写没写成进回执：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="465-492" hash="5d67dc1fcd4d" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="474-503" hash="ab87430d9019" blob="a1fc4f4c5f8b" */}
 
 **浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）里，`list` 的回执带 `pinned`——置顶单元条目的数组，按置顶先后。
 `list` 每次现扫时顺带清掉过期的状态：置顶了但清单里找不到的（目录删了、换了容器根）从置顶表摘掉并存盘；最近一次点击的单元不在清单里，
 就清掉这次点击，不然一个删掉的单元会一直占着「当前」。两样清完只判一次变没变、最多广播一次：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="298-336" hash="b65b9d3b403b" blob="c3c7a7d543b7" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="298-337" hash="a3eff81cbef0" blob="a1fc4f4c5f8b" */}
 
 `listDir` 回一层目录，目录在前、文件在后，各自按名字典序；某一项读不出大小照样列出，只是没有 `size`。`readFile` 回原文预览：
 超过 512 KB 截断（`truncated`），前 8 KB 里有 NUL 就当二进制、回空串；截断点切在 UTF-8 字符中间时末尾会解出一个替换字符。

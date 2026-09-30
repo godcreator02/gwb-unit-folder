@@ -1,0 +1,11 @@
+---
+title: 'toolbarButtons 只给页面调用、list 回执去掉重复的出生证、说明书描述被截断'
+description: '来源：gwb-base-plugins（D:\unitfolders\igldu-gwbkernel\gwb-base-plugins），2026-09-26；总控台会话投递。原反馈里「给每条命令标 effect」已做完，这里只剩没做的三条'
+docfirst: none
+---
+
+* **`unit-folder.toolbarButtons` 标 `hiddenFromAgents: true`**：它的 usage 写着「浏览器侧取表用，人一般不调」。标了以后 MCP 入口不再列出它，
+  agent 经 `run` 调会被拒，页面与别的插件照常调（`@godcreator/gwb-commands` 0.5.3 起支持这一项）。
+* **`unit-folder.list` 的回执去重**：`pinned` 把每个置顶单元的完整出生证又带了一遍，和 `byKind` 里的重复，可以只回名字与路径。
+  改回执形状是破坏性版本，要先问人。
+* **说明书 `unit-folder` 的描述太长**：约 300 字，MCP 入口 `index` 在 200 字处截断，截掉的正是命令清单那半句。
