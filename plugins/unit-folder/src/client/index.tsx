@@ -905,7 +905,7 @@ function DirMenu({
   return (
     <DropdownMenu onOpenChange={(open) => { if (open) onEnsureDirs() }}>
       <DropdownMenuTrigger asChild disabled={activeUnitPath === null}>
-        <Button size="icon" className="unitfolder:size-7" variant="ghost" aria-label={label} title={label}>
+        <Button size="icon-sm" variant="ghost" aria-label={label} title={label}>
           {icon}
         </Button>
       </DropdownMenuTrigger>

@@ -108,7 +108,7 @@ export function ToolbarButtons({ host, unitPath, from }: { host: HostBridge; uni
           return (
             <DropdownMenu key={keyOf(button)} onOpenChange={(open) => { if (open) askState(button) }}>
               <DropdownMenuTrigger asChild disabled={!enabled}>
-                <Button size="icon" className="unitfolder:size-7" variant="ghost">
+                <Button size="icon-sm" variant="ghost">
                   <Icon className="unitfolder:size-4" />
                 </Button>
               </DropdownMenuTrigger>
