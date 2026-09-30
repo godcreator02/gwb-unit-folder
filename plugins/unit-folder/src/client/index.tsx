@@ -367,14 +367,15 @@ function UnitsViewer({
     <div className="unitfolder:flex unitfolder:h-full unitfolder:min-w-0 unitfolder:flex-col">
       <div className="unitfolder:flex unitfolder:flex-none unitfolder:items-center unitfolder:gap-2 unitfolder:border-b unitfolder:px-3 unitfolder:py-2">
         {/* 点路径复制绝对路径 */}
-        <button
-          type="button"
-          className="unitfolder:text-foreground unitfolder:hover:text-primary unitfolder:m-0 unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:truncate unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left unitfolder:font-mono unitfolder:text-xs"
+        <Button
+          variant="link"
+          size="xs"
+          className="unitfolder:min-w-0 unitfolder:flex-1 unitfolder:shrink unitfolder:justify-start unitfolder:px-0 unitfolder:text-left"
           title={copied ? '已复制' : `点一下复制\n${selected.path}`}
           onClick={copyPath}
         >
-          {copied ? '已复制' : (displayPath ?? selected.path)}
-        </button>
+          <span className="unitfolder:truncate unitfolder:font-mono">{copied ? '已复制' : (displayPath ?? selected.path)}</span>
+        </Button>
         {preview.status === 'loaded' && (
           <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-xs">
             {formatByteSize(preview.data.size)}
@@ -610,14 +611,15 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
       <div key={`${keyPrefix}${unit.path}`}>
         <div
           className={cn(
-            'unitfolder:flex unitfolder:min-w-0 unitfolder:items-start unitfolder:gap-2.5 unitfolder:rounded-md unitfolder:py-1.5 unitfolder:pl-2 unitfolder:pr-1 unitfolder:hover:bg-accent/40',
+            'unitfolder:flex unitfolder:min-w-0 unitfolder:items-start unitfolder:gap-1 unitfolder:rounded-md unitfolder:pr-1',
             active && open && 'unitfolder:urow-active',
           )}
         >
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             title={rowContent.title}
-            className="unitfolder:flex unitfolder:min-w-0 unitfolder:flex-1 unitfolder:cursor-pointer unitfolder:items-start unitfolder:gap-2.5 unitfolder:border-0 unitfolder:bg-transparent unitfolder:p-0 unitfolder:text-left unitfolder:text-foreground"
+            className="unitfolder:h-auto unitfolder:min-w-0 unitfolder:flex-1 unitfolder:shrink unitfolder:items-start unitfolder:justify-start unitfolder:gap-2.5 unitfolder:py-1.5 unitfolder:text-left unitfolder:whitespace-normal"
             onClick={() => {
               if (active) {
                 // 再点一下选中的那行：收起并取消选中
@@ -651,7 +653,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
                   {rowContent.head}
                 </span>
                 {quiet && rowContent.status !== null && (
-                  <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:rounded-sm unitfolder:border unitfolder:px-1 unitfolder:text-[10px] unitfolder:leading-4">
+                  <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:rounded-sm unitfolder:border unitfolder:px-1 unitfolder:text-[10px] unitfolder:leading-4 unitfolder:font-normal">
                     {STATUS_LABEL[rowContent.status]}
                   </span>
                 )}
@@ -659,14 +661,14 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
               {/* purpose 显示两行，再长省略；全文在悬停说明里 */}
               <span
                 className={cn(
-                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:break-words',
+                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:font-normal unitfolder:break-words',
                   rowContent.broken ? 'unitfolder:text-destructive' : active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground',
                 )}
               >
                 {rowContent.subtitle}
               </span>
             </span>
-          </button>
+          </Button>
           {/* 置顶按钮：置顶块里那一行同样有它，点了就是取消置顶 */}
           <IconButton
             label={pinnedHere ? '取消置顶' : '置顶'}

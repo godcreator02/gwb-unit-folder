@@ -12,7 +12,7 @@ description: 把「容器根下一层一个目录、目录里一张 unit.json」
 - **现扫**：每次调用都重新列一遍容器根、读每个单元的出生证，按种类分组；不缓存，刚建的单元立刻看得见
 - **建单元**：算目录名（五位随机小写字母数字，可带功能名，如 `igldu-gwbkernel`）、建目录、写出生证，到 `unit.json` 为止
 - **浏览**：单元树里展开单元看文件，点文件在原文窗格里看原文；也能在资源管理器或 VSCode 里打开目录
-- **报选中与置顶**：人在树上点了哪个单元、钉了哪几个单元，经服务 `ctx.gwbUnitFolder` 与事件 `unit-folder/selection` 往外报
+- **报选中与置顶**：人在树上点了哪个单元、置顶了哪几个单元，经服务 `ctx.gwbUnitFolder` 与事件 `unit-folder/selection` 往外报
 
 对外的接口是十一条命令、一个服务、一个事件、两个窗格、一项设置、一份 data 文档和一份说明书，逐项的形状在
 [服务与命令](/docs/service-and-commands)，每个依赖的 peer 写法在[插件之间怎么连](/docs/wiring)。
@@ -32,7 +32,7 @@ description: 把「容器根下一层一个目录、目录里一张 unit.json」
 node 侧负责校验参数与回执形状；浏览器侧按形状收，缺配置这种要区别对待的失败只认 `code: 'unconfigured'`，不认错误文字。
 报选中是其中特别的一次调用：展开单元不等它的回执，失败只在控制台 warn——「当前单元」是给别的插件看的，报告失败不该让单元树卡住：
 
-{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="492-507" hash="65ff3fe3ee63" blob="e3f45a0d223d" */}
+{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="493-508" hash="65ff3fe3ee63" blob="8a6d7b1cfa13" */}
 
 测试：浏览器侧没有自动测试，产物测试只确认十一条命令名都在 `dist/index.js` 里；界面效果用 `devkit.dev` 装进隔离 home 后看。
 
@@ -101,7 +101,7 @@ node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，
 原文窗格装哪个文件只存在它自己的参数里（key 是文件的绝对路径），随布局保存，整页重载后还在。外壳替换预览窗格的内容时调句柄上的 `retarget`，
 原地换文件、不卸载，折行开关保留。原文窗格不用定时器：自己轮询只会把「盘慢」与「卡死」混成同一种症状，文件变了点「重读」：
 
-{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="780-815" hash="f6023ac072f8" blob="e3f45a0d223d" */}
+{/* ref file="../plugins/unit-folder/src/client/index.tsx" lines="782-817" hash="f6023ac072f8" blob="8a6d7b1cfa13" */}
 
 测试：`tests/open-file.test.ts` 覆盖手势到开法、文件到 key 与参数、保存的参数读回来。
 
@@ -166,7 +166,7 @@ VSCode 必须找到 `Code.exe` 本身：PATH 上的 `code` 是 `.cmd`，Node 修
 原文窗格显示行号、能切换折行、点路径复制绝对路径；二进制文件不显示，超过 512 KB 截断。过滤、展开、目录清单都只存在窗格内存里，关掉再开回到默认。
 
 **node 侧**（`src/index.ts`）：登记十一条命令与两个窗格，提供服务 `gwbUnitFolder`，记住本会话最近一次点击与置顶表，`current()` 变了就广播；
-`unit-folder.list` 每次现扫时顺带清掉过期状态——置顶了但目录已不在的从置顶表摘掉并存盘，最近一次点击的单元不在了就清掉那次点击，两样清完只广播一次。
+`unit-folder.list` 每次现扫时顺带清掉过期状态——置顶了但目录已不在的从置顶表删掉并存盘，最近一次点击的单元不在了就清掉那次点击，两样清完只广播一次。
 
 **判断与读盘**（`src/scan.ts`、`browse.ts`、`current.ts`、`create.ts`、`vscode.ts`、`toolbar.ts`）：出生证字段表与校验、现扫与分组、路径验证、
 列一层目录、读原文、置顶表的形状与增删、`current()` 的回落、建单元、找 VSCode、工具条登记表。不依赖 cordis，都在 `tests/` 里直接测。
