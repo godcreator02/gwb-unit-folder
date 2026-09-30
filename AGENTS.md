@@ -14,7 +14,7 @@
   本插件不 import 任何消费方
 - **样式隔离靠类名前缀**：`src/client` 里每个类名都带 `unitfolder:`，本插件自己的类写成 `@utility`；漏写不报错，
   `pnpm check` 里由 `tests/prefix.test.ts` 查，`devkit.dev` / `devkit.release` 的样式检查再查一遍。外壳映射文件里没有的主题键
-  （`leading-relaxed`、`animate-pulse` 这类）会编出写死的 fallback、过不了样式检查，写任意值或 `@utility`
+  （`leading-relaxed`、`animate-pulse` 这类）会编译出写死的 fallback、过不了样式检查，写任意值或 `@utility`
 
 ## 怎么跑
 
@@ -29,14 +29,14 @@ pnpm test:all   # 全量测试（含产物测试，要先 build）
 在隔离 home 里验证：`devkit.dev {"home":"<home 名>","dir":"<仓根>","packages":["plugins/unit-folder"]}`；
 发版：`devkit.release {"dir":"<仓根>","packages":["plugins/unit-folder"]}`，发到插件包 `publishConfig.registry` 写的团队源。
 
-写插件、在隔离 home 里验证读 skill「gwb-devkit」，界面读「gwb-shell」，升版本号、发版读「gwb-release」，写文档读「docfirst-docs」。
+写插件、在隔离 home 里验证读 skill「gwb-devkit」，界面读「gwb-shell」，升版本号、发版读「gwb-release」，写文档读「docs-writing」。
 
 ## 文档
 
 文档站在 `docs-site/`：`cd docs-site && pnpm doc` 检查；看站先 `pnpm build` 再 `pnpm start`（端口 4319），不用 dev 模式。从首页（`content/docs/index.mdx`，接缝图与接缝逐条）读起。
 仓根 `README.md`、`CLAUDE.md`、这份 `AGENTS.md` 与随包说明书 `plugins/unit-folder/skills/unit-folder/SKILL.md` 都是生成物，
 正本在 `docs-site/content/docs/outputs/`，改正本后在站目录运行 `pnpm doc:render`，生成物与正本放进同一个提交。
-改了被钉的代码，同一个提交里在站目录 `pnpm doc:confirm` 写回、逐条复核剩下的黄灯（做法见 skill「docfirst-docs」）。
+改了被钉的代码，同一个提交里在站目录 `pnpm doc:confirm` 写回、逐条复核剩下的黄灯（做法见 skill「docs-site」）。
 
 ## 代码地图
 
