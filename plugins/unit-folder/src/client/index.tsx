@@ -191,10 +191,12 @@ function DirectoryRows({
         if (entry.type === 'dir') {
           return (
             <div key={abs}>
-              <div
+              <Button
+                variant="ghost"
+                size="sm"
                 role="treeitem"
                 aria-expanded={open}
-                className="unitfolder:hover:bg-accent/40 unitfolder:flex unitfolder:min-w-0 unitfolder:cursor-default unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:py-1 unitfolder:pr-2 unitfolder:text-sm"
+                className="unitfolder:h-auto unitfolder:w-full unitfolder:min-w-0 unitfolder:justify-start unitfolder:gap-1.5 unitfolder:py-1 unitfolder:pr-2 unitfolder:text-left"
                 style={{ paddingLeft: depth * 16 + 8 }}
                 onClick={() => onToggle(abs)}
               >
@@ -204,8 +206,8 @@ function DirectoryRows({
                 <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
                   {open ? <FolderOpenIcon className="unitfolder:size-4" /> : <FolderIcon className="unitfolder:size-4" />}
                 </span>
-                <span className="unitfolder:truncate">{entry.name}</span>
-              </div>
+                <span className="unitfolder:truncate unitfolder:font-normal">{entry.name}</span>
+              </Button>
               {open && (
                 <DirectoryRows
                   dir={abs}
@@ -222,14 +224,13 @@ function DirectoryRows({
         }
         const isSelected = selected === abs
         return (
-          <div
+          <Button
             key={abs}
+            variant={isSelected ? 'secondary' : 'ghost'}
+            size="sm"
             role="treeitem"
             aria-selected={isSelected}
-            className={cn(
-              'unitfolder:hover:bg-accent/40 unitfolder:flex unitfolder:min-w-0 unitfolder:cursor-default unitfolder:items-center unitfolder:gap-1.5 unitfolder:rounded-sm unitfolder:py-1 unitfolder:pr-2 unitfolder:text-sm',
-              isSelected && 'unitfolder:bg-accent/60',
-            )}
+            className="unitfolder:h-auto unitfolder:w-full unitfolder:min-w-0 unitfolder:justify-start unitfolder:gap-1.5 unitfolder:py-1 unitfolder:pr-2 unitfolder:text-left"
             style={{ paddingLeft: depth * 16 + 8 + 18 }}
             onClick={(e) => onOpenFile(abs, entry.name, openModeOf(e))}
             // 中键不触发 onClick，走 auxclick；按下时拦掉浏览器的中键自动滚动。右键（button 2）不算打开
@@ -243,11 +244,11 @@ function DirectoryRows({
             <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
               <FileIcon className="unitfolder:size-4" />
             </span>
-            <span className="unitfolder:truncate">{entry.name}</span>
+            <span className="unitfolder:truncate unitfolder:font-normal">{entry.name}</span>
             {entry.size !== undefined && (
-              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px]">{formatByteSize(entry.size)}</span>
+              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px] unitfolder:font-normal">{formatByteSize(entry.size)}</span>
             )}
-          </div>
+          </Button>
         )
       })}
     </>
@@ -701,23 +702,27 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
     return (
       <div key={group.kindKey} className="unitfolder:mb-1">
         {/* 种类分组头：滚动时停在顶部；有文字筛选时不能收起 */}
-        <div
-          className="unitfolder:bg-background/95 unitfolder:sticky unitfolder:top-0 unitfolder:z-10 unitfolder:flex unitfolder:cursor-pointer unitfolder:items-center unitfolder:gap-2 unitfolder:px-2 unitfolder:py-1.5 unitfolder:backdrop-blur-[8px]"
-          onClick={() => {
-            if (filtered) return
-            setCollapsedKinds((prev) => {
-              const next = new Set(prev)
-              if (next.has(group.kindKey)) next.delete(group.kindKey)
-              else next.add(group.kindKey)
-              return next
-            })
-          }}
-        >
-          <span className={cn('unitfolder:transition-transform', !collapsed && 'unitfolder:rotate-90')}>
-            <ChevronRightIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
-          </span>
-          <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-[0.05em]">{group.label}</span>
-          <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{group.units.length}</span>
+        <div className="unitfolder:bg-background/95 unitfolder:sticky unitfolder:top-0 unitfolder:z-10 unitfolder:backdrop-blur-[8px]">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="unitfolder:h-auto unitfolder:w-full unitfolder:justify-start unitfolder:gap-2 unitfolder:px-2 unitfolder:py-1.5"
+            onClick={() => {
+              if (filtered) return
+              setCollapsedKinds((prev) => {
+                const next = new Set(prev)
+                if (next.has(group.kindKey)) next.delete(group.kindKey)
+                else next.add(group.kindKey)
+                return next
+              })
+            }}
+          >
+            <span className={cn('unitfolder:transition-transform', !collapsed && 'unitfolder:rotate-90')}>
+              <ChevronRightIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
+            </span>
+            <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-[0.05em]">{group.label}</span>
+            <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs unitfolder:font-normal">{group.units.length}</span>
+          </Button>
         </div>
         {!collapsed && group.units.map((u) => renderUnitRow(u))}
       </div>
