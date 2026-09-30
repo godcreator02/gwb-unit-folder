@@ -1,7 +1,7 @@
 ---
 born-at: 2026-09-27T16:30
 type: choice
-parent: [2026-09-26-workspace-and-style-check]
+parent: [2026-09-08-gwb-unit-folder]
 label: 去掉 repo-kit 自述测试
 domain: 仓与构建
 ---
@@ -11,6 +11,8 @@ domain: 仓与构建
 插件包的 devDependencies 里有 `@godcreator/gwb-repo-kit` 0.3.0，只给 `tests/self-report.test.ts` 用：它调 `registerSelfReportGuard`，
 核对 `description` 里写的服务、说明书份数、命令条数，`gwb.provides` 与源码提供的服务一一对应，源码注入的服务名在文档站现状区出现过。
 这个包在本机已经没有源码，2026-09-27 清理团队源时连同全部版本一起删掉了，本仓再 `pnpm install` 就会失败。
+
+pivots-from:: [迁 workspace 布局](2026-09-26-workspace-and-style-check.mdx)
 
 ## 结论与边界
 

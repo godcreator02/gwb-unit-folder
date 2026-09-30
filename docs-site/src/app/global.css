@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
-/* 状态点的样式随格式包发，一行引进来 */
+/* 钉码状态点的样式 */
 @import '@godcreator/docfirst-workflow/fumadocs/light.css';
 
 html {

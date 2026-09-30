@@ -1,0 +1,29 @@
+---
+born-at: 2026-09-30T12:40
+type: choice
+parent: [2026-09-08-gwb-unit-folder]
+label: 升 docfirst 0.5
+domain: 文档站
+---
+
+## 背景
+
+文档站装的是 `@godcreator/docfirst-workflow` 0.3.1 加 `@godcreator/docfirst-trajectory` 0.1.1。docfirst 0.5 起 fumadocs 适配并进
+`docfirst-workflow` 的子入口 `./fumadocs`，`docfirst-trajectory` 停更；配置删掉 `formats`；`has` 记号与 `@@docfirst` 草稿写法直接报错；
+卡目录只认一张根卡，其余卡的 `parent` 只能写根卡。用 0.5.2 的 `docfirst check` 检查本站，四张卡的 `parent` 写的是上一张卡，报红。
+
+## 结论与边界
+
+**站升到 `@godcreator/docfirst-workflow` 0.5.2（精确号），删掉 `@godcreator/docfirst-trajectory`。集合仍写在 `source.config.ts`、路由仍在
+`(zones)` 路由组里，fumadocs 与 next 的版本不动**，没有换成建站模板的 `fumadocs-mdx/macro` 写法：那一步要连带升 fumadocs、next、typescript，
+和这次要解决的 docfirst 破坏性改动无关。照模板改的是接线：`cardSchema` / `remarkTrajectoryLinks` 改从 `./fumadocs` 取，名册换成 `fumadocsRoster`，
+侧栏的区根节点补上 `$id`，加整页星轨盘 `/trajectory`，卡页加回到盘的链接，轨迹区侧栏第一条链到盘。
+
+**卡的迁移只动 frontmatter 的 `parent` 与关系行，正文不改。** 四张卡的 `parent` 改成只写根卡；原来 `parent` 里的上一张卡在 `## 背景` 末尾补一行
+`pivots-from::`（`2026-09-19-viewer-document-pane` 原来写了根卡与 `2026-09-13-toolbar-buttons` 两个，补的是后者）。旧 `parent` 的意思是
+「这张卡接着哪张卡往下做」，对应 `pivots-from`；没有一张卡整个取代了旧 `parent`，所以没加 `supersedes::`。
+
+记号：22 处 `has` 改成钉 `text` 所在那一行的行段记号，首页两处 `@@docfirst ref … @@` 草稿改成正式记号，确认前对过它们钉的行段
+（`open-file.ts` 的 `openModeOf` 与 `openViewer`）跟正文说的一致。
+
+依据：本卡与升级改动在同一个提交里；迁移前后的检查结果是提交前后在 `docs-site` 里运行 `pnpm doc` 的输出，没有另存。

@@ -1,7 +1,7 @@
 ---
 born-at: 2026-09-13T23:20
 type: choice
-parent: [2026-09-09-report-selection-not-extension-point]
+parent: [2026-09-08-gwb-unit-folder]
 label: 工具条按钮登记口
 domain: 服务面
 ---
@@ -12,6 +12,8 @@ domain: 服务面
 现在前提变了：站点启动要从全局总清单挪进单元树的工具条（清单格退役，站件三仓方案的一半），站件
 就是一个真实存在的登记方——不是假想的第二消费者，是点名要这个口子的用户拍的板（2026-09-13）。
 判据没翻，是判据的前提到货了。
+
+pivots-from:: [选中往外报](2026-09-09-report-selection-not-extension-point.mdx)
 
 ## 结论与边界
 

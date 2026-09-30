@@ -3,9 +3,8 @@ import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page'
 import { getMDXComponents } from '@/components/mdx'
 import { notFound } from 'next/navigation'
 
-// 卡页：标题下一行元信息（born-at、type、domain、parent 链到父卡页）。
-// slug 必选——轨迹区没有导读页；星轨盘（/trajectory 那个根）暂未接线，
-// 所以卡页也没有「回到盘」，parent 只链到卡页本身。
+// 卡页：标题下一行元信息（born-at、type、domain、parent 链到根卡页），再一行回到盘的链接。
+// slug 必选：空 slug 是另一个路由组 src/app/(trajectory-disk)/ 里的整页星轨盘，轨迹区没有导读页。
 export default async function Page({ params }: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await params
   const page = sourceTrajectory.getPage(slug)
@@ -34,6 +33,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string[
           ) : null}
         </div>
       ) : null}
+      <div style={{ fontSize: 13, margin: '0 0 16px' }}>
+        <a href="/trajectory">← 回到盘</a>
+      </div>
       <DocsBody>
         <MDX components={getMDXComponents()} />
       </DocsBody>
@@ -41,7 +43,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string[
   )
 }
 
-// 只出卡，不出空 slug——/trajectory 那个根将来归星轨盘那条路由
+// 只出卡，不出空 slug：/trajectory 那个根是星轨盘那条路由
 export function generateStaticParams() {
   return sourceTrajectory.generateParams().filter((p) => p.slug.length > 0)
 }

@@ -3,7 +3,7 @@ title: 插件之间怎么连
 description: 单元文件夹提供的服务、命令、事件、窗格与设置，注入的五个服务与 peer 写法，按名字调用的命令与约定通道
 ---
 
-**本页回答**：本仓插件提供哪些服务、命令与事件；注入了哪些服务、是必需还是局部注入、peer 怎么写；按名字调用了别家哪些命令、用了哪些约定通道。
+**本页回答**：本仓插件提供哪些服务、命令与事件；注入了哪些服务、是必需还是局部注入、peer 怎么写；按名字调用了别的插件的哪些命令、用了哪些约定通道。
 
 ## @godcreator/gwb-unit-folder
 
@@ -21,19 +21,19 @@ description: 单元文件夹提供的服务、命令、事件、窗格与设置�
 | data 文档 | `pinned` | 经 `gwbData` 存置顶表 `{ paths }` |
 | 说明书 | `unit-folder` | 包根 `skills/unit-folder/`，经 `gwbSkills.register` 登记 |
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="super(ctx, 'gwbUnitFolder')" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="123-123" hash="d806e355bbf5" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="export const SELECTION_EVENT = 'unit-folder/selection'" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="45-45" hash="5b7a6e3e6b2a" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/toolbar.ts" text="export const TOOLBAR_EVENT = 'gwb-unit-folder-toolbar'" */}
+{/* ref file="../plugins/unit-folder/src/toolbar.ts" lines="119-119" hash="c90347e65c2a" blob="0b8e41823305" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="id: 'main'," */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="137-137" hash="99920fe58bed" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="id: 'viewer'," */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="144-144" hash="49f73b6a2614" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="key: 'units-root'," */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="156-156" hash="da77d4760491" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/current.ts" text="export const PINNED_DOC = 'pinned'" */}
+{/* ref file="../plugins/unit-folder/src/current.ts" lines="20-20" hash="9e8f43409cba" blob="31efe67af1c4" */}
 
 ### 注入
 
@@ -50,29 +50,29 @@ peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Ser
 `peerDependenciesMeta` 里标 `optional: true`——home 里可以没有它们，有的话版本要在范围里。
 局部注入拿到的 `settings` / `data` 在那个插件卸载时设回 undefined。
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="static inject = ['gwbShell', 'gwbCommands']" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="99-99" hash="c932d31e135f" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="ctx.inject(['gwbSettings'], (scoped) => {" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="154-154" hash="32011c68a410" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="ctx.inject(['gwbData'], (scoped) => {" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="168-168" hash="951e2dbd05c7" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="ctx.inject(['gwbSkills'], (scoped) => {" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="190-190" hash="b858759f4cdb" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/src/index.ts" text="this.kernel = requireKernel(ctx)" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="126-126" hash="d2a243292168" blob="a1fc4f4c5f8b" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-kernel-desktop&quot;: &quot;^0.10.0&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="48-48" hash="5c8ad9cb296d" blob="cc6e831c12fd" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-commands&quot;: &quot;^0.5.6&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="49-49" hash="d38869ebe0ad" blob="cc6e831c12fd" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-shell&quot;: &quot;^0.15.1&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="50-50" hash="8dbd39ec53fc" blob="cc6e831c12fd" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-settings&quot;: &quot;^0.3.5&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="51-51" hash="2580c5f58c3a" blob="cc6e831c12fd" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-data&quot;: &quot;^0.1.9&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="52-52" hash="a19d5c2efcd0" blob="cc6e831c12fd" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;@godcreator/gwb-skills&quot;: &quot;^0.4.7&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="53-53" hash="f0a5da0d8007" blob="cc6e831c12fd" */}
 
-{/* has file="../plugins/unit-folder/package.json" text="&quot;cordis&quot;: &quot;^4.0.0-rc.10&quot;" */}
+{/* ref file="../plugins/unit-folder/package.json" lines="54-54" hash="12abfcb4ff81" blob="cc6e831c12fd" */}
 
 ### 按名字调用与约定通道
 
@@ -84,11 +84,11 @@ peer 里还有 `cordis`（`^4.0.0-rc.10`）：本插件按值 import 它的 `Ser
 | 磁盘文件 | 人、agent | 每个单元目录下的 `unit.json` | 出生证：本插件建单元时写、扫描时读；人与 agent 手写或改写 |
 | 共享 id | docfirst 插件 `@godcreator/gwb-docfirst-workflow` | 条目 id `unit-folder`（也就是设置的分区名）与设置键 `units-root` | 建站时经 `settings.get { section: 'unit-folder', key: 'units-root' }` 读本插件的容器根，给 `docfirst.create` / `docfirst.create-plain` 查哪些端口已被别的站占用 |
 
-{/* has file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" text="host.call(button.command, clickArgsOf(button, { unitPath, item, from }))" */}
+{/* ref file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" lines="91-91" hash="cd3ed5d7e100" blob="8402d33d406c" */}
 
-{/* has file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" text="host.call(button.state, { unitPath, ...(button.args ?? {}) })" */}
+{/* ref file="../plugins/unit-folder/src/client/toolbar-buttons.tsx" lines="68-68" hash="067b1f191f40" blob="8402d33d406c" */}
 
-{/* has file="../plugins/unit-folder/src/scan.ts" text="export const IDENTITY_FILE = 'unit.json'" */}
+{/* ref file="../plugins/unit-folder/src/scan.ts" lines="7-7" hash="2c2414fa588e" blob="741a4d4102eb" */}
 
 工具条登记接口此刻没有登记方；接口留着还是删掉等人决定，
 见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)。
