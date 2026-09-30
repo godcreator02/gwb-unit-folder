@@ -5,3 +5,5 @@ dist/
 # 文档站的构建产物（站本身进 git）
 docs-site/.next/
 docs-site/.source/
+# next build 与 next dev 各写一版，内容随最后运行的那条命令变
+docs-site/next-env.d.ts
