@@ -206,7 +206,7 @@ function DirectoryRows({
                 <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
                   {open ? <FolderOpenIcon className="unitfolder:size-4" /> : <FolderIcon className="unitfolder:size-4" />}
                 </span>
-                <span className="unitfolder:truncate unitfolder:font-normal">{entry.name}</span>
+                <span className="unitfolder:truncate">{entry.name}</span>
               </Button>
               {open && (
                 <DirectoryRows
@@ -244,9 +244,9 @@ function DirectoryRows({
             <span className="unitfolder:text-muted-foreground unitfolder:shrink-0">
               <FileIcon className="unitfolder:size-4" />
             </span>
-            <span className="unitfolder:truncate unitfolder:font-normal">{entry.name}</span>
+            <span className="unitfolder:truncate">{entry.name}</span>
             {entry.size !== undefined && (
-              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px] unitfolder:font-normal">{formatByteSize(entry.size)}</span>
+              <span className="unitfolder:text-muted-foreground unitfolder:ml-auto unitfolder:shrink-0 unitfolder:font-mono unitfolder:text-[10.5px]">{formatByteSize(entry.size)}</span>
             )}
           </Button>
         )
@@ -654,7 +654,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
                   {rowContent.head}
                 </span>
                 {quiet && rowContent.status !== null && (
-                  <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:rounded-sm unitfolder:border unitfolder:px-1 unitfolder:text-[10px] unitfolder:leading-4 unitfolder:font-normal">
+                  <span className="unitfolder:text-muted-foreground unitfolder:shrink-0 unitfolder:rounded-sm unitfolder:border unitfolder:px-1 unitfolder:text-[10px] unitfolder:leading-4">
                     {STATUS_LABEL[rowContent.status]}
                   </span>
                 )}
@@ -662,7 +662,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
               {/* purpose 显示两行，再长省略；全文在悬停说明里 */}
               <span
                 className={cn(
-                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:font-normal unitfolder:break-words',
+                  'unitfolder:line-clamp-2 unitfolder:text-xs unitfolder:leading-[1.625] unitfolder:break-words',
                   rowContent.broken ? 'unitfolder:text-destructive' : active ? 'unitfolder:text-foreground/85' : 'unitfolder:text-muted-foreground',
                 )}
               >
@@ -721,7 +721,7 @@ function UnitFolderPane({ host, shell, instance }: { host: HostBridge; shell: Sh
               <ChevronRightIcon className="unitfolder:text-muted-foreground unitfolder:size-3.5" />
             </span>
             <span className="unitfolder:text-muted-foreground unitfolder:text-xs unitfolder:font-semibold unitfolder:tracking-[0.05em]">{group.label}</span>
-            <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs unitfolder:font-normal">{group.units.length}</span>
+            <span className="unitfolder:text-muted-foreground/70 unitfolder:ml-auto unitfolder:font-mono unitfolder:text-xs">{group.units.length}</span>
           </Button>
         </div>
         {!collapsed && group.units.map((u) => renderUnitRow(u))}
