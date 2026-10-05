@@ -8,6 +8,8 @@ description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三�
 这里钉着的每一样都有人或程序对着写：出生证由人与 agent 手写，命令由浏览器侧与 agent 调，服务与事件留给别的插件注入。
 改任何一样都是破坏性版本，先问人。这些接口各经哪条接缝、为什么这么切，在[首页的接缝图](/docs#接缝图)。
 
+本插件跟随 gwb-settings 0.4 的普通设置接口，只读写 `units-root`，不声明或编排凭据。secret 的外部操作属于独立的 `credentials.*`，不经过本插件；设置服务的内部 `ctx.gwbSettings` 签名保持兼容。
+
 ## 出生证 `unit.json`
 
 六项全部必给，`status` 只认三种，`icon` 是 lucide 的 kebab-case 名：
