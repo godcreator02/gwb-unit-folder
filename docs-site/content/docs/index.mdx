@@ -48,7 +48,7 @@ agent 经 MCP 入口 `run {"command":"unit-folder.list"}` 调的是同一组命�
 
 带路径参数的命令共用同一道检查：先现读设置 `units-root`，没配就回 `unconfigured`；再把参数验成容器根**里面**的绝对路径，根自己不算，越出根的一律回「路径不在容器根内」：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="247-257" hash="3d4afaaca5e1" blob="152a9c544697" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="251-261" hash="3d4afaaca5e1" blob="88659318dfe5" */}
 
 验证分两道。词法那道看字符串：相对路径按容器根解（不按宿主的工作目录解，那个目录由应用怎么启动决定），`..`、根外绝对路径、换盘符在
 `path.relative` 的结果上都看得出来。物理那道看实际位置：NTFS 的 junction / symlink 不改字符串、只改实际指向，根内一条链接能把 `stat` / `open`
@@ -121,7 +121,7 @@ docfirst 插件 `@godcreator/gwb-docfirst-workflow` 建站（`docfirst.create` /
 它存在数据插件的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。数据插件加载时把磁盘上那份读进内存；人先点了置顶、数据插件后加载的那种顺序，
 以内存里最近的动作为准、反过来写盘：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="169-187" hash="3595503bad88" blob="152a9c544697" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="173-191" hash="3595503bad88" blob="88659318dfe5" */}
 
 磁盘上那份人可以手改，读回来要验形状（`parsePinnedDoc`）。测试：`tests/current.test.ts` 覆盖文档形状、置顶表的增删与回落。
 
@@ -131,7 +131,7 @@ docfirst 插件 `@godcreator/gwb-docfirst-workflow` 建站（`docfirst.create` /
 两样的形状是同一个 `UnitSelection`；要容器根的调 `unitsRoot()`。工具条登记接口 `registerToolbarButton` 按调用方的 fiber 认出登记方的条目与包名，不由登记方自己报；
 注销登记在调用方的 effect 上，登记方卸载时按钮自动消失：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="207-237" hash="10c602fa332a" blob="152a9c544697" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="211-241" hash="10c602fa332a" blob="88659318dfe5" */}
 
 **此刻注入这个服务的只有 docfirst 插件（只调 `unitsRoot()`），工具条没有登记方**。服务、事件与登记接口仍然是契约，
 删掉它们是破坏性版本，要不要删等人决定，见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)。

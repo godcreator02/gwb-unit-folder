@@ -104,8 +104,12 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
   private clickedSelection: UnitSelection | undefined
   /** 置顶单元的绝对路径：data 文档 `pinned` 在内存里的副本，改了就同步存盘 */
   private pinnedPaths: string[] = []
-  /** 设置插件的 get；设置插件不在时是 undefined */
-  private settings: { get(key: string): unknown } | undefined
+  /**
+   * 读本插件分区里 `units-root` 的原值；设置插件不在时是 undefined。
+   * 存成闭包、不存设置服务对象：别的插件经服务调进来时，方法里经 `this` 读到的服务对象会被 cordis 重新绑到调用方，
+   * `get` 就读成调用方自己的分区
+   */
+  private readUnitsRootSetting: (() => unknown) | undefined
   /** 数据插件的两个方法；数据插件不在时是 undefined，置顶只存在内存里 */
   private data: DataDocs | undefined
   /** 「没装数据插件、置顶存不了盘」只提示一次 */
@@ -152,7 +156,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
     })
     ctx.gwbShell.describeSelf({ title: '单元文件夹', icon: 'folders' })
 
-    // 设置插件局部注入：不在时本插件照常加载，命令一律回 unconfigured。设置插件卸载时 settings 设回 undefined
+    // 设置插件局部注入：不在时本插件照常加载，命令一律回 unconfigured。设置插件卸载时 readUnitsRootSetting 设回 undefined
     ctx.inject(['gwbSettings'], (scoped) => {
       scoped.gwbSettings.define({
         key: 'units-root',
@@ -160,9 +164,9 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
         type: 'string',
         description: '装单元目录的那个根的绝对路径（如 D:\\unitfolders）：根下一层一个单元目录，各自带一张 unit.json。不填这个插件的命令全都不工作',
       })
-      this.settings = scoped.gwbSettings
+      this.readUnitsRootSetting = () => scoped.gwbSettings.get('units-root')
       scoped.effect(() => () => {
-        this.settings = undefined
+        this.readUnitsRootSetting = undefined
       })
     })
 
@@ -241,7 +245,7 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
   }
 
   private resolveUnitsRoot(): string | undefined {
-    return rootFromSetting(this.settings?.get('units-root'))
+    return rootFromSetting(this.readUnitsRootSetting?.())
   }
 
   /**
