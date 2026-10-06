@@ -48,7 +48,7 @@ agent 经 MCP 入口 `run {"command":"unit-folder.list"}` 调的是同一组命�
 
 带路径参数的命令共用同一道检查：先现读设置 `units-root`，没配就回 `unconfigured`；再把参数验成容器根**里面**的绝对路径，根自己不算，越出根的一律回「路径不在容器根内」：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="241-251" hash="3d4afaaca5e1" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="247-257" hash="3d4afaaca5e1" blob="152a9c544697" */}
 
 验证分两道。词法那道看字符串：相对路径按容器根解（不按宿主的工作目录解，那个目录由应用怎么启动决定），`..`、根外绝对路径、换盘符在
 `path.relative` 的结果上都看得出来。物理那道看实际位置：NTFS 的 junction / symlink 不改字符串、只改实际指向，根内一条链接能把 `stat` / `open`
@@ -112,8 +112,8 @@ node 侧在 `[Service.init]` 里调两次 `registerPane`：`main`（单元树，
 每条命令现读一次，不在加载时读成常量；没配时不给默认值，因为容器根是这台机器的事实，编一个只会造成「配置了但不在」的假象。设置插件是局部注入，
 不在时本插件照常加载，命令一律回 `unconfigured`。测试：`tests/settings.test.ts` 覆盖设置值到绝对路径的换算（非字符串、空白、相对路径）。
 
-docfirst 插件 `@godcreator/gwb-docfirst-workflow` 建站（`docfirst.create` / `docfirst.create-plain`）时经 `settings.get { section: 'unit-folder', key: 'units-root' }`
-读这一项，在容器根里查哪些端口已被别的站占用，所以条目 id `unit-folder` 与设置键都不能随便改。
+docfirst 插件 `@godcreator/gwb-docfirst-workflow` 建站（`docfirst.create` / `docfirst.create-plain`）时局部注入本插件的服务，经 `unitsRoot()`
+读这一项，在容器根里查哪些端口已被别的站占用（见接缝 9）。
 
 ### 8 node 侧 ⇄ 数据插件 ⇢ 置顶文档
 
@@ -121,19 +121,19 @@ docfirst 插件 `@godcreator/gwb-docfirst-workflow` 建站（`docfirst.create` /
 它存在数据插件的文档 `pinned`（`<home>/data/unit-folder/pinned.json`，`{ paths }`）。数据插件加载时把磁盘上那份读进内存；人先点了置顶、数据插件后加载的那种顺序，
 以内存里最近的动作为准、反过来写盘：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="167-185" hash="3595503bad88" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="169-187" hash="3595503bad88" blob="152a9c544697" */}
 
 磁盘上那份人可以手改，读回来要验形状（`parsePinnedDoc`）。测试：`tests/current.test.ts` 覆盖文档形状、置顶表的增删与回落。
 
 ### 9 node 侧 → 消费方插件
 
 依赖方向是消费方认识本插件，本插件不认识任何消费方：用它的插件局部注入 `gwbUnitFolder`，用 `current()` 取初值、`on('unit-folder/selection')` 听变化，
-两样的形状是同一个 `UnitSelection`。工具条登记接口 `registerToolbarButton` 按调用方的 fiber 认出登记方的条目与包名，不由登记方自己报；
+两样的形状是同一个 `UnitSelection`；要容器根的调 `unitsRoot()`。工具条登记接口 `registerToolbarButton` 按调用方的 fiber 认出登记方的条目与包名，不由登记方自己报；
 注销登记在调用方的 effect 上，登记方卸载时按钮自动消失：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="205-235" hash="10c602fa332a" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="207-237" hash="10c602fa332a" blob="152a9c544697" */}
 
-**此刻容器里没有插件注入这个服务，也没有登记方**。服务、事件与登记接口仍然是契约，
+**此刻注入这个服务的只有 docfirst 插件（只调 `unitsRoot()`），工具条没有登记方**。服务、事件与登记接口仍然是契约，
 删掉它们是破坏性版本，要不要删等人决定，见轨迹卡[「工具条登记口没有登记方了」](/trajectory/2026-09-26-toolbar-no-registrant)。
 测试：`tests/toolbar.test.ts` 覆盖登记表的规矩；产物测试确认 `.d.ts` 里有服务与事件的类型声明。
 
@@ -185,7 +185,7 @@ VSCode 必须找到 `Code.exe` 本身：PATH 上的 `code` 是 `.cmd`，Node 修
 
 必需依赖只有前两个：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="97-99" hash="608eedbb45ea" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="99-101" hash="608eedbb45ea" blob="152a9c544697" */}
 
 每个依赖的 peer 范围、是否可选，以及按名字调用与约定通道，见[插件之间怎么连](/docs/wiring)。
 

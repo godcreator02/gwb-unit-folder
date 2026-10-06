@@ -71,6 +71,8 @@ export interface GwbUnitFolderApi {
    * `ToolbarButtonSpec`。回注销函数；登记方卸载时自动注销
    */
   registerToolbarButton(spec: ToolbarButtonSpec): () => void
+  /** 容器根的绝对路径，每次从设置 `units-root` 现读；没配、或设置插件不在时回 undefined */
+  unitsRoot(): string | undefined
 }
 
 /** 命令总线传来的参数是 `unknown`：按对象收下，字段各自再判 */
@@ -232,6 +234,10 @@ export default class GwbUnitFolder extends Service implements GwbUnitFolderApi {
 
   private announceToolbarChanged(): void {
     this.kernel.emit({ t: TOOLBAR_EVENT })
+  }
+
+  unitsRoot(): string | undefined {
+    return this.resolveUnitsRoot()
   }
 
   private resolveUnitsRoot(): string | undefined {

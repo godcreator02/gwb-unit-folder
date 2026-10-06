@@ -114,6 +114,10 @@ describe.skipIf(!built)('产物', () => {
     expect(types).toContain("'unit-folder/selection'(selection: UnitSelection | undefined): void")
   })
 
+  it('node 侧：服务上有 unitsRoot——docfirst 插件经它读容器根，不按名字调 settings.get 读别人的分区', () => {
+    expect(read('index.d.ts')).toContain('unitsRoot(): string | undefined')
+  })
+
   it('浏览器侧：包名 import 只许 react 的四个', () => {
     const leaked = specsIn(read(CLIENT), BARE).filter((s) => !SHARED.has(s))
     expect(leaked).toEqual([])

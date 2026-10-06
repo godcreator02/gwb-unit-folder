@@ -90,6 +90,8 @@ ctx.inject(['gwbUnitFolder'], (scoped) => {
 服务上还有 `registerToolbarButton(spec)`：往单元树窗格的工具条登记一个动作按钮（`id` / `icon` / `label` / `command` / `state?` / `args?`），
 点击与「可不可用」都按登记里给的命令名调回登记方。此刻没有插件用它，形状见文档站「服务与命令」页。
 
+`unitsRoot()` 回容器根的绝对路径（每次从设置现读，没配回 undefined）：别的插件要容器根就调它，不按名字调 `settings.get` 读本插件的分区。
+
 这个服务、事件与命令的名字和参数形状是契约：**改之前先问人。**
 
 ## 怎么用它回答问题

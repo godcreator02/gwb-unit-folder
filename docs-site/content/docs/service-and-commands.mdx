@@ -1,6 +1,6 @@
 ---
 title: 服务与命令
-description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三个方法、事件 unit-folder/selection 的载荷、十一条命令的参数与回执、置顶文档的形状——别人对着写代码的契约，逐条钉在源码上
+description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的方法、事件 unit-folder/selection 的载荷、十一条命令的参数与回执、置顶文档的形状——别人对着写代码的契约，逐条钉在源码上
 ---
 
 **本页回答**：本插件对外的契约各长什么样：出生证字段表、服务 `ctx.gwbUnitFolder`、事件 `unit-folder/selection`、十一条命令、置顶文档。
@@ -25,9 +25,13 @@ description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三�
 
 ## 服务 `ctx.gwbUnitFolder`
 
-消费方写 `ctx.inject(['gwbUnitFolder'], …)`（或 `export const inject`）拿到这个服务。读的两个方法都同步，登记按钮的那个回注销函数：
+消费方写 `ctx.inject(['gwbUnitFolder'], …)`（或 `export const inject`）拿到这个服务。读的方法都同步，登记按钮的那个回注销函数：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="56-74" hash="752a56d160f2" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="56-76" hash="9ccd1f017c7d" blob="152a9c544697" */}
+
+`unitsRoot()` 回容器根的绝对路径，和命令共用同一处换算，每次从设置 `units-root` 现读；没配、设置插件不在时回 undefined。设置插件的 `get` 只读调用方自己的分区，别的插件要容器根就调它，不按名字调 `settings.get` 读本插件的分区（docfirst 插件建站查端口时局部注入本服务、调它）：
+
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="239-245" hash="db8c167295d9" blob="152a9c544697" */}
 
 `current()` 的回值形状与事件载荷是同一个 `UnitSelection`，三个字段都是绝对路径：
 
@@ -56,11 +60,11 @@ description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三�
 `current()` 变了就在提供方的 ctx 上 emit 一次，载荷就是新的 `current()`。点击、置顶、清掉已删单元几条路都经同一处判「变没变」，
 所以没点过时置顶、取消置顶也会广播——消费方看到的「当前」确实变了：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="259-268" hash="2b41167709d3" blob="55206a0602ef" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="265-274" hash="2b41167709d3" blob="152a9c544697" */}
 
 消费方只要 `import type {} from '@godcreator/gwb-unit-folder'`，Context 上的 `gwbUnitFolder` 与 Events 上的 `'unit-folder/selection'` 就都有了：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="507-514" hash="bb45bdf6edcd" blob="a1fc4f4c5f8b" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="513-520" hash="bb45bdf6edcd" blob="152a9c544697" */}
 
 「当前」不跨会话：`current()` 只存在内存里，重启之后是第一个置顶或空。没有「清空」命令，undefined 只在从有到无时出现——
 摘掉了最后一个置顶，或者最近一次点击的单元已被删掉而且没有置顶。
@@ -73,27 +77,27 @@ description: 出生证 unit.json 的字段表、服务 ctx.gwbUnitFolder 的三�
 **建单元**：`create` 不带路径参数，解出容器根之后把 `kind / title / purpose / icon / status? / slug?` 交给 `src/create.ts` 算目录名、建目录、写出生证；
 字段不成立一个目录都不建：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="339-363" hash="0f303310f44a" blob="a1fc4f4c5f8b" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="345-369" hash="0f303310f44a" blob="152a9c544697" */}
 
 **选中与置顶四条**是服务的命令入口。`select` 是浏览器侧点树时调的那条，agent 想替人「切到某个单元」也调它；它先确认目录还在（不在直接回失败），
 再算出所属单元、记下、变了就广播：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="443-462" hash="7197ccbfb029" blob="a1fc4f4c5f8b" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="449-468" hash="7197ccbfb029" blob="152a9c544697" */}
 
 `current` 无参数，回 `{ ok: true, data: current() ?? null }`，没有「当前」时 data 是 null 而不是缺字段：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="464-472" hash="90f6b76bc318" blob="a1fc4f4c5f8b" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="470-478" hash="90f6b76bc318" blob="152a9c544697" */}
 
 `pin` 只认容器根下一层的单元目录，追加到置顶表末尾（已经在的不挪位置），存进 data 文档 `pinned`，不改最近一次点击；`unpin` 要给 `path`，摘掉那一个。
 两条的回执都等存盘完成，写没写成进回执：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="474-503" hash="ab87430d9019" blob="a1fc4f4c5f8b" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="480-509" hash="ab87430d9019" blob="152a9c544697" */}
 
 **浏览那五条**（`list` / `listDir` / `readFile` / `open` / `code`）里，`list` 的回执带 `pinned`——置顶单元条目的数组，按置顶先后。
 `list` 每次现扫时顺带清掉过期的状态：置顶了但清单里找不到的（目录删了、换了容器根）从置顶表摘掉并存盘；最近一次点击的单元不在清单里，
 就清掉这次点击，不然一个删掉的单元会一直占着「当前」。两样清完只判一次变没变、最多广播一次：
 
-{/* ref file="../plugins/unit-folder/src/index.ts" lines="298-337" hash="a3eff81cbef0" blob="a1fc4f4c5f8b" */}
+{/* ref file="../plugins/unit-folder/src/index.ts" lines="304-343" hash="a3eff81cbef0" blob="152a9c544697" */}
 
 `listDir` 回一层目录，目录在前、文件在后，各自按名字典序；某一项读不出大小照样列出，只是没有 `size`。`readFile` 回原文预览：
 超过 512 KB 截断（`truncated`），前 8 KB 里有 NUL 就当二进制、回空串；截断点切在 UTF-8 字符中间时末尾会解出一个替换字符。
