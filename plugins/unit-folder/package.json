@@ -1,10 +1,11 @@
 {
   "name": "@godcreator/gwb-unit-folder",
-  "version": "0.7.22",
+  "version": "0.7.23",
   "author": {
     "name": "godcreator"
   },
   "description": "单元文件夹插件：出生证（unit.json）字段表的正本——建单元、现扫单元容器根读出生证，树里按状态与种类过滤、展开看文件、点文件读原文；「人现在看的是哪个单元」经 unit-folder/selection 事件往外报。服务 gwbUnitFolder；skill 1 份；命令 11 条。",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,7 +21,8 @@
   "files": [
     "dist",
     "skills",
-    "src"
+    "src",
+    "LICENSE"
   ],
   "gwb": {
     "provides": {
@@ -42,7 +44,8 @@
     "node": ">=24"
   },
   "publishConfig": {
-    "registry": "https://git.tianshen02.online:28377/api/packages/godcreator/npm/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "peerDependencies": {
     "@godcreator/gwb-kernel-desktop": "^0.10.0",
@@ -87,7 +90,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://git.tianshen02.online:28377/godcreator/gwb-unit-folder.git"
+    "url": "https://github.com/godcreator02/gwb-unit-folder.git"
   },
   "keywords": [
     "gwb-plugin"
