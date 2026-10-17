@@ -1,0 +1,38 @@
+---
+born-at: 2026-10-17T10:43
+type: choice
+parent: [2026-09-08-gwb-unit-folder]
+label: 文档站迁到 god-docsite
+domain: 文档站
+---
+
+## 背景
+
+docs-site 原来是 Next 16 + `@godcreator/docfirst-workflow` 0.5.2：页面路由、侧栏的三区树、星轨盘都是站里手写的 Next 文件（`src/app/`、`src/lib/`），
+组件名册由 `src/components/registry.ts` 与 `scripts/verify-roster.mjs` 两边核对，看页面要先 `pnpm build` 再 `pnpm start`（端口 4319）。
+平台换成了 `@godcreator/god-docsite`（fumadocs + React Router + Vite）加功能包 code-pin、trajectory、explainer，命令行换成 `@godcreator/docfirst` 0.1.0，
+开发服务由工作台的 `docsite.site.*` 托管。本站照 god-docsite 维护页「Next docfirst 站迁到平台」迁过去。
+
+pivots-from:: [升 docfirst 0.5](2026-09-30-docfirst-0-5.mdx)
+
+## 结论与边界
+
+- 骨架用 `docfirst.create` 在空目录生成，`app/` 与根配置（`vite.config.ts`、`react-router.config.ts`、`source.config.ts`、`tsconfig.json`、`.gitignore`、
+  `pnpm-workspace.yaml`、锁文件、`docsite.json`、`people.json`、`glossary.json`、`comments/`）整份换进 docs-site；`package.json` 依赖与脚本照骨架，名字、版本、描述保留
+- `content/` 正文不动；`content/meta.json` 写站名，`docs`（现状）、`future`（未来）两区的 `meta.json` 加 `title` 与 `"root": true`；
+  轨迹卡从 `content/trajectory/` 挪到站点根 `trajectory/`，原来给侧栏排序的 `meta.json` 删掉
+- 接缝图 `UnitFolderSeams` 从 `src/components/` 挪到首页 `docs/index.mdx` 的同名文件夹 `content/docs/index/`，首页开头 import 它；
+  它的样式原来写在全站的 `src/app/global.css` 里，挪成旁边的 `unit-folder-seams.css`、由组件自己 import。它没有数据文件，机读规则仍写在 `docfirst.config.mjs` 里
+- `docfirst.config.mjs` 改成新写法：`fumadocsRoster: true`、`trajectory: 'trajectory'`、名册加 `Term`；SKILL.md 的映射照旧
+- 首页 `app/routes/home.tsx` 写站名、一句介绍与去文档的链接，取代旧站「`/` 跳到 `/docs`」
+- 生成物只有 AGENTS.md 与 README.md 各变了一句：「build + start、端口 4319」改成由工作台托管开发服务。SKILL.md 一字没变（正本里本来就用 `-` 作列表记号，网址都在链接或反引号里）
+- 迁完 `pnpm doc` 全绿，`pnpm typecheck`、`pnpm build` 通过；`docsite.site.start` 后首页、现状区各页、`/future/overview`、星轨盘、卡页、`/llms.txt` 都是 200，接缝图在深浅主题下都画出来了
+
+## 否掉的候选
+
+在 Next 站上逐个文件改成 React Router：路由、页面 loader、功能包接线全都不同，从骨架换进来再核对差异更可靠。
+
+## 代价与遗留
+
+- `/future` 本身是 404：未来区没有 `index` 页，旧站也一样。从侧栏下拉框进未来区落在第一页 `/future/overview`；要不要给未来区加首页以后再定
+- 站里还没有术语表：`glossary.json` 是骨架给的空表，正文没有术语标注

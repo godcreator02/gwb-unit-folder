@@ -3,6 +3,8 @@ title: 单元文件夹
 description: 把「容器根下一层一个目录、目录里一张 unit.json」这个约定变成工作台里的一棵树：建单元、看文件原文、报出人正在看哪个单元。本页按接缝讲它和工作台、磁盘、别的插件怎么连
 ---
 
+import { UnitFolderSeams } from './index/unit-folder-seams'
+
 **本页回答**：这个插件做什么、对外有哪些接口、依赖谁、不做什么；它和外面的十二条接缝各传什么、由谁负责、怎么测。
 
 「单元」是一个纯目录约定：容器根（设置 `units-root`，如 `D:\unitfolders`）下一层一个目录，目录里一张 `unit.json` 出生证，

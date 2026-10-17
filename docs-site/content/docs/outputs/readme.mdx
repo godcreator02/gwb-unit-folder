@@ -37,7 +37,8 @@ pnpm test:all     # 全量测试（含产物测试，要先 build）
 在隔离 home 里看改动用 `devkit.dev {"home":"<home 名>","dir":"<仓根>","packages":["plugins/unit-folder"]}`，发版用
 `devkit.release {"dir":"<仓根>","packages":["plugins/unit-folder"]}`。
 
-文档站：`cd docs-site && pnpm install && pnpm doc`（核对文档与代码），`pnpm build && pnpm start` 后在 http://localhost:4319 看（不用 dev 模式，改了内容重新 build）。
+文档站（god-docsite + docfirst）：`cd docs-site && pnpm install && pnpm doc`（核对文档与代码）。
+开发服务由 gwb 工作台托管：`docsite.site.add {"dir":"<站目录>"}`，地址看 `docsite.site.list`。
 
 ## 结构
 
