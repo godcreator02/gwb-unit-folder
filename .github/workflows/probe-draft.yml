@@ -1,0 +1,40 @@
+# 实测用：tag probe-draft-* 由推送镜像带到 GitHub 时，能不能列出草稿、下载草稿上的文件、把草稿公开。测完删掉这个分支
+name: probe-draft
+
+on:
+  push:
+    tags: ['probe-draft-*']
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 按 tag 名下载草稿上的文件（预期拿不到）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --dir by-tag && ls -l by-tag || echo "按 tag 名拿不到草稿"
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '')
+            const { owner, repo } = context.repo
+            core.info(`触发方式 ${context.eventName}，推送者 ${context.actor}，tag ${tag}`)
+            const releases = await github.paginate(github.rest.repos.listReleases, { owner, repo, per_page: 100 })
+            const draft = releases.find((one) => one.draft && one.tag_name === tag)
+            core.info(`release 共 ${releases.length} 个，草稿 ${releases.filter((one) => one.draft).length} 个，这个 tag 的草稿 ${draft ? draft.id : '没找到'}`)
+            if (!draft) {
+              core.setFailed('列不出这个 tag 的草稿')
+              return
+            }
+            core.info(`草稿正文：${draft.body}`)
+            for (const asset of draft.assets) {
+              const res = await github.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', { owner, repo, asset_id: asset.id, headers: { accept: 'application/octet-stream' } })
+              core.info(`按 id 下载 ${asset.name}：${Buffer.from(res.data).length} 字节`)
+            }
+            const ref = await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` })
+            core.info(`tag 在仓里，指向 ${ref.data.object.sha}`)
+            const published = await github.rest.repos.updateRelease({ owner, repo, release_id: draft.id, draft: false })
+            core.info(`公开后 draft=${published.data.draft} tag=${published.data.tag_name} target=${published.data.target_commitish} 网址 ${published.data.html_url}`)
